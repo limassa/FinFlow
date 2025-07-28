@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope } from 'react-icons/fa';
+import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet } from 'react-icons/fa';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
@@ -53,6 +53,16 @@ function Layout() {
         title="Despesa">
             <span className="icon"><FaMoneyCheckAlt /></span>
             <span className="label">{hovered === 'despesa' && 'Despesa'}</span>
+        </div>
+        {/*Contas*/}
+        <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('contas')}
+        onMouseLeave={() => setHovered(null)}
+        onClick={() => navigate('/contas')}
+        style={{ cursor: 'pointer' }}
+        title="Contas">
+            <span className="icon"><FaWallet /></span>
+            <span className="label">{hovered === 'contas' && 'Contas'}</span>
         </div>
         {/*Fale Conosco*/}
         <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''}`}

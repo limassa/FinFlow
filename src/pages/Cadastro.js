@@ -142,6 +142,7 @@ function Cadastro() {
         </button>
         
         <div className="form-divider">
+          <br />
           <span>ou</span>
         </div>
         

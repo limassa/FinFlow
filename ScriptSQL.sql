@@ -156,3 +156,28 @@ CREATE TABLE budget_items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Criação da tabela de contas
+CREATE TABLE IF NOT EXISTS contas (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    saldo DECIMAL(10,2) DEFAULT 0.00,
+    usuario_id INTEGER NOT NULL,
+    ativo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (usuario_id) REFERENCES users(id)
+);
+
+-- Adicionar campos de conta nas tabelas de receitas e despesas
+ALTER TABLE receita_transacao ADD COLUMN IF NOT EXISTS conta_id INTEGER NULL;
+ALTER TABLE receita_transacao ADD CONSTRAINT fk_receita_conta FOREIGN KEY (conta_id) REFERENCES contas(id);
+
+ALTER TABLE despesa_transacao ADD COLUMN IF NOT EXISTS conta_id INTEGER NULL;
+ALTER TABLE despesa_transacao ADD CONSTRAINT fk_despesa_conta FOREIGN KEY (conta_id) REFERENCES contas(id);
+
+ALTER TABLE despesa_transacao 
+ADD COLUMN despesa_pago BOOLEAN DEFAULT FALSE,
+ADD COLUMN despesa_dtVencimento DATE;

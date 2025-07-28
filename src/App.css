@@ -472,7 +472,7 @@
 
 .grid-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 100px 80px;
   background: #f8f9fa;
   font-weight: 600;
   color: #555;
@@ -485,11 +485,12 @@
 
 .grid-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 100px 80px;
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
   padding: 12px 20px;
   align-items: center;
+  min-height: 50px;
 }
 
 .grid-row:hover {
@@ -913,8 +914,35 @@
 .header-content {
   width: 100%;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.user-greeting {
+  color: #2d199c !important;
+  font-size: 16px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.9) !important;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0 !important;
+  transition: all 0.3s ease;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-greeting:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .logo-container {
@@ -958,12 +986,22 @@
   .company-name {
     font-size: 10px;
   }
+  
+  .user-greeting {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
 }
 
 @media (max-width: 480px) {
   .app-header {
     left: 45px;
     height: 45px;
+  }
+  
+  .user-greeting {
+    font-size: 12px;
+    padding: 4px 8px;
   }
 }
 
@@ -1055,6 +1093,7 @@
 .banner-features {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 15px;
   margin-bottom: 40px;
 }
@@ -1489,6 +1528,246 @@ select.form-input:focus {
 
 .dashboard-back-button svg {
   font-size: 16px;
+}
+
+/* Estilos para o gráfico de evolução mensal */
+.grafico-evolucao-mensal {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: #fff;
+  border-radius: 8px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-content {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+
+.chart-loading,
+.chart-error,
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.chart-error button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.chart-error button:hover {
+  background: #0056b3;
+}
+
+/* Responsividade para o gráfico */
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px;
+    padding: 15px;
+  }
+  
+  .chart-content {
+    min-height: 300px;
+  }
+  
+  .chart-loading,
+  .chart-error,
+  .chart-empty {
+    height: 300px;
+  }
+}
+
+/* Estilos para os gráficos de pizza */
+.graficos-pizza {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.pizza-charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.pizza-chart-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 180px;
+  max-width: 100%;
+  overflow: hidden;
+  height: 180px;
+}
+
+.pizza-chart-card .chart-container {
+  height: 150px;
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Responsividade para os gráficos de pizza */
+@media (max-width: 768px) {
+  .pizza-charts-container {
+    gap: 15px;
+  }
+  
+  .pizza-chart-card {
+    min-height: 160px;
+    padding: 10px;
+  }
+  
+  .pizza-chart-card .chart-container {
+    height: 130px;
+  }
+}
+
+/* Estilos para botões de atualização */
+.btn-atualizar {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.btn-atualizar:hover {
+  background: #2563eb;
+}
+
+.btn-cancelar {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-cancelar:hover {
+  background: #4b5563;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Estilos específicos para o grid de despesas */
+.despesas-grid .grid-header,
+.despesas-grid .grid-row {
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 100px 80px;
+}
+
+.despesas-grid .grid-cell {
+  min-height: 50px;
+  align-items: center;
+}
+
+.despesas-grid .grid-cell.acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  min-height: 50px;
+}
+
+.despesas-grid .grid-cell:last-child {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50px;
+}
+
+/* Diminuir o campo descrição */
+.despesas-grid .grid-cell:first-child {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Estilos específicos para o grid de receitas */
+.receitas-grid .grid-header,
+.receitas-grid .grid-row {
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 100px;
+}
+
+.receitas-grid .grid-cell.acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  min-height: 50px;
+}
+
+/* Estilos para o grid de contas */
+.contas-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+}
+
+.contas-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.contas-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.contas-grid::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.contas-grid::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 

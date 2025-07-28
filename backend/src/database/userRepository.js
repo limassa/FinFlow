@@ -47,18 +47,18 @@ const userRepository = {
     return result.rows;
   },
 
-  async createReceita({ descricao, valor, data, tipo, usuario_id }) {
+  async createReceita({ descricao, valor, data, tipo, conta_id, usuario_id }) {
     const result = await pool.query(
-      'INSERT INTO receita_transacao (descricao, valor, date, tipo, usuario_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [descricao, valor, data, tipo, usuario_id]
+      'INSERT INTO receita_transacao (descricao, valor, date, tipo, conta_id, usuario_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [descricao, valor, data, tipo, conta_id || null, usuario_id]
     );
     return result.rows[0];
   },
 
-  async updateReceita(id, { descricao, valor, data, tipo }) {
+  async updateReceita(id, { descricao, valor, data, tipo, conta_id }) {
     const result = await pool.query(
-      'UPDATE receita_transacao SET descricao = $1, valor = $2, date = $3, tipo = $4 WHERE id = $5 RETURNING *',
-      [descricao, valor, data, tipo, id]
+      'UPDATE receita_transacao SET descricao = $1, valor = $2, date = $3, tipo = $4, conta_id = $5 WHERE id = $6 RETURNING *',
+      [descricao, valor, data, tipo, conta_id || null, id]
     );
     return result.rows[0];
   },
@@ -87,18 +87,24 @@ const userRepository = {
     return result.rows;
   },
 
-  async createDespesa({ descricao, valor, data, tipo, usuario_id }) {
+  async createDespesa({ descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id }) {
+    // Tratar dataVencimento vazio como NULL
+    const dataVencimentoValue = dataVencimento && dataVencimento.trim() !== '' ? dataVencimento : null;
+    
     const result = await pool.query(
-      'INSERT INTO despesa_transacao (descricao, valor, date, tipo, usuario_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [descricao, valor, data, tipo, usuario_id]
+      'INSERT INTO despesa_transacao (descricao, valor, date, despesa_dtVencimento, tipo, despesa_pago, conta_id, usuario_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [descricao, valor, data, dataVencimentoValue, tipo, pago || false, conta_id || null, usuario_id]
     );
     return result.rows[0];
   },
 
-  async updateDespesa(id, { descricao, valor, data, tipo }) {
+  async updateDespesa(id, { descricao, valor, data, dataVencimento, tipo, pago, conta_id }) {
+    // Tratar dataVencimento vazio como NULL
+    const dataVencimentoValue = dataVencimento && dataVencimento.trim() !== '' ? dataVencimento : null;
+    
     const result = await pool.query(
-      'UPDATE despesa_transacao SET descricao = $1, valor = $2, date = $3, tipo = $4 WHERE id = $5 RETURNING *',
-      [descricao, valor, data, tipo, id]
+      'UPDATE despesa_transacao SET descricao = $1, valor = $2, date = $3, despesa_dtVencimento = $4, tipo = $5, despesa_pago = $6, conta_id = $7 WHERE id = $8 RETURNING *',
+      [descricao, valor, data, dataVencimentoValue, tipo, pago, conta_id || null, id]
     );
     return result.rows[0];
   },
@@ -106,6 +112,39 @@ const userRepository = {
   async deleteDespesa(id) {
     const result = await pool.query(
       'UPDATE despesa_transacao SET ativo = false, deleted_at = NOW() WHERE id = $1 RETURNING *',
+      [id]
+    );
+    return result.rows[0];
+  },
+
+  // Métodos para Contas
+  async getContas(userId) {
+    const result = await pool.query(
+      'SELECT * FROM contas WHERE usuario_id = $1 AND ativo = true ORDER BY nome',
+      [userId]
+    );
+    return result.rows;
+  },
+
+  async createConta({ nome, tipo, saldo, usuario_id }) {
+    const result = await pool.query(
+      'INSERT INTO contas (nome, tipo, saldo, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [nome, tipo, saldo || 0, usuario_id]
+    );
+    return result.rows[0];
+  },
+
+  async updateConta(id, { nome, tipo, saldo }) {
+    const result = await pool.query(
+      'UPDATE contas SET nome = $1, tipo = $2, saldo = $3 WHERE id = $4 RETURNING *',
+      [nome, tipo, saldo || 0, id]
+    );
+    return result.rows[0];
+  },
+
+  async deleteConta(id) {
+    const result = await pool.query(
+      'UPDATE contas SET ativo = false, deleted_at = NOW() WHERE id = $1 RETURNING *',
       [id]
     );
     return result.rows[0];

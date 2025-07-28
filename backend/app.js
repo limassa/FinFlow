@@ -77,9 +77,9 @@ app.get('/api/receitas', async (req, res) => {
 });
 
 app.post('/api/receitas', async (req, res) => {
-  const { descricao, valor, data, tipo, usuario_id } = req.body;
+  const { descricao, valor, data, tipo, conta_id, usuario_id } = req.body;
   try {
-    const receita = await userRepository.createReceita({ descricao, valor, data, tipo, usuario_id });
+    const receita = await userRepository.createReceita({ descricao, valor, data, tipo, conta_id, usuario_id });
     res.status(201).json(receita);
   } catch (err) {
     console.error('Erro ao criar receita:', err);
@@ -89,9 +89,9 @@ app.post('/api/receitas', async (req, res) => {
 
 app.put('/api/receitas/:id', async (req, res) => {
   const { id } = req.params;
-  const { descricao, valor, data, tipo } = req.body;
+  const { descricao, valor, data, tipo, conta_id } = req.body;
   try {
-    const receita = await userRepository.updateReceita(id, { descricao, valor, data, tipo });
+    const receita = await userRepository.updateReceita(id, { descricao, valor, data, tipo, conta_id });
     res.json(receita);
   } catch (err) {
     console.error('Erro ao atualizar receita:', err);
@@ -123,9 +123,9 @@ app.get('/api/despesas', async (req, res) => {
 });
 
 app.post('/api/despesas', async (req, res) => {
-  const { descricao, valor, data, tipo, usuario_id } = req.body;
+  const { descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id } = req.body;
   try {
-    const despesa = await userRepository.createDespesa({ descricao, valor, data, tipo, usuario_id });
+    const despesa = await userRepository.createDespesa({ descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id });
     res.status(201).json(despesa);
   } catch (err) {
     console.error('Erro ao criar despesa:', err);
@@ -135,9 +135,9 @@ app.post('/api/despesas', async (req, res) => {
 
 app.put('/api/despesas/:id', async (req, res) => {
   const { id } = req.params;
-  const { descricao, valor, data, tipo } = req.body;
+  const { descricao, valor, data, dataVencimento, tipo, pago, conta_id } = req.body;
   try {
-    const despesa = await userRepository.updateDespesa(id, { descricao, valor, data, tipo });
+    const despesa = await userRepository.updateDespesa(id, { descricao, valor, data, dataVencimento, tipo, pago, conta_id });
     res.json(despesa);
   } catch (err) {
     console.error('Erro ao atualizar despesa:', err);
@@ -153,6 +153,52 @@ app.delete('/api/despesas/:id', async (req, res) => {
   } catch (err) {
     console.error('Erro ao deletar despesa:', err);
     res.status(500).json({ error: 'Erro ao deletar despesa' });
+  }
+});
+
+// Rotas para Contas
+app.get('/api/contas', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const contas = await userRepository.getContas(userId);
+    res.json(contas);
+  } catch (err) {
+    console.error('Erro ao buscar contas:', err);
+    res.status(500).json({ error: 'Erro ao buscar contas' });
+  }
+});
+
+app.post('/api/contas', async (req, res) => {
+  const { nome, tipo, saldo, usuario_id } = req.body;
+  try {
+    const conta = await userRepository.createConta({ nome, tipo, saldo, usuario_id });
+    res.status(201).json(conta);
+  } catch (err) {
+    console.error('Erro ao criar conta:', err);
+    res.status(500).json({ error: 'Erro ao criar conta' });
+  }
+});
+
+app.put('/api/contas/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, tipo, saldo } = req.body;
+  try {
+    const conta = await userRepository.updateConta(id, { nome, tipo, saldo });
+    res.json(conta);
+  } catch (err) {
+    console.error('Erro ao atualizar conta:', err);
+    res.status(500).json({ error: 'Erro ao atualizar conta' });
+  }
+});
+
+app.delete('/api/contas/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const conta = await userRepository.deleteConta(id);
+    res.json(conta);
+  } catch (err) {
+    console.error('Erro ao deletar conta:', err);
+    res.status(500).json({ error: 'Erro ao deletar conta' });
   }
 });
 

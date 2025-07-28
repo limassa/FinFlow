@@ -1,7 +1,10 @@
 import React from 'react';
 import '../App.css';
+import { getUsuarioLogado } from '../functions/auth'; 
 
 function Header() {
+  const usuario = getUsuarioLogado();
+
   return (
     <header className="app-header">
       <div className="header-content">
@@ -26,6 +29,11 @@ function Header() {
             <h1 className="app-title">FinFlow</h1>
             <span className="company-name">Liz Softwares</span>
           </div>
+        </div>
+        <div className="user-info">
+          <span className="user-greeting">
+            {usuario && usuario.nome ? `Olá, ${usuario.nome}` : 'Olá, Usuário'}
+          </span>
         </div>
       </div>
     </header>

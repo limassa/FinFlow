@@ -9,10 +9,14 @@ function Despesa() {
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [data, setData] = useState('');
+  const [dataVencimento, setDataVencimento] = useState('');
+  const [contaId, setContaId] = useState('');
+  const [contas, setContas] = useState([]);
   const [editId, setEditId] = useState(null);
   const [totalDespesas, setTotalDespesas] = useState(0);
   const [mesFiltro, setMesFiltro] = useState('');
   const [loading, setLoading] = useState(true); // Mudando para true para forçar o carregamento
+  const [pago, setPago] = useState(false);
   
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -51,8 +55,18 @@ function Despesa() {
     if (userId) {
       console.log('🔄 Chamando fetchDespesas...');
       fetchDespesas();
+      fetchContas();
     }
   }, [userId, mesFiltro]);
+
+  const fetchContas = async () => {
+    try {
+      const res = await axios.get(`http://localhost:3001/api/contas?userId=${userId}`);
+      setContas(res.data);
+    } catch (err) {
+      console.log('Erro ao buscar contas:', err);
+    }
+  };
 
   const fetchDespesas = async () => {
     setLoading(true);
@@ -65,8 +79,10 @@ function Despesa() {
       const res = await axios.get(url);
       setDespesas(res.data);
       
-      // Calcular total
-      const total = res.data.reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
+      // Calcular total apenas das despesas pagas
+      const total = res.data
+        .filter(despesa => despesa.despesa_pago)
+        .reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
       setTotalDespesas(total);
     } catch (err) {
       console.error('❌ Erro ao buscar Despesas:', err);
@@ -79,7 +95,7 @@ function Despesa() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!descricao || !valor || !data || !tipo) {
-      alert('Preencha todos os campos');
+      alert('Preencha todos os campos obrigatórios');
       return;
     }
     
@@ -88,13 +104,19 @@ function Despesa() {
         descricao, 
         valor, 
         data, 
+        dataVencimento,
         tipo,
+        pago,
+        conta_id: contaId || null,
         usuario_id: userId // Mudando de userId para usuario_id
       });
       setDescricao('');
       setValor('');
       setData('');
+      setDataVencimento('');
       setTipo('');
+      setPago(false);
+      setContaId('');
       fetchDespesas();
       alert('Despesa adicionada com sucesso');
     } catch (err) {
@@ -105,8 +127,15 @@ function Despesa() {
   const handleEdit = (despesa) => {
     setDescricao(despesa.descricao);
     setValor(despesa.valor);
-    setData(despesa.date); // Mudando de 'data' para 'date'
+    // Formatar a data para o formato YYYY-MM-DD que o input date espera
+    const dataFormatada = despesa.date ? new Date(despesa.date).toISOString().split('T')[0] : '';
+    setData(dataFormatada);
+    // Formatar a data de vencimento para o formato YYYY-MM-DD
+    const dataVencimentoFormatada = despesa.despesa_dtVencimento ? new Date(despesa.despesa_dtVencimento).toISOString().split('T')[0] : '';
+    setDataVencimento(dataVencimentoFormatada);
     setTipo(despesa.tipo);
+    setPago(despesa.despesa_pago || false);
+    setContaId(despesa.conta_id || '');
     setEditId(despesa.id);
   };
 
@@ -121,8 +150,74 @@ function Despesa() {
     }
   };
 
+  const handleTogglePago = async (despesa) => {
+    try {
+      await axios.put(`http://localhost:3001/api/despesas/${despesa.id}`, {
+        descricao: despesa.descricao,
+        valor: despesa.valor,
+        data: despesa.date || despesa.data,
+        dataVencimento: despesa.despesa_dtVencimento,
+        tipo: despesa.tipo,
+        pago: !despesa.despesa_pago,
+        conta_id: despesa.conta_id
+      });
+      fetchDespesas();
+    } catch (err) {
+      console.log('Erro ao atualizar status de pago:', err);
+      alert('Erro ao atualizar status de pago');
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!descricao || !valor || !data || !tipo) {
+      alert('Preencha todos os campos obrigatórios');
+      return;
+    }
+    
+    try {
+      await axios.put(`http://localhost:3001/api/despesas/${editId}`, { 
+        descricao, 
+        valor, 
+        data, 
+        dataVencimento,
+        tipo,
+        pago: pago,
+        conta_id: contaId || null
+      });
+      setDescricao('');
+      setValor('');
+      setData('');
+      setDataVencimento('');
+      setTipo('');
+      setPago(false);
+      setContaId('');
+      setEditId(null);
+      fetchDespesas();
+      alert('Despesa atualizada com sucesso');
+    } catch (err) {
+      alert('Erro ao atualizar despesa');
+    }
+  };
+
+  const handleCancel = () => {
+    setDescricao('');
+    setValor('');
+    setData('');
+    setDataVencimento('');
+    setTipo('');
+    setPago(false);
+    setContaId('');
+    setEditId(null);
+  };
+
   const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR');
+    if (!data) return '00/00/0000';
+    try {
+      return new Date(data).toLocaleDateString('pt-BR');
+    } catch (error) {
+      return '00/00/0000';
+    }
   };
 
   const formatarValor = (valor) => {
@@ -171,8 +266,8 @@ function Despesa() {
 
       {/* Formulário */}
       <div className="form-container">
-        <h3>Adicionar Nova Despesa</h3>
-        <form onSubmit={handleSubmit} className="receita-form">
+        <h3>{editId ? 'Editar Despesa' : 'Adicionar Nova Despesa'}</h3>
+        <form onSubmit={editId ? handleUpdate : handleSubmit} className="receita-form">
           <div className="form-row">
             <div className="form-group">
               <label>Descrição:</label>
@@ -207,6 +302,16 @@ function Despesa() {
               />
             </div>
             <div className="form-group">
+              <label>Data de Vencimento:</label>
+              <input
+                type="date"
+                value={dataVencimento}
+                onChange={e => setDataVencimento(e.target.value)}
+              />
+            </div>
+          </div>
+                    <div className="form-row">
+            <div className="form-group">
               <label>Tipo:</label>
               <select value={tipo} onChange={e => setTipo(e.target.value)} required>
                 <option value="">Selecione</option>
@@ -215,10 +320,45 @@ function Despesa() {
                 ))}
               </select>
             </div>
+            <div className="form-group">
+              <label>Conta:</label>
+              <select value={contaId} onChange={e => setContaId(e.target.value)} required>
+                <option value="">Selecione uma conta</option>
+                {contas.map(conta => (
+                  <option key={conta.id} value={conta.id}>{conta.nome}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-row">
+            <div className="form-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pago}
+                  onChange={e => setPago(e.target.checked)}
+                />
+                Pago
+              </label>
+            </div>
+            </div>
           </div>
-          <button type="submit" className="btn-adicionar">
-            <FaPlus /> Adicionar Despesa
-          </button>
+          
+          <div className="form-buttons">
+            {editId ? (
+              <>
+                <button type="submit" className="btn-atualizar">
+                  <FaEdit /> Atualizar Despesa
+                </button>
+                <button type="button" onClick={handleCancel} className="btn-cancelar">
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <button type="submit" className="btn-adicionar">
+                <FaPlus /> Adicionar Despesa
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -231,21 +371,27 @@ function Despesa() {
             ) : despesas.length === 0 ? (
           <div className="no-data">Nenhuma despesa encontrada</div>
         ) : (
-          <div className="receitas-grid">
+          <div className="despesas-grid">
             <div className="grid-header">
               <div className="grid-cell">Descrição</div>
               <div className="grid-cell">Valor</div>
               <div className="grid-cell">Data</div>
+              <div className="grid-cell">Data Vencimento</div>
               <div className="grid-cell">Tipo</div>
+              <div className="grid-cell">Conta</div>
               <div className="grid-cell">Ações</div>
+              <div className="grid-cell">Pago</div>
             </div>
             {despesas.map(despesa => {
+              const conta = contas.find(c => c.id === despesa.conta_id);
               return (
                 <div key={despesa.id} className="grid-row">
                   <div className="grid-cell">{despesa.descricao}</div>
                   <div className="grid-cell valor">{formatarValor(despesa.valor)}</div>
                   <div className="grid-cell">{formatarData(despesa.date)}</div>
+                  <div className="grid-cell">{formatarData(despesa.despesa_dtVencimento)}</div>
                   <div className="grid-cell">{despesa.tipo}</div>
+                  <div className="grid-cell">{conta ? conta.nome : '-'}</div>
                   <div className="grid-cell acoes">
                     <button 
                       onClick={() => handleEdit(despesa)}
@@ -255,12 +401,20 @@ function Despesa() {
                       <FaEdit />
                     </button>
                     <button 
-                          onClick={() => handleDelete(despesa.id)}
+                      onClick={() => handleDelete(despesa.id)}
                       className="btn-delete"
                       title="Excluir"
                     >
                       <FaTrash />
                     </button>
+                  </div>
+                  <div className="grid-cell">
+                    <input
+                      type="checkbox"
+                      checked={despesa.despesa_pago || false}
+                      onChange={() => handleTogglePago(despesa)}
+                      title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
+                    />
                   </div>
                 </div>
               );

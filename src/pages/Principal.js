@@ -4,6 +4,8 @@ import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 import { useNavigate } from 'react-router-dom';
+import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
+import GraficosPizza from '../components/GraficosPizza';
 
 function Principal() {
   const navigate = useNavigate();
@@ -31,14 +33,47 @@ function Principal() {
         axios.get(`http://localhost:3001/api/despesas?userId=${userId}`)
       ]);
 
-      const totalReceitas = receitasRes.data.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
-      const totalDespesas = despesasRes.data.reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
-      const saldo = totalReceitas - totalDespesas;
+      // Obter mês atual
+      const hoje = new Date();
+      const mesAtual = hoje.getMonth();
+      const anoAtual = hoje.getFullYear();
+
+      // Filtrar receitas do mês atual para o banner
+      const receitasMes = receitasRes.data.filter(receita => {
+        const dataReceita = new Date(receita.date || receita.data);
+        return dataReceita.getMonth() === mesAtual && 
+               dataReceita.getFullYear() === anoAtual;
+      });
+
+      // Filtrar despesas do mês atual para o banner
+      const despesasMes = despesasRes.data.filter(despesa => {
+        const dataDespesa = new Date(despesa.date || despesa.data);
+        return dataDespesa.getMonth() === mesAtual && 
+               dataDespesa.getFullYear() === anoAtual;
+      });
+
+      // Totais do período (para os cards)
+      const totalReceitasPeriodo = receitasRes.data.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
+      const totalDespesasPeriodo = despesasRes.data
+        .filter(despesa => despesa.despesa_pago)
+        .reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
+      const saldoPeriodo = totalReceitasPeriodo - totalDespesasPeriodo;
+
+      // Totais do mês (para o banner)
+      const totalReceitasMes = receitasMes.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
+      const totalDespesasMes = despesasMes
+        .filter(despesa => despesa.despesa_pago)
+        .reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
+      const saldoMes = totalReceitasMes - totalDespesasMes;
 
       setTotais({
-        totalReceitas,
-        totalDespesas,
-        saldo
+        totalReceitas: totalReceitasPeriodo, // Cards mostram período total
+        totalDespesas: totalDespesasPeriodo, // Cards mostram período total
+        saldo: saldoPeriodo, // Cards mostram período total
+        // Dados do mês para o banner
+        totalReceitasMes,
+        totalDespesasMes,
+        saldoMes
       });
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
@@ -82,7 +117,7 @@ function Principal() {
           <div className="card-content">
             <h3>Total Receitas</h3>
             <span className="card-value">{formatarValor(totais.totalReceitas)}</span>
-            <span className="card-description">Entradas do período</span>
+            <span className="card-description">Total Entradas</span>
           </div>
         </div>
 
@@ -97,7 +132,7 @@ function Principal() {
           <div className="card-content">
             <h3>Total Despesas</h3>
             <span className="card-value">{formatarValor(totais.totalDespesas)}</span>
-            <span className="card-description">Saídas do período</span>
+            <span className="card-description">Total Saídas</span>
           </div>
         </div>
 
@@ -117,21 +152,21 @@ function Principal() {
 
       <div className="home-stats">
         <div className="stat-summary">
-          <h3>Resumo do Período</h3>
+          <h3>Resumo do Mês</h3>
           <div className="stat-items">
             <div className="stat-item">
               <span className="stat-label">Receitas:</span>
-              <span className="stat-value positive">{formatarValor(totais.totalReceitas)}</span>
+              <span className="stat-value positive">{formatarValor(totais.totalReceitasMes)}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Despesas:</span>
-              <span className="stat-value negative">{formatarValor(totais.totalDespesas)}</span>
+              <span className="stat-value negative">{formatarValor(totais.totalDespesasMes)}</span>
             </div>
             {/*<div className="stat-item total">*/}
             <div className="stat-item">
               <span className="stat-label">Saldo:</span>
-              <span className={`stat-value ${totais.saldo >= 0 ? 'positive' : 'negative'}`}>
-                {formatarValor(totais.saldo)}
+              <span className={`stat-value ${totais.saldoMes >= 0 ? 'positive' : 'negative'}`}>
+                {formatarValor(totais.saldoMes)}
               </span>
             </div>
           </div>
@@ -146,15 +181,16 @@ function Principal() {
         </div>
         <div className="charts-container">
           <div className="chart-card">
-            <h4>Gráfico de Receitas vs Despesas</h4>
-            <div className="chart-placeholder">
-              <p>Gráfico será implementado aqui</p>
+            <h4>Evolução Mensal - Últimos 12 Meses</h4>
+            <div className="chart-content">
+              <GraficoEvolucaoMensal />
             </div>
           </div>
+          
           <div className="chart-card">
-            <h4>Evolução Mensal</h4>
-            <div className="chart-placeholder">
-              <p>Gráfico será implementado aqui</p>
+            <h4>Distribuição por Tipo - Mês Atual</h4>
+            <div className="chart-content">
+              <GraficosPizza />
             </div>
           </div>
         </div>

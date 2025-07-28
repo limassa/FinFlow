@@ -9,10 +9,13 @@ function Receita() {
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [data, setData] = useState('');
+  const [contaId, setContaId] = useState('');
+  const [contas, setContas] = useState([]);
   const [editId, setEditId] = useState(null);
   const [totalReceitas, setTotalReceitas] = useState(0);
   const [mesFiltro, setMesFiltro] = useState('');
   const [loading, setLoading] = useState(false);
+
   
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -52,8 +55,18 @@ function Receita() {
   useEffect(() => {
     if (userId) {
       fetchReceitas();
+      fetchContas();
     }
   }, [userId, mesFiltro]);
+
+  const fetchContas = async () => {
+    try {
+      const res = await axios.get(`http://localhost:3001/api/contas?userId=${userId}`);
+      setContas(res.data);
+    } catch (err) {
+      console.log('Erro ao buscar contas:', err);
+    }
+  };
 
   const fetchReceitas = async () => {
     setLoading(true);
@@ -91,12 +104,14 @@ function Receita() {
         valor, 
         data, 
         tipo,
+        conta_id: contaId || null,
         usuario_id: userId // Mudando de userId para usuario_id
       });
       setDescricao('');
       setValor('');
       setData('');
       setTipo('');
+      setContaId('');
       fetchReceitas();
       alert('Receita adicionada com sucesso');
     } catch (err) {
@@ -107,9 +122,49 @@ function Receita() {
   const handleEdit = (receita) => {
     setDescricao(receita.descricao);
     setValor(receita.valor);
-    setData(receita.date); // Mudando de 'data' para 'date'
+    // Formatar a data para o formato YYYY-MM-DD que o input date espera
+    const dataFormatada = receita.date ? new Date(receita.date).toISOString().split('T')[0] : '';
+    setData(dataFormatada);
     setTipo(receita.tipo);
+    setContaId(receita.conta_id || '');
     setEditId(receita.id);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!descricao || !valor || !data || !tipo) {
+      alert('Preencha todos os campos');
+      return;
+    }
+    
+    try {
+      await axios.put(`http://localhost:3001/api/receitas/${editId}`, { 
+        descricao, 
+        valor, 
+        data, 
+        tipo,
+        conta_id: contaId || null
+      });
+      setDescricao('');
+      setValor('');
+      setData('');
+      setTipo('');
+      setContaId('');
+      setEditId(null);
+      fetchReceitas();
+      alert('Receita atualizada com sucesso');
+    } catch (err) {
+      alert('Erro ao atualizar receita');
+    }
+  };
+
+  const handleCancel = () => {
+    setDescricao('');
+    setValor('');
+    setData('');
+    setTipo('');
+    setContaId('');
+    setEditId(null);
   };
 
   const handleDelete = async (id) => {
@@ -122,6 +177,8 @@ function Receita() {
       }
     }
   };
+
+
 
   const formatarData = (data) => {
     return new Date(data).toLocaleDateString('pt-BR');
@@ -173,8 +230,8 @@ function Receita() {
 
       {/* Formulário */}
       <div className="form-container">
-        <h3>Adicionar Nova Receita</h3>
-        <form onSubmit={handleSubmit} className="receita-form">
+        <h3>{editId ? 'Editar Receita' : 'Adicionar Nova Receita'}</h3>
+        <form onSubmit={editId ? handleUpdate : handleSubmit} className="receita-form">
           <div className="form-row">
             <div className="form-group">
               <label>Descrição:</label>
@@ -218,9 +275,34 @@ function Receita() {
               </select>
             </div>
           </div>
-          <button type="submit" className="btn-adicionar">
-            <FaPlus /> Adicionar Receita
-          </button>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Conta (Opcional):</label>
+              <select value={contaId} onChange={e => setContaId(e.target.value)}>
+                <option value="">Selecione uma conta</option>
+                {contas.map(conta => (
+                  <option key={conta.id} value={conta.id}>{conta.nome}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-buttons">
+            {editId ? (
+              <>
+                <button type="submit" className="btn-atualizar">
+                  <FaEdit /> Atualizar Receita
+                </button>
+                <button type="button" onClick={handleCancel} className="btn-cancelar">
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <button type="submit" className="btn-adicionar">
+                <FaPlus /> Adicionar Receita
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -238,32 +320,37 @@ function Receita() {
               <div className="grid-cell">Valor</div>
               <div className="grid-cell">Data</div>
               <div className="grid-cell">Tipo</div>
+              <div className="grid-cell">Conta</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {receitas.map(receita => (
-              <div key={receita.id} className="grid-row">
-                <div className="grid-cell">{receita.descricao}</div>
-                <div className="grid-cell valor">{formatarValor(receita.valor)}</div>
-                <div className="grid-cell">{formatarData(receita.date)}</div>
-                <div className="grid-cell">{receita.tipo}</div>
-                <div className="grid-cell acoes">
-                  <button 
-                    onClick={() => handleEdit(receita)}
-                    className="btn-edit"
-                    title="Editar"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(receita.id)}
-                    className="btn-delete"
-                    title="Excluir"
-                  >
-                    <FaTrash />
-                  </button>
+            {receitas.map(receita => {
+              const conta = contas.find(c => c.id === receita.conta_id);
+              return (
+                <div key={receita.id} className="grid-row">
+                  <div className="grid-cell">{receita.descricao}</div>
+                  <div className="grid-cell valor">{formatarValor(receita.valor)}</div>
+                  <div className="grid-cell">{formatarData(receita.date)}</div>
+                  <div className="grid-cell">{receita.tipo}</div>
+                  <div className="grid-cell">{conta ? conta.nome : '-'}</div>
+                  <div className="grid-cell acoes">
+                    <button 
+                      onClick={() => handleEdit(receita)}
+                      className="btn-edit"
+                      title="Editar"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(receita.id)}
+                      className="btn-delete"
+                      title="Excluir"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
