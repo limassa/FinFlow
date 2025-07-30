@@ -461,6 +461,54 @@ app.get('/api/lembretes/vencimentos', async (req, res) => {
   }
 });
 
+// Rota para testar envio de lembretes por email
+app.post('/api/lembretes/teste-email', async (req, res) => {
+  const { userId } = req.body;
+  
+  try {
+    // Buscar usuário
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    // Verificar se lembretes por email estão ativos
+    if (!user.usuario_lembretesemail) {
+      return res.status(400).json({ error: 'Lembretes por email estão desativados para este usuário' });
+    }
+    
+    // Buscar vencimentos próximos
+    const vencimentos = await userRepository.getVencimentosProximos(userId);
+    
+    if (vencimentos.length === 0) {
+      return res.status(404).json({ 
+        message: 'Nenhuma despesa com vencimento próximo encontrada',
+        info: 'Para testar, crie uma despesa com vencimento nos próximos 5 dias'
+      });
+    }
+    
+    // Enviar email de teste
+    const emailEnviado = await emailService.sendReminderEmail({
+      nome: user.usuario_nome,
+      email: user.usuario_email
+    }, vencimentos);
+    
+    if (emailEnviado) {
+      res.json({ 
+        message: 'Email de teste enviado com sucesso!',
+        vencimentos: vencimentos.length,
+        destinatario: user.usuario_email
+      });
+    } else {
+      res.status(500).json({ error: 'Erro ao enviar email de teste' });
+    }
+    
+  } catch (err) {
+    console.error('Erro ao testar envio de lembretes:', err);
+    res.status(500).json({ error: 'Erro ao testar envio de lembretes' });
+  }
+});
+
 // Rota para marcar parcela atual como paga/recebida
 app.put('/api/parcela-atual/:tipo/:id', async (req, res) => {
   const { tipo, id } = req.params;
