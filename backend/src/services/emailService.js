@@ -6,8 +6,8 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       service: 'gmail', // ou 'outlook', 'yahoo', etc.
       auth: {
-        user: process.env.EMAIL_USER || 'seu-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'sua-senha-de-app'
+        user: process.env.EMAIL_USER || 'joaolmnmarket@gmail.com',
+        pass: process.env.EMAIL_PASS || 'ppth orme wylc paqn'
       }
     });
   }
@@ -173,7 +173,7 @@ class EmailService {
       console.error('Erro ao enviar alerta de segurança:', error);
       return false;
     }
-  },
+  }
 
   async sendReminderEmail(user, vencimentos) {
     if (!vencimentos || vencimentos.length === 0) {
@@ -184,7 +184,7 @@ class EmailService {
       <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ff6b6b;">
         <h4 style="color: #333; margin: 0 0 10px 0;">${venc.despesa_descricao}</h4>
         <p style="color: #666; margin: 5px 0;">
-          <strong>Valor:</strong> R$ ${venc.despesa_valor.toFixed(2).replace('.', ',')}<br>
+          <strong>Valor:</strong> R$ ${Number(venc.despesa_valor).toFixed(2).replace('.', ',')}<br>
           <strong>Vencimento:</strong> ${new Date(venc.despesa_dtvencimento).toLocaleDateString('pt-BR')}<br>
           <strong>Status:</strong> ${venc.despesa_pago ? 'Pago' : 'Pendente'}
         </p>

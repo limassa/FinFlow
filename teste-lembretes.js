@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // Configurações
 const API_BASE_URL = 'http://localhost:3001';
-const TEST_USER_ID = 1; // Altere para o ID do usuário que deseja testar
+const TEST_USER_ID = 4; // Altere para o ID do usuário que deseja testar
 
 async function testarLembretes() {
   console.log('🔔 Testando Sistema de Lembretes - FinFlow\n');

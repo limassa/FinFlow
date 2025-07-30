@@ -465,22 +465,32 @@ app.get('/api/lembretes/vencimentos', async (req, res) => {
 app.post('/api/lembretes/teste-email', async (req, res) => {
   const { userId } = req.body;
   
+  console.log('🔔 Teste de lembretes iniciado para userId:', userId);
+  
   try {
     // Buscar usuário
+    console.log('📋 Buscando usuário...');
     const user = await userRepository.findUserById(userId);
     if (!user) {
+      console.log('❌ Usuário não encontrado');
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
+    console.log('✅ Usuário encontrado:', user.usuario_nome, user.usuario_email);
+    
     // Verificar se lembretes por email estão ativos
     if (!user.usuario_lembretesemail) {
+      console.log('❌ Lembretes por email desativados');
       return res.status(400).json({ error: 'Lembretes por email estão desativados para este usuário' });
     }
     
     // Buscar vencimentos próximos
+    console.log('📅 Buscando vencimentos próximos...');
     const vencimentos = await userRepository.getVencimentosProximos(userId);
+    console.log('📊 Vencimentos encontrados:', vencimentos.length);
     
     if (vencimentos.length === 0) {
+      console.log('❌ Nenhum vencimento próximo encontrado');
       return res.status(404).json({ 
         message: 'Nenhuma despesa com vencimento próximo encontrada',
         info: 'Para testar, crie uma despesa com vencimento nos próximos 5 dias'
@@ -488,23 +498,26 @@ app.post('/api/lembretes/teste-email', async (req, res) => {
     }
     
     // Enviar email de teste
+    console.log('📧 Enviando email de teste...');
     const emailEnviado = await emailService.sendReminderEmail({
       nome: user.usuario_nome,
       email: user.usuario_email
     }, vencimentos);
     
     if (emailEnviado) {
+      console.log('✅ Email enviado com sucesso!');
       res.json({ 
         message: 'Email de teste enviado com sucesso!',
         vencimentos: vencimentos.length,
         destinatario: user.usuario_email
       });
     } else {
+      console.log('❌ Falha ao enviar email');
       res.status(500).json({ error: 'Erro ao enviar email de teste' });
     }
     
   } catch (err) {
-    console.error('Erro ao testar envio de lembretes:', err);
+    console.error('❌ Erro detalhado:', err);
     res.status(500).json({ error: 'Erro ao testar envio de lembretes' });
   }
 });
