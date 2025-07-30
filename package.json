@@ -5,12 +5,7 @@
   "main": "backend/app.js",
   "scripts": {
     "start": "cd backend && npm start",
-    "dev": "cd backend && npm run dev",
-    "build": "cd backend && npm install",
-    "install-backend": "cd backend && npm install",
-    "install-frontend": "cd frontend && npm install",
-    "build-frontend": "cd frontend && npm run build",
-    "test": "cd backend && npm test"
+    "postinstall": "cd backend && npm install"
   },
   "keywords": [
     "finflow",
@@ -22,8 +17,8 @@
   "author": "Liz Softwares",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": "18.x",
+    "npm": "8.x"
   },
   "repository": {
     "type": "git",
