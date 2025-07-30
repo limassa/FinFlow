@@ -5,7 +5,34 @@
   "main": "backend/app.js",
   "scripts": {
     "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
+    "build": "npm run build:frontend",
+    "build:frontend": "npm install && npm run build:react",
+    "build:react": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "postinstall": "cd backend && npm install"
+  },
+  "dependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.11.0",
+    "chart.js": "^4.5.0",
+    "cors": "^2.8.5",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
+    "localstorage": "^1.0.1",
+    "pg": "^8.16.3",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
+    "react-input-mask": "^2.0.4",
+    "react-router-dom": "^6.30.1",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
   },
   "keywords": [
     "finflow",
@@ -27,5 +54,17 @@
   "bugs": {
     "url": "https://github.com/lizsoftwares/finflow/issues"
   },
-  "homepage": "https://finflow.lizsoftwares.com"
+  "homepage": "https://finflow.lizsoftwares.com",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }
