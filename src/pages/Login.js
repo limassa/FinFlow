@@ -98,6 +98,15 @@ function Login() {
             required
             className="form-input"
           />
+          <div className="forgot-password-link">
+            <button
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              className="link-button"
+            >
+              Esqueci minha senha
+            </button>
+          </div>
         </div>
         
         <button

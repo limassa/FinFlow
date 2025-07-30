@@ -11,17 +11,15 @@ function Contas() {
   const [saldo, setSaldo] = useState('');
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
+  console.log('Usuario logado em Contas:', usuario);
+  console.log('UserId em Contas:', userId);
 
   const tiposConta = [
-    'Conta Corrente',
-    'Conta Poupança',
-    'Carteira',
-    'Cartão de Crédito',
-    'Investimentos',
-    'Outros'
+    'Conta Corrente', 'Conta Poupança', 'Carteira', 'Cartão de Crédito',
+    'Investimentos', 'Outros'
   ];
 
   useEffect(() => {
@@ -33,7 +31,9 @@ function Contas() {
   const fetchContas = async () => {
     setLoading(true);
     try {
+      console.log('Buscando contas para userId:', userId);
       const res = await axios.get(`http://localhost:3001/api/contas?userId=${userId}`);
+      console.log('Contas recebidas:', res.data);
       setContas(res.data);
     } catch (err) {
       console.error('Erro ao buscar contas:', err);
@@ -67,10 +67,10 @@ function Contas() {
   };
 
   const handleEdit = (conta) => {
-    setNome(conta.nome);
-    setTipo(conta.tipo);
-    setSaldo(conta.saldo || '');
-    setEditId(conta.id);
+    setNome(conta.conta_nome);
+    setTipo(conta.conta_tipo);
+    setSaldo(conta.conta_saldo || '');
+    setEditId(conta.conta_id);
   };
 
   const handleUpdate = async (e) => {
@@ -127,19 +127,17 @@ function Contas() {
   }
 
   return (
-    <div className="receita-container">
+      <div className="receita-container">
       <div className="receita-header">
-        <h2>Minhas Contas</h2>
+        <h2>Conta</h2>
         <div className="receita-stats">
           <div className="stat-card">
-            <span className="stat-label">Total de Contas</span>
-            <span className="stat-value">{contas.length}</span>
+            <span className="stat-label">Total</span>
+            <span className="stat-value">{formatarValor(contas.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0))}</span>
           </div>
           <div className="stat-card">
-            <span className="stat-label">Saldo Total</span>
-            <span className="stat-value">
-              {formatarValor(contas.reduce((sum, conta) => sum + parseFloat(conta.saldo || 0), 0))}
-            </span>
+            <span className="stat-label">Quantidade</span>
+            <span className="stat-value">{contas.length}</span>
           </div>
         </div>
       </div>
@@ -215,29 +213,33 @@ function Contas() {
               <div className="grid-cell">Saldo</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {contas.map(conta => (
-              <div key={conta.id} className="grid-row">
-                <div className="grid-cell">{conta.nome}</div>
-                <div className="grid-cell">{conta.tipo}</div>
-                <div className="grid-cell valor">{formatarValor(conta.saldo || 0)}</div>
-                <div className="grid-cell acoes">
-                  <button 
-                    onClick={() => handleEdit(conta)}
-                    className="btn-edit"
-                    title="Editar"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(conta.id)}
-                    className="btn-delete"
-                    title="Excluir"
-                  >
-                    <FaTrash />
-                  </button>
+            {console.log('Renderizando contas:', contas)}
+            {contas.map(conta => {
+              console.log('Conta individual:', conta);
+              return (
+                <div key={conta.conta_id} className="grid-row">
+                  <div className="grid-cell">{conta.conta_nome}</div>
+                  <div className="grid-cell">{conta.conta_tipo}</div>
+                  <div className="grid-cell valor">{formatarValor(conta.conta_saldo || 0)}</div>
+                  <div className="grid-cell acoes">
+                    <button 
+                      onClick={() => handleEdit(conta)}
+                      className="btn-edit"
+                      title="Editar"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(conta.conta_id)}
+                      className="btn-delete"
+                      title="Excluir"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

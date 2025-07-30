@@ -15,10 +15,12 @@ function Receita() {
   const [totalReceitas, setTotalReceitas] = useState(0);
   const [mesFiltro, setMesFiltro] = useState('');
   const [loading, setLoading] = useState(false);
-
+  
   
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
+  console.log('Usuario logado em Receita:', usuario);
+  console.log('UserId em Receita:', userId);
 
   console.log('Usuário logado:', usuario);
   console.log('User ID:', userId);
@@ -32,6 +34,10 @@ function Receita() {
     'Outros'
   ];
   const [tipo, setTipo] = useState('');
+  const [recebido, setRecebido] = useState(false);
+  const [recorrente, setRecorrente] = useState(false);
+  const [frequencia, setFrequencia] = useState('mensal');
+  const [proximasParcelas, setProximasParcelas] = useState(12);
 
   // Gerar opções dos últimos 12 meses
   const gerarOpcoesMeses = () => {
@@ -76,11 +82,15 @@ function Receita() {
         url += `&mes=${mesFiltro}`;
       }
       
+      console.log('Buscando receitas com URL:', url);
       const res = await axios.get(url);
+      console.log('Receitas recebidas:', res.data);
       setReceitas(res.data);
       
       // Calcular total
-      const total = res.data.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
+      const total = res.data
+      .filter(receita => receita.receita_recebido)
+      .reduce((sum, receita) => sum + parseFloat(receita.receita_valor), 0);
       setTotalReceitas(total);
     } catch (err) {
       console.log('Erro ao buscar receitas:', err);
@@ -99,38 +109,49 @@ function Receita() {
     console.log('Tentando adicionar receita com userId:', userId);
     
     try {
-      await axios.post('http://localhost:3001/api/receitas', { 
+      const receitaData = {
         descricao, 
         valor, 
         data, 
         tipo,
+        recebido,
         conta_id: contaId || null,
-        usuario_id: userId // Mudando de userId para usuario_id
-      });
+        usuario_id: userId,
+        recorrente,
+        frequencia,
+        proximasParcelas
+      };
+      
+      await axios.post('http://localhost:3001/api/receitas', receitaData);
       setDescricao('');
       setValor('');
       setData('');
       setTipo('');
+      setRecebido(false);
       setContaId('');
+      setRecorrente(false);
+      setFrequencia('mensal');
+      setProximasParcelas(12);
       fetchReceitas();
-      alert('Receita adicionada com sucesso');
+      alert(recorrente ? 'Receitas recorrentes criadas com sucesso!' : 'Receita adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar receita');
     }
   };
 
   const handleEdit = (receita) => {
-    setDescricao(receita.descricao);
-    setValor(receita.valor);
+    setDescricao(receita.receita_descricao);
+    setValor(receita.receita_valor);
     // Formatar a data para o formato YYYY-MM-DD que o input date espera
-    const dataFormatada = receita.date ? new Date(receita.date).toISOString().split('T')[0] : '';
+    const dataFormatada = receita.receita_data ? new Date(receita.receita_data).toISOString().split('T')[0] : '';
     setData(dataFormatada);
-    setTipo(receita.tipo);
+    setTipo(receita.receita_tipo);
+    setRecebido(receita.receita_recebido || false);
     setContaId(receita.conta_id || '');
-    setEditId(receita.id);
+    setEditId(receita.receita_id);
   };
 
-  const handleUpdate = async (e) => {
+    const handleUpdate = async (e) => {
     e.preventDefault();
     if (!descricao || !valor || !data || !tipo) {
       alert('Preencha todos os campos');
@@ -138,17 +159,19 @@ function Receita() {
     }
     
     try {
-      await axios.put(`http://localhost:3001/api/receitas/${editId}`, { 
-        descricao, 
-        valor, 
-        data, 
+      await axios.put(`http://localhost:3001/api/receitas/${editId}`, {
+        descricao,
+        valor,
+        data,
         tipo,
+        recebido,
         conta_id: contaId || null
       });
       setDescricao('');
       setValor('');
       setData('');
       setTipo('');
+      setRecebido(false);
       setContaId('');
       setEditId(null);
       fetchReceitas();
@@ -157,12 +180,25 @@ function Receita() {
       alert('Erro ao atualizar receita');
     }
   };
+  const handleTogglePago = async (receita) => {
+    try {
+      // Usar a nova rota para marcar apenas a parcela atual
+      await axios.put(`http://localhost:3001/api/parcela-atual/receita/${receita.receita_id}`, {
+        status: !receita.receita_recebido
+      });
+      fetchReceitas();
+    } catch (err) {
+      console.log('Erro ao atualizar status de recebimento:', err);
+      alert('Erro ao atualizar status de recebimento');
+    }
+  };
 
   const handleCancel = () => {
     setDescricao('');
     setValor('');
     setData('');
     setTipo('');
+    setRecebido(false);
     setContaId('');
     setEditId(null);
   };
@@ -202,7 +238,8 @@ function Receita() {
         <div className="receita-stats">
           <div className="stat-card">
             <span className="stat-label">Total</span>
-            <span className="stat-value">{formatarValor(totalReceitas)}</span>
+            <span className="stat-value">{formatarValor(receitas.filter(receita => receita.receita_recebido)
+              .reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0))}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Quantidade</span>
@@ -274,18 +311,65 @@ function Receita() {
                 ))}
               </select>
             </div>
-          </div>
-          <div className="form-row">
+            
+
             <div className="form-group">
               <label>Conta (Opcional):</label>
               <select value={contaId} onChange={e => setContaId(e.target.value)}>
                 <option value="">Selecione uma conta</option>
                 {contas.map(conta => (
-                  <option key={conta.id} value={conta.id}>{conta.nome}</option>
+                  <option key={conta.conta_id} value={conta.conta_id}>{conta.conta_nome}</option>
                 ))}
               </select>
             </div>
           </div>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={recebido}
+                  onChange={e => setRecebido(e.target.checked)}
+                />
+                Recebido
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={recorrente}
+                  onChange={e => setRecorrente(e.target.checked)}
+                />
+                Recorrente
+              </label>
+            </div>
+          </div>
+            {recorrente && (
+              <>
+                <div className="form-group">
+                  <label>Frequência:</label>
+                  <select value={frequencia} onChange={e => setFrequencia(e.target.value)}>
+                    <option value="mensal">Mensal</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="quinzenal">Quinzenal</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Número de Parcelas:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={proximasParcelas}
+                    onChange={e => setProximasParcelas(parseInt(e.target.value))}
+                  />
+                </div>
+              </>
+            )}
+          
+          
 
           <div className="form-buttons">
             {editId ? (
@@ -321,17 +405,41 @@ function Receita() {
               <div className="grid-cell">Data</div>
               <div className="grid-cell">Tipo</div>
               <div className="grid-cell">Conta</div>
+              <div className="grid-cell">Recebido</div>
               <div className="grid-cell">Ações</div>
             </div>
+            {console.log('Renderizando receitas:', receitas)}
             {receitas.map(receita => {
-              const conta = contas.find(c => c.id === receita.conta_id);
+              console.log('Receita individual:', receita);
+              const conta = contas.find(c => c.conta_id === receita.conta_id);
               return (
-                <div key={receita.id} className="grid-row">
-                  <div className="grid-cell">{receita.descricao}</div>
-                  <div className="grid-cell valor">{formatarValor(receita.valor)}</div>
-                  <div className="grid-cell">{formatarData(receita.date)}</div>
-                  <div className="grid-cell">{receita.tipo}</div>
-                  <div className="grid-cell">{conta ? conta.nome : '-'}</div>
+                <div key={receita.receita_id} className="grid-row">
+                  <div className="grid-cell">{receita.receita_descricao}</div>
+                  <div className="grid-cell valor">{formatarValor(receita.receita_valor)}</div>
+                  <div className="grid-cell">{formatarData(receita.receita_data)}</div>
+                  <div className="grid-cell">{receita.receita_tipo}</div>
+                  <div className="grid-cell">{conta ? conta.conta_nome : '-'}</div>
+                  <div className="grid-cell">
+                    <input
+                      type="checkbox"
+                      checked={receita.receita_recebido || false}
+                      onChange={async (e) => {
+                        try {
+                          await axios.put(`http://localhost:3001/api/receitas/${receita.receita_id}`, {
+                            descricao: receita.receita_descricao,
+                            valor: receita.receita_valor,
+                            data: receita.receita_data,
+                            tipo: receita.receita_tipo,
+                            recebido: e.target.checked,
+                            conta_id: receita.conta_id
+                          });
+                          fetchReceitas();
+                        } catch (err) {
+                          alert('Erro ao atualizar status de recebimento');
+                        }
+                      }}
+                    />
+                  </div>
                   <div className="grid-cell acoes">
                     <button 
                       onClick={() => handleEdit(receita)}
@@ -341,7 +449,7 @@ function Receita() {
                       <FaEdit />
                     </button>
                     <button 
-                      onClick={() => handleDelete(receita.id)}
+                      onClick={() => handleDelete(receita.receita_id)}
                       className="btn-delete"
                       title="Excluir"
                     >

@@ -1,6 +1,7 @@
 import React from 'react';
 import '../App.css';
-import { getUsuarioLogado } from '../functions/auth'; 
+import { getUsuarioLogado } from '../functions/auth';
+import UserMenu from './UserMenu'; 
 
 function Header() {
   const usuario = getUsuarioLogado();
@@ -31,9 +32,7 @@ function Header() {
           </div>
         </div>
         <div className="user-info">
-          <span className="user-greeting">
-            {usuario && usuario.nome ? `Olá, ${usuario.nome}` : 'Olá, Usuário'}
-          </span>
+          <UserMenu />
         </div>
       </div>
     </header>

@@ -63,22 +63,24 @@ function GraficosPizza() {
     const hoje = new Date();
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
+   
 
     // Filtrar receitas do mês atual
     const receitasMes = receitas.filter(receita => {
-      const dataReceita = new Date(receita.date || receita.data);
+      const dataReceita = new Date(receita.receita_data);
       return dataReceita.getMonth() === mesAtual && 
-             dataReceita.getFullYear() === anoAtual;
+             dataReceita.getFullYear() === anoAtual &&
+             receita.receita_recebido;
     });
 
     // Agrupar por tipo
     const receitasPorTipo = {};
     receitasMes.forEach(receita => {
-      const tipo = receita.tipo || 'Outros';
+      const tipo = receita.receita_tipo || 'Outros';
       if (!receitasPorTipo[tipo]) {
         receitasPorTipo[tipo] = 0;
       }
-      receitasPorTipo[tipo] += parseFloat(receita.valor);
+      receitasPorTipo[tipo] += parseFloat(receita.receita_valor);
     });
 
     // Preparar dados para o gráfico
@@ -114,7 +116,7 @@ function GraficosPizza() {
 
     // Filtrar despesas do mês atual (apenas pagas)
     const despesasMes = despesas.filter(despesa => {
-      const dataDespesa = new Date(despesa.date || despesa.data);
+      const dataDespesa = new Date(despesa.despesa_data);
               return dataDespesa.getMonth() === mesAtual && 
                dataDespesa.getFullYear() === anoAtual &&
                despesa.despesa_pago;
@@ -123,11 +125,11 @@ function GraficosPizza() {
     // Agrupar por tipo
     const despesasPorTipo = {};
     despesasMes.forEach(despesa => {
-      const tipo = despesa.tipo || 'Outros';
+      const tipo = despesa.despesa_tipo || 'Outros';
       if (!despesasPorTipo[tipo]) {
         despesasPorTipo[tipo] = 0;
       }
-      despesasPorTipo[tipo] += parseFloat(despesa.valor);
+      despesasPorTipo[tipo] += parseFloat(despesa.despesa_valor);
     });
 
     // Preparar dados para o gráfico

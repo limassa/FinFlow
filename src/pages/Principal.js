@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf } from 'react-icons/fa';
 import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 import { useNavigate } from 'react-router-dom';
 import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
 import GraficosPizza from '../components/GraficosPizza';
+import ModalRelatorio from '../components/ModalRelatorio';
 
 function Principal() {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ function Principal() {
     saldo: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showModalRelatorio, setShowModalRelatorio] = useState(false);
+  const [receitas, setReceitas] = useState([]);
+  const [despesas, setDespesas] = useState([]);
   
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -40,30 +44,34 @@ function Principal() {
 
       // Filtrar receitas do mês atual para o banner
       const receitasMes = receitasRes.data.filter(receita => {
-        const dataReceita = new Date(receita.date || receita.data);
+        const dataReceita = new Date(receita.receita_data);
         return dataReceita.getMonth() === mesAtual && 
                dataReceita.getFullYear() === anoAtual;
       });
 
       // Filtrar despesas do mês atual para o banner
       const despesasMes = despesasRes.data.filter(despesa => {
-        const dataDespesa = new Date(despesa.date || despesa.data);
+        const dataDespesa = new Date(despesa.despesa_data);
         return dataDespesa.getMonth() === mesAtual && 
                dataDespesa.getFullYear() === anoAtual;
       });
 
       // Totais do período (para os cards)
-      const totalReceitasPeriodo = receitasRes.data.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
+      const totalReceitasPeriodo = receitasRes.data
+      .filter(receita => receita.receita_recebido)
+      .reduce((sum, receita) => sum + parseFloat(receita.receita_valor), 0);
       const totalDespesasPeriodo = despesasRes.data
         .filter(despesa => despesa.despesa_pago)
-        .reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
+        .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor), 0);
       const saldoPeriodo = totalReceitasPeriodo - totalDespesasPeriodo;
 
       // Totais do mês (para o banner)
-      const totalReceitasMes = receitasMes.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
+      const totalReceitasMes = receitasMes
+      .filter(receita => receita.receita_recebido)
+      .reduce((sum, receita) => sum + parseFloat(receita.receita_valor), 0);
       const totalDespesasMes = despesasMes
         .filter(despesa => despesa.despesa_pago)
-        .reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
+        .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor), 0);
       const saldoMes = totalReceitasMes - totalDespesasMes;
 
       setTotais({
@@ -75,6 +83,10 @@ function Principal() {
         totalDespesasMes,
         saldoMes
       });
+
+      // Armazenar dados completos para relatórios
+      setReceitas(receitasRes.data);
+      setDespesas(despesasRes.data);
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
     } finally {
@@ -103,7 +115,23 @@ function Principal() {
 
   return (
     <div className="home-container">
-     
+      {/* Botões de Ação */}
+      <div className="relatorios-header">
+        <div className="header-actions">
+          {/*<button 
+            onClick={() => navigate('/dashboard')}
+            className="btn-dashboard"
+          >
+            <FaChartLine /> Dashboard Completo
+          </button>*/}
+          <button 
+            onClick={() => setShowModalRelatorio(true)}
+            className="btn-relatorio"
+          >
+            <FaFilePdf /> Gerar Relatórios
+          </button>
+        </div>
+      </div>
 
       <div className="dashboard-cards">
         <div className="dashboard-card positive"
@@ -196,7 +224,13 @@ function Principal() {
         </div>
       </div>
 
-
+      {/* Modal de Relatórios */}
+      <ModalRelatorio 
+        isOpen={showModalRelatorio}
+        onClose={() => setShowModalRelatorio(false)}
+        receitas={receitas}
+        despesas={despesas}
+      />
     </div>
   );
 }

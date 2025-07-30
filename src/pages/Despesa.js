@@ -17,6 +17,9 @@ function Despesa() {
   const [mesFiltro, setMesFiltro] = useState('');
   const [loading, setLoading] = useState(true); // Mudando para true para forçar o carregamento
   const [pago, setPago] = useState(false);
+  const [recorrente, setRecorrente] = useState(false);
+  const [frequencia, setFrequencia] = useState('mensal');
+  const [proximasParcelas, setProximasParcelas] = useState(12);
   
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -27,7 +30,8 @@ function Despesa() {
     'Saúde',
     'Moradia',
     'Aluguel',
-    'Outros'
+    'Outros',
+    'Veículos'
   ];        
   const [tipo, setTipo] = useState('');
 
@@ -100,7 +104,7 @@ function Despesa() {
     }
     
     try {
-      await axios.post('http://localhost:3001/api/despesas', { 
+      const despesaData = {
         descricao, 
         valor, 
         data, 
@@ -108,8 +112,13 @@ function Despesa() {
         tipo,
         pago,
         conta_id: contaId || null,
-        usuario_id: userId // Mudando de userId para usuario_id
-      });
+        usuario_id: userId,
+        recorrente,
+        frequencia,
+        proximasParcelas
+      };
+      
+      await axios.post('http://localhost:3001/api/despesas', despesaData);
       setDescricao('');
       setValor('');
       setData('');
@@ -117,26 +126,29 @@ function Despesa() {
       setTipo('');
       setPago(false);
       setContaId('');
+      setRecorrente(false);
+      setFrequencia('mensal');
+      setProximasParcelas(12);
       fetchDespesas();
-      alert('Despesa adicionada com sucesso');
+      alert(recorrente ? 'Despesas recorrentes criadas com sucesso!' : 'Despesa adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar despesa');
     }
   };
 
   const handleEdit = (despesa) => {
-    setDescricao(despesa.descricao);
-    setValor(despesa.valor);
+    setDescricao(despesa.despesa_descricao);
+    setValor(despesa.despesa_valor);
     // Formatar a data para o formato YYYY-MM-DD que o input date espera
-    const dataFormatada = despesa.date ? new Date(despesa.date).toISOString().split('T')[0] : '';
+    const dataFormatada = despesa.despesa_data ? new Date(despesa.despesa_data).toISOString().split('T')[0] : '';
     setData(dataFormatada);
     // Formatar a data de vencimento para o formato YYYY-MM-DD
-    const dataVencimentoFormatada = despesa.despesa_dtVencimento ? new Date(despesa.despesa_dtVencimento).toISOString().split('T')[0] : '';
+    const dataVencimentoFormatada = despesa.despesa_dtvencimento ? new Date(despesa.despesa_dtvencimento).toISOString().split('T')[0] : '';
     setDataVencimento(dataVencimentoFormatada);
-    setTipo(despesa.tipo);
+    setTipo(despesa.despesa_tipo);
     setPago(despesa.despesa_pago || false);
     setContaId(despesa.conta_id || '');
-    setEditId(despesa.id);
+    setEditId(despesa.despesa_id);
   };
 
   const handleDelete = async (id) => {
@@ -152,14 +164,9 @@ function Despesa() {
 
   const handleTogglePago = async (despesa) => {
     try {
-      await axios.put(`http://localhost:3001/api/despesas/${despesa.id}`, {
-        descricao: despesa.descricao,
-        valor: despesa.valor,
-        data: despesa.date || despesa.data,
-        dataVencimento: despesa.despesa_dtVencimento,
-        tipo: despesa.tipo,
-        pago: !despesa.despesa_pago,
-        conta_id: despesa.conta_id
+      // Usar a nova rota para marcar apenas a parcela atual
+      await axios.put(`http://localhost:3001/api/parcela-atual/despesa/${despesa.despesa_id}`, {
+        status: !despesa.despesa_pago
       });
       fetchDespesas();
     } catch (err) {
@@ -238,7 +245,8 @@ function Despesa() {
         <div className="receita-stats">
           <div className="stat-card">
             <span className="stat-label">Total</span>
-            <span className="stat-value">{formatarValor(totalDespesas)}</span>
+            <span className="stat-value">{formatarValor(despesas.filter(despesa => despesa.despesa_pago)
+              .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0))}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Quantidade</span>
@@ -310,7 +318,7 @@ function Despesa() {
               />
             </div>
           </div>
-                    <div className="form-row">
+          <div className="form-row">
             <div className="form-group">
               <label>Tipo:</label>
               <select value={tipo} onChange={e => setTipo(e.target.value)} required>
@@ -322,14 +330,16 @@ function Despesa() {
             </div>
             <div className="form-group">
               <label>Conta:</label>
-              <select value={contaId} onChange={e => setContaId(e.target.value)} required>
+              <select value={contaId} onChange={e => setContaId(e.target.value)} >
                 <option value="">Selecione uma conta</option>
                 {contas.map(conta => (
-                  <option key={conta.id} value={conta.id}>{conta.nome}</option>
+                  <option key={conta.conta_id} value={conta.conta_id}>{conta.conta_nome}</option>
                 ))}
               </select>
             </div>
-            <div className="form-row">
+          </div>
+          
+          <div className="form-row">
             <div className="form-group">
               <label>
                 <input
@@ -340,8 +350,39 @@ function Despesa() {
                 Pago
               </label>
             </div>
+            <div className="form-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={recorrente}
+                  onChange={e => setRecorrente(e.target.checked)}
+                />
+                Recorrente
+              </label>
             </div>
           </div>
+            {recorrente && (
+              <>
+                <div className="form-group">
+                  <label>Frequência:</label>
+                  <select value={frequencia} onChange={e => setFrequencia(e.target.value)}>
+                    <option value="mensal">Mensal</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="quinzenal">Quinzenal</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Número de Parcelas:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={proximasParcelas}
+                    onChange={e => setProximasParcelas(parseInt(e.target.value))}
+                  />
+                </div>
+              </>
+            )}
           
           <div className="form-buttons">
             {editId ? (
@@ -379,19 +420,27 @@ function Despesa() {
               <div className="grid-cell">Data Vencimento</div>
               <div className="grid-cell">Tipo</div>
               <div className="grid-cell">Conta</div>
-              <div className="grid-cell">Ações</div>
               <div className="grid-cell">Pago</div>
+              <div className="grid-cell">Ações</div>
             </div>
             {despesas.map(despesa => {
-              const conta = contas.find(c => c.id === despesa.conta_id);
+              const conta = contas.find(c => c.Conta_Id === despesa.Conta_id);
               return (
-                <div key={despesa.id} className="grid-row">
-                  <div className="grid-cell">{despesa.descricao}</div>
-                  <div className="grid-cell valor">{formatarValor(despesa.valor)}</div>
-                  <div className="grid-cell">{formatarData(despesa.date)}</div>
-                  <div className="grid-cell">{formatarData(despesa.despesa_dtVencimento)}</div>
-                  <div className="grid-cell">{despesa.tipo}</div>
-                  <div className="grid-cell">{conta ? conta.nome : '-'}</div>
+                <div key={despesa.despesa_id} className="grid-row">
+                  <div className="grid-cell">{despesa.despesa_descricao}</div>
+                  <div className="grid-cell valor">{formatarValor(despesa.despesa_valor)}</div>
+                  <div className="grid-cell">{formatarData(despesa.despesa_data)}</div>
+                  <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
+                  <div className="grid-cell">{despesa.despesa_tipo}</div>
+                  <div className="grid-cell">{conta ? conta.conta_nome : '-'}</div>
+                  <div className="grid-cell">
+                    <input
+                      type="checkbox"
+                      checked={despesa.despesa_pago || false}
+                      onChange={() => handleTogglePago(despesa)}
+                      title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
+                    />
+                  </div>
                   <div className="grid-cell acoes">
                     <button 
                       onClick={() => handleEdit(despesa)}
@@ -407,14 +456,6 @@ function Despesa() {
                     >
                       <FaTrash />
                     </button>
-                  </div>
-                  <div className="grid-cell">
-                    <input
-                      type="checkbox"
-                      checked={despesa.despesa_pago || false}
-                      onChange={() => handleTogglePago(despesa)}
-                      title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
-                    />
                   </div>
                 </div>
               );

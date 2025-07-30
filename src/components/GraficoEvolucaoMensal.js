@@ -80,37 +80,35 @@ function GraficoEvolucaoMensal() {
 
       // Calcular total de receitas do mês
       const receitasMes = receitas.filter(receita => {
-        const dataReceita = new Date(receita.date || receita.data);
+        const dataReceita = new Date(receita.receita_data);
         const mesReceita = dataReceita.getMonth();
         const anoReceita = dataReceita.getFullYear();
         const mesAtual = data.getMonth();
         const anoAtual = data.getFullYear();
+        const receitaPago = receita.receita_recebido;
         
-
-        
-        return mesReceita === mesAtual && anoReceita === anoAtual;
+        return mesReceita === mesAtual && anoReceita === anoAtual && receitaPago;
       });
       
       const totalReceitasMes = receitasMes.reduce((sum, receita) => 
-        sum + parseFloat(receita.valor), 0
+        sum + parseFloat(receita.receita_valor), 0
       );
       dadosReceitas.push(totalReceitasMes);
 
       // Calcular total de despesas do mês (apenas pagas)
       const despesasMes = despesas.filter(despesa => {
-        const dataDespesa = new Date(despesa.date || despesa.data);
+        const dataDespesa = new Date(despesa.despesa_data);
         const mesDespesa = dataDespesa.getMonth();
         const anoDespesa = dataDespesa.getFullYear();
         const mesAtual = data.getMonth();
         const anoAtual = data.getFullYear();
+        const despesaPago = despesa.despesa_pago;
         
-
-        
-        return mesDespesa === mesAtual && anoDespesa === anoAtual && despesa.despesa_pago;
+        return mesDespesa === mesAtual && anoDespesa === anoAtual && despesaPago;
       });
       
       const totalDespesasMes = despesasMes.reduce((sum, despesa) => 
-        sum + parseFloat(despesa.valor), 0
+        sum + parseFloat(despesa.despesa_valor), 0
       );
       dadosDespesas.push(totalDespesasMes);
     }

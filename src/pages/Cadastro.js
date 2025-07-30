@@ -4,6 +4,7 @@ import { funcoes } from '../functions/function.js';
 import { useNavigate } from 'react-router-dom';
 import InputMask from 'react-input-mask';
 import AuthBanner from '../components/AuthBanner';
+import PasswordStrength from '../components/PasswordStrength';
 import { FaEnvelope } from 'react-icons/fa';
 
 function Cadastro() {
@@ -17,11 +18,12 @@ function Cadastro() {
   const handleCadastro = async (e) => {
     e.preventDefault();
 
-    // Validação dos campos (opcional)
+    // Validação dos campos
     if (!nome || !telefone || !email || !senha || !senhaConfirm) {
       alert('Preencha todos os campos!');
       return;
     }
+    
     if (senha !== senhaConfirm) {
       alert('As senhas não coincidem!');
       return;
@@ -42,15 +44,19 @@ function Cadastro() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        alert('Cadastro realizado com sucesso!');
+        alert(data.message || 'Cadastro realizado com sucesso! Verifique seu email.');
         navigate('/home');
-        // Redirecionar para login ou home, se desejar
-        // navigate('/');
       } else {
-        const error = await response.json();
-        alert(error.error || 'Erro ao cadastrar usuário');
+        if (data.passwordErrors) {
+          // Mostrar erros de validação de senha
+          const errorMessage = `Senha não atende aos requisitos de segurança:\n${data.passwordErrors.join('\n')}`;
+          alert(errorMessage);
+        } else {
+          alert(data.error || 'Erro ao cadastrar usuário');
+        }
       }
     } catch (err) {
       alert('Erro de conexão com o servidor');
@@ -112,13 +118,10 @@ function Cadastro() {
         
         <div className="form-group">
           <label className='form-label'>Senha</label>
-          <input
-            type="password"
-            placeholder="Crie uma senha"
-            value={senha}
-            onChange={e => setSenha(e.target.value)}
-            required
-            className="form-input"
+          <PasswordStrength
+            password={senha}
+            onPasswordChange={setSenha}
+            showRequirements={true}
           />
         </div>
         

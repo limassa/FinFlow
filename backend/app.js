@@ -1,6 +1,11 @@
+// Carregar variáveis de ambiente
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const userRepository = require('./src/database/userRepository');
+const PasswordValidator = require('./src/utils/passwordValidator');
+const emailService = require('./src/services/emailService');
 
 const app = express();
 app.use(cors());
@@ -30,16 +35,95 @@ app.use((req, res, next) => {
 
 app.post('/api/cadastro', async (req, res) => {
   const { nome, telefone, email, senha } = req.body;
+  
   try {
+    // Validação de email
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+    
+    // Validação de senha
+    const passwordValidation = PasswordValidator.validatePassword(senha);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        error: 'Senha não atende aos requisitos de segurança',
+        passwordErrors: passwordValidation.errors,
+        requirements: PasswordValidator.getPasswordRequirements()
+      });
+    }
+    
+    // Verificar se usuário já existe
     const existingUser = await userRepository.findUserByEmail(email);
     if (existingUser) {
       return res.status(409).json({ error: 'E-mail já cadastrado' });
     }
+    
+    // Criar usuário
     const user = await userRepository.createUser({ nome, telefone, email, senha });
-    res.status(201).json(user);
+    
+    // Enviar email de boas-vindas (em background para não bloquear a resposta)
+    emailService.sendWelcomeEmail({
+      nome: user.usuario_nome,
+      email: user.usuario_email
+    }).catch(err => {
+      console.error('Erro ao enviar email de boas-vindas:', err);
+    });
+    
+    res.status(201).json({
+      ...user,
+      message: 'Usuário cadastrado com sucesso! Verifique seu email.'
+    });
   } catch (err) {
     console.error('Erro no cadastro:', err);
     res.status(500).json({ error: 'Erro ao cadastrar usuário' });
+  }
+});
+
+// Rota de debug para verificar usuários
+app.get('/api/debug/users', async (req, res) => {
+  try {
+    const users = await userRepository.getAllUsers();
+    console.log('Todos os usuários:', users);
+    res.json(users);
+  } catch (err) {
+    console.error('Erro ao buscar usuários:', err);
+    res.status(500).json({ error: 'Erro ao buscar usuários' });
+  }
+});
+
+// Rota de debug para verificar estrutura das tabelas
+app.get('/api/debug/tables', async (req, res) => {
+  try {
+    const pool = require('./src/database/connection');
+    
+    // Verificar se as tabelas existem
+    const tablesQuery = `
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('usuario', 'receita', 'despesa', 'conta')
+    `;
+    
+    const tablesResult = await pool.query(tablesQuery);
+    console.log('Tabelas encontradas:', tablesResult.rows);
+    
+    // Verificar estrutura da tabela usuario
+    const usuarioColumnsQuery = `
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'usuario'
+    `;
+    
+    const usuarioColumnsResult = await pool.query(usuarioColumnsQuery);
+    console.log('Colunas da tabela usuario:', usuarioColumnsResult.rows);
+    
+    res.json({
+      tables: tablesResult.rows,
+      usuarioColumns: usuarioColumnsResult.rows
+    });
+  } catch (err) {
+    console.error('Erro ao verificar tabelas:', err);
+    res.status(500).json({ error: 'Erro ao verificar tabelas' });
   }
 });
 
@@ -49,10 +133,10 @@ app.post('/api/login', async (req, res) => {
     const user = await userRepository.loginUser(email, senha);
     if (user) {
       const userResponse = {
-        id: user.id,
-        nome: user.full_name,
-        email: user.email,
-        telefone: user.telefone
+        id: user.usuario_id,
+        nome: user.usuario_nome, 
+        email: user.usuario_email,
+        telefone: user.usuario_telefone
       };
       res.json(userResponse);
     } else {
@@ -67,8 +151,10 @@ app.post('/api/login', async (req, res) => {
 // Rotas para Receitas
 app.get('/api/receitas', async (req, res) => {
   const { userId, mes } = req.query;
+  console.log('GET /api/receitas - userId:', userId, 'mes:', mes);
   try {
     const receitas = await userRepository.getReceitas(userId, mes);
+    console.log('Receitas encontradas:', receitas.length);
     res.json(receitas);
   } catch (err) {
     console.error('Erro ao buscar receitas:', err);
@@ -77,10 +163,27 @@ app.get('/api/receitas', async (req, res) => {
 });
 
 app.post('/api/receitas', async (req, res) => {
-  const { descricao, valor, data, tipo, conta_id, usuario_id } = req.body;
+  const { descricao, valor, data, tipo, recebido, conta_id, usuario_id, recorrente, frequencia, proximasParcelas } = req.body;
   try {
-    const receita = await userRepository.createReceita({ descricao, valor, data, tipo, conta_id, usuario_id });
-    res.status(201).json(receita);
+    let receitas;
+    if (recorrente) {
+      receitas = await userRepository.createReceitaRecorrente({ 
+        descricao, 
+        valor, 
+        data, 
+        tipo, 
+        recebido, 
+        conta_id, 
+        usuario_id, 
+        recorrente, 
+        frequencia, 
+        proximasParcelas 
+      });
+    } else {
+      const receita = await userRepository.createReceita({ descricao, valor, data, tipo, recebido, conta_id, usuario_id });
+      receitas = [receita];
+    }
+    res.status(201).json(receitas);
   } catch (err) {
     console.error('Erro ao criar receita:', err);
     res.status(500).json({ error: 'Erro ao criar receita' });
@@ -89,9 +192,9 @@ app.post('/api/receitas', async (req, res) => {
 
 app.put('/api/receitas/:id', async (req, res) => {
   const { id } = req.params;
-  const { descricao, valor, data, tipo, conta_id } = req.body;
+  const { descricao, valor, data, tipo, recebido, conta_id } = req.body;
   try {
-    const receita = await userRepository.updateReceita(id, { descricao, valor, data, tipo, conta_id });
+    const receita = await userRepository.updateReceita(id, { descricao, valor, data, tipo, recebido, conta_id });
     res.json(receita);
   } catch (err) {
     console.error('Erro ao atualizar receita:', err);
@@ -123,10 +226,28 @@ app.get('/api/despesas', async (req, res) => {
 });
 
 app.post('/api/despesas', async (req, res) => {
-  const { descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id } = req.body;
+  const { descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id, recorrente, frequencia, proximasParcelas } = req.body;
   try {
-    const despesa = await userRepository.createDespesa({ descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id });
-    res.status(201).json(despesa);
+    let despesas;
+    if (recorrente) {
+      despesas = await userRepository.createDespesaRecorrente({ 
+        descricao, 
+        valor, 
+        data, 
+        dataVencimento, 
+        tipo, 
+        pago, 
+        conta_id, 
+        usuario_id, 
+        recorrente, 
+        frequencia, 
+        proximasParcelas 
+      });
+    } else {
+      const despesa = await userRepository.createDespesa({ descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id });
+      despesas = [despesa];
+    }
+    res.status(201).json(despesas);
   } catch (err) {
     console.error('Erro ao criar despesa:', err);
     res.status(500).json({ error: 'Erro ao criar despesa' });
@@ -159,8 +280,10 @@ app.delete('/api/despesas/:id', async (req, res) => {
 // Rotas para Contas
 app.get('/api/contas', async (req, res) => {
   const { userId } = req.query;
+  console.log('GET /api/contas - userId:', userId);
   try {
     const contas = await userRepository.getContas(userId);
+    console.log('Contas encontradas:', contas.length);
     res.json(contas);
   } catch (err) {
     console.error('Erro ao buscar contas:', err);
@@ -199,6 +322,156 @@ app.delete('/api/contas/:id', async (req, res) => {
   } catch (err) {
     console.error('Erro ao deletar conta:', err);
     res.status(500).json({ error: 'Erro ao deletar conta' });
+  }
+});
+
+// Rota para migrar senhas antigas para criptografadas (executar apenas uma vez)
+app.post('/api/migrate-passwords', async (req, res) => {
+  try {
+    await userRepository.migratePasswords();
+    res.json({ message: 'Migração de senhas concluída com sucesso!' });
+  } catch (err) {
+    console.error('Erro na migração de senhas:', err);
+    res.status(500).json({ error: 'Erro na migração de senhas' });
+  }
+});
+
+// Rota para solicitar redefinição de senha
+app.post('/api/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  
+  try {
+    const user = await userRepository.findUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: 'Email não encontrado' });
+    }
+    
+    // Gerar token de redefinição (expira em 1 hora)
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+    
+    // Salvar token no banco (você precisará adicionar campos na tabela usuario)
+    await userRepository.saveResetToken(user.usuario_id, resetToken, resetExpiry);
+    
+    // Enviar email de redefinição
+    const emailSent = await emailService.sendPasswordResetEmail({
+      nome: user.usuario_nome,
+      email: user.usuario_email
+    }, resetToken);
+    
+    if (emailSent) {
+      res.json({ message: 'Email de redefinição enviado com sucesso!' });
+    } else {
+      res.status(500).json({ error: 'Erro ao enviar email de redefinição' });
+    }
+  } catch (err) {
+    console.error('Erro na redefinição de senha:', err);
+    res.status(500).json({ error: 'Erro ao processar solicitação' });
+  }
+});
+
+// Rota para redefinir senha com token
+app.post('/api/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  try {
+    // Validar nova senha
+    const passwordValidation = PasswordValidator.validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        error: 'Nova senha não atende aos requisitos de segurança',
+        passwordErrors: passwordValidation.errors,
+        requirements: PasswordValidator.getPasswordRequirements()
+      });
+    }
+    
+    // Verificar token e redefinir senha
+    const user = await userRepository.resetPasswordWithToken(token, newPassword);
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido ou expirado' });
+    }
+    
+    // Enviar alerta de segurança
+    emailService.sendSecurityAlert({
+      nome: user.usuario_nome,
+      email: user.usuario_email
+    }, 'Redefinição de senha').catch(err => {
+      console.error('Erro ao enviar alerta de segurança:', err);
+    });
+    
+    res.json({ message: 'Senha redefinida com sucesso!' });
+  } catch (err) {
+    console.error('Erro na redefinição de senha:', err);
+    res.status(500).json({ error: 'Erro ao redefinir senha' });
+  }
+});
+
+// Rota para obter requisitos de senha
+app.get('/api/password-requirements', (req, res) => {
+  res.json(PasswordValidator.getPasswordRequirements());
+});
+
+// Rotas para gerenciar lembretes do usuário
+app.get('/api/user/lembretes', async (req, res) => {
+  const { userId } = req.query;
+  
+  try {
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    res.json({
+      lembretesAtivos: user.usuario_lembretesativos,
+      lembretesEmail: user.usuario_lembretesemail,
+      lembretesDiasAntes: user.usuario_lembretesdiasantes
+    });
+  } catch (err) {
+    console.error('Erro ao buscar configuração de lembretes:', err);
+    res.status(500).json({ error: 'Erro ao buscar configuração' });
+  }
+});
+
+app.put('/api/user/lembretes', async (req, res) => {
+  const { userId, lembretesAtivos } = req.body;
+  
+  try {
+    const result = await userRepository.updateLembretesConfig(userId, lembretesAtivos);
+    if (result) {
+      res.json({ message: 'Configuração de lembretes atualizada com sucesso!' });
+    } else {
+      res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+  } catch (err) {
+    console.error('Erro ao atualizar configuração de lembretes:', err);
+    res.status(500).json({ error: 'Erro ao atualizar configuração' });
+  }
+});
+
+// Rota para buscar despesas com vencimento próximo
+app.get('/api/lembretes/vencimentos', async (req, res) => {
+  const { userId } = req.query;
+  
+  try {
+    const vencimentos = await userRepository.getVencimentosProximos(userId);
+    res.json(vencimentos);
+  } catch (err) {
+    console.error('Erro ao buscar vencimentos próximos:', err);
+    res.status(500).json({ error: 'Erro ao buscar vencimentos' });
+  }
+});
+
+// Rota para marcar parcela atual como paga/recebida
+app.put('/api/parcela-atual/:tipo/:id', async (req, res) => {
+  const { tipo, id } = req.params;
+  const { status } = req.body;
+  
+  try {
+    const result = await userRepository.updateParcelaAtual(id, tipo, status);
+    res.json(result);
+  } catch (err) {
+    console.error('Erro ao atualizar parcela:', err);
+    res.status(500).json({ error: 'Erro ao atualizar parcela' });
   }
 });
 
