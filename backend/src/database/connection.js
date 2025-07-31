@@ -3,12 +3,11 @@ const { Pool } = require('pg');
 // Configuração baseada no ambiente
 const isProduction = process.env.NODE_ENV === 'production';
 
+// URL do banco de dados do Railway
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:OumtwkgYJuWpNCAxJfLVAecULdKGjMEP@interchange.proxy.rlwy.net:50880/railway';
+
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'FinFlowTeste',
-  password: process.env.DB_PASSWORD || 'admin',
-  port: process.env.DB_PORT || 5433,
+  connectionString: DATABASE_URL,
   // Configurações específicas para produção
   ...(isProduction && {
     ssl: { rejectUnauthorized: false },
@@ -20,10 +19,8 @@ const pool = new Pool({
 
 // Log de conexão para debug
 console.log('🔌 Configuração do banco de dados:');
-console.log('  Host:', process.env.DB_HOST || 'localhost');
-console.log('  Database:', process.env.DB_NAME || 'FinFlowTeste');
-console.log('  User:', process.env.DB_USER || 'postgres');
-console.log('  Port:', process.env.DB_PORT || 5433);
+console.log('  Ambiente:', isProduction ? 'PRODUÇÃO' : 'DESENVOLVIMENTO');
+console.log('  URL:', DATABASE_URL.replace(/:[^:@]*@/, ':***@')); // Oculta a senha
 console.log('  SSL:', isProduction ? 'enabled' : 'disabled');
 
 // Testar conexão
