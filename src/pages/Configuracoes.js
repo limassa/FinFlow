@@ -56,8 +56,8 @@ function Configuracoes() {
       
       // Buscar configurações do usuário
       const [lembretesRes, perfilRes] = await Promise.all([
-        fetch(`http://localhost:3001/api/user/lembretes?userId=${userId}`),
-        fetch(`http://localhost:3001/api/user/perfil?userId=${userId}`)
+        fetch(`${API_ENDPOINTS.USER_LEMBRETES}?userId=${userId}`),
+        fetch(`${API_ENDPOINTS.USER_PROFILE}?userId=${userId}`)
       ]);
 
       if (lembretesRes.ok) {
@@ -95,7 +95,7 @@ function Configuracoes() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/user/perfil`, {
+      const response = await fetch(`${API_ENDPOINTS.USER_PROFILE}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ function Configuracoes() {
 
   const handleSalvarLembretes = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/user/lembretes', {
+      const response = await fetch('${API_ENDPOINTS.USER_LEMBRETES}', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ function Configuracoes() {
 
   const handleExportarDados = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/user/exportar?userId=${user.id}`);
+      const response = await fetch(`${API_ENDPOINTS.USER_EXPORTAR}?userId=${user.id}`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -168,7 +168,7 @@ function Configuracoes() {
   const handleExcluirConta = async () => {
     if (window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
       try {
-        const response = await fetch(`http://localhost:3001/api/user/excluir`, {
+        const response = await fetch(`${API_ENDPOINTS.USER_EXCLUIR}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',

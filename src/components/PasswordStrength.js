@@ -8,7 +8,7 @@ const PasswordStrength = ({ password, onPasswordChange, showRequirements = true 
 
   useEffect(() => {
     // Buscar requisitos do backend
-    fetch('http://localhost:3001/api/password-requirements')
+    fetch('${API_ENDPOINTS.PASSWORD_REQUIREMENTS}')
       .then(response => response.json())
       .then(data => {
         setRequirements(data.requirements);

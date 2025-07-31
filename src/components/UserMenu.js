@@ -24,7 +24,7 @@ function UserMenu() {
 
   const fetchLembretesConfig = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/user/lembretes?userId=${userId}`);
+      const response = await fetch(`${API_ENDPOINTS.USER_LEMBRETES}?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setLembretesAtivos(data.lembretesAtivos || false);
@@ -38,7 +38,7 @@ function UserMenu() {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:3001/api/user/lembretes', {
+      const response = await fetch('${API_ENDPOINTS.USER_LEMBRETES}', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

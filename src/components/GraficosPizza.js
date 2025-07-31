@@ -7,6 +7,7 @@ import {
 } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 
 ChartJS.register(
@@ -37,8 +38,8 @@ function GraficosPizza() {
     try {
       // Buscar receitas e despesas do usuário
       const [receitasRes, despesasRes] = await Promise.all([
-        axios.get(`http://localhost:3001/api/receitas?userId=${userId}`),
-        axios.get(`http://localhost:3001/api/despesas?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
       ]);
 
       const receitas = receitasRes.data;

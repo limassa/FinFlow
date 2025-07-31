@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine } from 'react-icons/fa';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 
 function Home() {
@@ -24,8 +25,8 @@ function Home() {
     setLoading(true);
     try {
       const [receitasRes, despesasRes] = await Promise.all([
-        axios.get(`http://localhost:3001/api/receitas?userId=${userId}`),
-        axios.get(`http://localhost:3001/api/despesas?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
       ]);
 
       const totalReceitas = receitasRes.data.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);

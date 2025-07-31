@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf } from 'react-icons/fa';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 import { useNavigate } from 'react-router-dom';
@@ -33,8 +34,8 @@ function Principal() {
     setLoading(true);
     try {
       const [receitasRes, despesasRes] = await Promise.all([
-        axios.get(`http://localhost:3001/api/receitas?userId=${userId}`),
-        axios.get(`http://localhost:3001/api/despesas?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
       ]);
 
       // Obter mês atual
