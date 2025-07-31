@@ -20,4 +20,8 @@ DB_PASSWORD = "OumtwkgYJuWpNCAxJfLVAecULdKGjMEP"
 EMAIL_PASS = "ppth orme wylc paqn"
 EMAIL_USER = "joaolmnmarket@gmail.com"
 FRONTEND_URL = "https://finflow.lizsoftwares.com"
-PORT = "3001" 
+PORT = "3001"
+
+# Configuração específica para branch production
+[context.production]
+branch = "production" 
