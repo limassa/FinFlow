@@ -1,13 +1,10 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd backend && npm install"
 
 [deploy]
 startCommand = "cd backend && npm start"
 healthcheckPath = "/"
 healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
 
 [build.environment]
 NODE_ENV = "production"
@@ -20,8 +17,4 @@ DB_PASSWORD = "OumtwkgYJuWpNCAxJfLVAecULdKGjMEP"
 EMAIL_PASS = "ppth orme wylc paqn"
 EMAIL_USER = "joaolmnmarket@gmail.com"
 FRONTEND_URL = "https://finflow.lizsoftwares.com"
-PORT = "3001"
-
-# Configuração específica para branch production
-[context.production]
-branch = "production" 
+PORT = "3001" 
