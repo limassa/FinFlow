@@ -129,20 +129,27 @@ app.get('/api/debug/tables', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
+  console.log('🔍 Tentativa de login:', { email, senha });
+  
   try {
+    console.log('📡 Chamando userRepository.loginUser...');
     const user = await userRepository.loginUser(email, senha);
+    console.log('📊 Resultado do login:', user);
+    
     if (user) {
       const userResponse = {
         id: user.usuario_id,
         nome: user.usuario_nome, 
         email: user.usuario_email
       };
+      console.log('✅ Login bem-sucedido:', userResponse);
       res.json(userResponse);
     } else {
+      console.log('❌ Login falhou - usuário não encontrado ou senha incorreta');
       res.status(401).json({ error: 'E-mail ou senha inválidos' });
     }
   } catch (err) {
-    console.error('Erro no login:', err);
+    console.error('💥 Erro no login:', err);
     res.status(500).json({ error: 'Erro ao fazer login' });
   }
 });
