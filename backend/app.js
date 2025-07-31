@@ -11,6 +11,57 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Rota de teste simples
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Rota de teste funcionando!', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Rota de teste de conexão com banco
+app.get('/api/test-db', async (req, res) => {
+  try {
+    console.log('🔍 Testando conexão com banco...');
+    const pool = require('./src/database/connection');
+    const result = await pool.query('SELECT NOW() as current_time');
+    console.log('✅ Conexão com banco OK:', result.rows[0]);
+    res.json({ 
+      message: 'Conexão com banco OK!', 
+      timestamp: result.rows[0].current_time,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (err) {
+    console.error('❌ Erro na conexão com banco:', err);
+    res.status(500).json({ 
+      error: 'Erro na conexão com banco',
+      details: err.message 
+    });
+  }
+});
+
+// Rota de teste de usuários
+app.get('/api/test-users', async (req, res) => {
+  try {
+    console.log('🔍 Testando busca de usuários...');
+    const pool = require('./src/database/connection');
+    const result = await pool.query('SELECT Usuario_Id, Usuario_Email, Usuario_Nome FROM Usuario');
+    console.log('✅ Usuários encontrados:', result.rows.length);
+    res.json({ 
+      message: 'Busca de usuários OK!', 
+      count: result.rows.length,
+      users: result.rows
+    });
+  } catch (err) {
+    console.error('❌ Erro ao buscar usuários:', err);
+    res.status(500).json({ 
+      error: 'Erro ao buscar usuários',
+      details: err.message 
+    });
+  }
+});
+
 // Rota de teste para verificar se o servidor está funcionando
 app.get('/', (req, res) => {
   res.json({ message: 'Backend funcionando!', timestamp: new Date().toISOString() });
