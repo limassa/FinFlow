@@ -5,6 +5,7 @@ import { setUsuarioLogado } from '../functions/auth';
 import { funcoes } from '../functions/function.js';
 import AuthBanner from '../components/AuthBanner';
 import { FaEnvelope } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../config/api';
 import '../App.css';
 
 function Login() {
@@ -28,8 +29,8 @@ function Login() {
     setLoading(true);
     
     try {
-      console.log('Enviando requisição para:', 'http://localhost:3001/api/login');
-      const response = await axios.post('http://localhost:3001/api/login', {
+      console.log('Enviando requisição para:', API_ENDPOINTS.LOGIN);
+      const response = await axios.post(API_ENDPOINTS.LOGIN, {
         email,
         senha
       });

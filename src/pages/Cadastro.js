@@ -6,6 +6,7 @@ import InputMask from 'react-input-mask';
 import AuthBanner from '../components/AuthBanner';
 import PasswordStrength from '../components/PasswordStrength';
 import { FaEnvelope } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../config/api';
 
 function Cadastro() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ function Cadastro() {
 
     // Chamada da API
     try {
-      const response = await fetch('http://localhost:3001/api/cadastro', {
+      const response = await fetch(API_ENDPOINTS.CADASTRO, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

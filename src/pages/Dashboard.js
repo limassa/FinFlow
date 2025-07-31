@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaChartLine, FaChartPie, FaCalendarAlt, FaBell, FaCog } from 'react-icons/fa';
 import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
 import GraficosPizza from '../components/GraficosPizza';
+import { API_ENDPOINTS } from '../config/api';
 import '../App.css';
 
 function Dashboard() {
@@ -43,9 +44,9 @@ function Dashboard() {
       
       // Buscar estatísticas gerais
       const [receitasRes, despesasRes, contasRes] = await Promise.all([
-        fetch(`http://localhost:3001/api/receitas?userId=${userId}`),
-        fetch(`http://localhost:3001/api/despesas?userId=${userId}`),
-        fetch(`http://localhost:3001/api/contas?userId=${userId}`)
+        fetch(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
+        fetch(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
+        fetch(`${API_ENDPOINTS.CONTAS}?userId=${userId}`)
       ]);
 
       const receitas = await receitasRes.json();
