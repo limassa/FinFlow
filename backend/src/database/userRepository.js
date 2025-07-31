@@ -8,8 +8,8 @@ const userRepository = {
     const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
     
     const result = await pool.query(
-      'INSERT INTO Usuario (Usuario_Email, Usuario_Senha, Usuario_Nome, Usuario_Telefone) VALUES ($1, $2, $3, $4) RETURNING *',
-      [email, senhaCriptografada, nome, telefone]
+      'INSERT INTO Usuario (Usuario_Email, Usuario_Senha, Usuario_Nome) VALUES ($1, $2, $3) RETURNING *',
+      [email, senhaCriptografada, nome]
     );
     return result.rows[0];
   },
@@ -25,7 +25,7 @@ const userRepository = {
   async loginUser(email, senha) {
     // Primeiro, buscar o usuário pelo email
     const result = await pool.query(
-      'SELECT Usuario_Id, Usuario_Email, Usuario_Nome, Usuario_Telefone, Usuario_Senha FROM Usuario WHERE Usuario_Email = $1 AND Usuario_Ativo = TRUE',
+      'SELECT Usuario_Id, Usuario_Email, Usuario_Nome, Usuario_Senha FROM Usuario WHERE Usuario_Email = $1 AND Usuario_Ativo = TRUE',
       [email]
     );
     
@@ -57,7 +57,7 @@ const userRepository = {
 
   // Método temporário para debug
   async getAllUsers() {
-    const result = await pool.query('SELECT Usuario_Id, Usuario_Email, Usuario_Nome, Usuario_Telefone FROM Usuario');
+    const result = await pool.query('SELECT Usuario_Id, Usuario_Email, Usuario_Nome FROM Usuario');
     return result.rows;
   },
 

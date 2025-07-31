@@ -135,8 +135,7 @@ app.post('/api/login', async (req, res) => {
       const userResponse = {
         id: user.usuario_id,
         nome: user.usuario_nome, 
-        email: user.usuario_email,
-        telefone: user.usuario_telefone
+        email: user.usuario_email
       };
       res.json(userResponse);
     } else {
