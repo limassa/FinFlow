@@ -64,7 +64,12 @@ app.get('/api/test-users', async (req, res) => {
 
 // Rota de teste para verificar se o servidor está funcionando
 app.get('/', (req, res) => {
-  res.json({ message: 'Backend funcionando!', timestamp: new Date().toISOString() });
+  res.json({ 
+    message: 'Backend funcionando!', 
+    timestamp: new Date().toISOString(),
+    version: '2.1.1', // Forçar deploy
+    commit: '7977100'
+  });
 });
 
 // Rota temporária para listar usuários (remover em produção)
