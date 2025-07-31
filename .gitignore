@@ -80,7 +80,7 @@ jspm_packages/
 Thumbs.db
 
 # Build outputs
-build/
+# build/
 dist/
 out/
 
