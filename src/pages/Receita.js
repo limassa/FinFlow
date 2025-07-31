@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter } from 'react-icons/fa';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 
@@ -67,7 +68,7 @@ function Receita() {
 
   const fetchContas = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/api/contas?userId=${userId}`);
+      const res = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
       setContas(res.data);
     } catch (err) {
       console.log('Erro ao buscar contas:', err);
@@ -77,7 +78,7 @@ function Receita() {
   const fetchReceitas = async () => {
     setLoading(true);
     try {
-      let url = `http://localhost:3001/api/receitas?userId=${userId}`;
+      let url = `${API_ENDPOINTS.RECEITAS}?userId=${userId}`;
       if (mesFiltro) {
         url += `&mes=${mesFiltro}`;
       }
@@ -122,7 +123,7 @@ function Receita() {
         proximasParcelas
       };
       
-      await axios.post('http://localhost:3001/api/receitas', receitaData);
+      await axios.post(API_ENDPOINTS.RECEITAS, receitaData);
       setDescricao('');
       setValor('');
       setData('');
@@ -159,7 +160,7 @@ function Receita() {
     }
     
     try {
-      await axios.put(`http://localhost:3001/api/receitas/${editId}`, {
+      await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, {
         descricao,
         valor,
         data,
@@ -183,7 +184,7 @@ function Receita() {
   const handleTogglePago = async (receita) => {
     try {
       // Usar a nova rota para marcar apenas a parcela atual
-      await axios.put(`http://localhost:3001/api/parcela-atual/receita/${receita.receita_id}`, {
+      await axios.put(`${API_ENDPOINTS.PARCELA_ATUAL_RECEITA}/${receita.receita_id}`, {
         status: !receita.receita_recebido
       });
       fetchReceitas();
@@ -206,7 +207,7 @@ function Receita() {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir esta receita? Esta ação pode ser desfeita.')) {
       try {
-        await axios.delete(`http://localhost:3001/api/receitas/${id}`);
+        await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
         fetchReceitas();
       } catch (err) {
         alert('Erro ao deletar receita');
@@ -425,7 +426,7 @@ function Receita() {
                       checked={receita.receita_recebido || false}
                       onChange={async (e) => {
                         try {
-                          await axios.put(`http://localhost:3001/api/receitas/${receita.receita_id}`, {
+                          await axios.put(`${API_ENDPOINTS.RECEITAS}/${receita.receita_id}`, {
                             descricao: receita.receita_descricao,
                             valor: receita.receita_valor,
                             data: receita.receita_data,

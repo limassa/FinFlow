@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaWallet } from 'react-icons/fa';
 import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
+import { API_ENDPOINTS } from '../config/api';
 import '../App.css';
 
 function Contas() {
@@ -32,7 +33,7 @@ function Contas() {
     setLoading(true);
     try {
       console.log('Buscando contas para userId:', userId);
-      const res = await axios.get(`http://localhost:3001/api/contas?userId=${userId}`);
+      const res = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
       console.log('Contas recebidas:', res.data);
       setContas(res.data);
     } catch (err) {
@@ -50,7 +51,7 @@ function Contas() {
     }
     
     try {
-      await axios.post('http://localhost:3001/api/contas', { 
+      await axios.post(API_ENDPOINTS.CONTAS, { 
         nome, 
         tipo,
         saldo: saldo || 0,
@@ -81,7 +82,7 @@ function Contas() {
     }
     
     try {
-      await axios.put(`http://localhost:3001/api/contas/${editId}`, { 
+      await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { 
         nome, 
         tipo,
         saldo: saldo || 0
@@ -107,7 +108,7 @@ function Contas() {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir esta conta? Esta ação pode ser desfeita.')) {
       try {
-        await axios.delete(`http://localhost:3001/api/contas/${id}`);
+        await axios.delete(`${API_ENDPOINTS.CONTAS}/${id}`);
         fetchContas();
       } catch (err) {
         alert('Erro ao deletar conta');

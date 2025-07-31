@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter } from 'react-icons/fa';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 
@@ -65,7 +66,7 @@ function Despesa() {
 
   const fetchContas = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/api/contas?userId=${userId}`);
+      const res = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
       setContas(res.data);
     } catch (err) {
       console.log('Erro ao buscar contas:', err);
@@ -75,7 +76,7 @@ function Despesa() {
   const fetchDespesas = async () => {
     setLoading(true);
     try {
-      let url = `http://localhost:3001/api/despesas?userId=${userId}`;
+      let url = `${API_ENDPOINTS.DESPESAS}?userId=${userId}`;
       if (mesFiltro) {
         url += `&mes=${mesFiltro}`;
       }
@@ -118,7 +119,7 @@ function Despesa() {
         proximasParcelas
       };
       
-      await axios.post('http://localhost:3001/api/despesas', despesaData);
+      await axios.post(API_ENDPOINTS.DESPESAS, despesaData);
       setDescricao('');
       setValor('');
       setData('');
@@ -154,7 +155,7 @@ function Despesa() {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir esta despesa? Esta ação pode ser desfeita.')) {
       try {
-        await axios.delete(`http://localhost:3001/api/despesas/${id}`);
+        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
         fetchDespesas();
       } catch (err) {
         alert('Erro ao deletar despesa');
@@ -165,7 +166,7 @@ function Despesa() {
   const handleTogglePago = async (despesa) => {
     try {
       // Usar a nova rota para marcar apenas a parcela atual
-      await axios.put(`http://localhost:3001/api/parcela-atual/despesa/${despesa.despesa_id}`, {
+      await axios.put(`${API_ENDPOINTS.PARCELA_ATUAL_DESPESA}/${despesa.despesa_id}`, {
         status: !despesa.despesa_pago
       });
       fetchDespesas();
@@ -183,7 +184,7 @@ function Despesa() {
     }
     
     try {
-      await axios.put(`http://localhost:3001/api/despesas/${editId}`, { 
+      await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, { 
         descricao, 
         valor, 
         data, 
