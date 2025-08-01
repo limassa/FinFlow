@@ -1,22 +1,23 @@
 {
-  "name": "finflow",
+  "name": "sistema-pdv",
   "version": "1.0.0",
-  "description": "FinFlow - Sistema de Gestão Financeira",
+  "description": "Sistema de PDV - Ponto de Venda",
   "main": "backend/app.js",
   "scripts": {
     "start": "cd backend && npm start",
     "build": "cd backend && npm install",
-    "dev": "cd backend && npm start"
+    "dev": "cd backend && npm start",
+    "install-all": "npm install && cd backend && npm install"
   },
   "engines": {
     "node": "18.x",
     "npm": "8.x"
   },
+  "keywords": ["pdv", "ponto-de-venda", "vendas", "controle"],
+  "author": "Liz Softwares",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/limassa/FinFlow.git"
-  },
-  "keywords": ["finflow", "financeiro", "gestão"],
-  "author": "Liz Softwares",
-  "license": "MIT"
+    "url": "https://github.com/limassa/SistemaPDV.git"
+  }
 }
