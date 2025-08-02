@@ -103,9 +103,9 @@ function GraficoEvolucaoMensal() {
         const anoDespesa = dataDespesa.getFullYear();
         const mesAtual = data.getMonth();
         const anoAtual = data.getFullYear();
-        const despesaPago = despesa.despesa_pago;
+        const despesaPaga = despesa.despesa_pago;
         
-        return mesDespesa === mesAtual && anoDespesa === anoAtual && despesaPago;
+        return mesDespesa === mesAtual && anoDespesa === anoAtual && despesaPaga;
       });
       
       const totalDespesasMes = despesasMes.reduce((sum, despesa) => 
@@ -138,16 +138,9 @@ function GraficoEvolucaoMensal() {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {
-      padding: {
-        top: 10,
-        bottom: 20,
-        left: 10,
-        right: 10
-      }
-    },
     plugins: {
       legend: {
+        display: true,
         position: 'top',
         labels: {
           usePointStyle: true,
@@ -159,16 +152,7 @@ function GraficoEvolucaoMensal() {
         }
       },
       title: {
-        display: true,
-        text: 'Evolução Mensal - Últimos 12 Meses',
-        font: {
-          size: 16,
-          weight: 'bold'
-        },
-        padding: {
-          top: 5,
-          bottom: 15
-        }
+        display: false
       },
       tooltip: {
         callbacks: {
@@ -206,6 +190,14 @@ function GraficoEvolucaoMensal() {
     interaction: {
       mode: 'index',
       intersect: false,
+    },
+    layout: {
+      padding: {
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 20
+      }
     }
   };
 
@@ -240,7 +232,7 @@ function GraficoEvolucaoMensal() {
 
   return (
     <div className="grafico-evolucao-mensal">
-      <div className="chart-container" style={{ height: '400px',width: '100%', overflow: 'hidden' }}>
+      <div className="chart-container" style={{ height: '350px', width: '100%', position: 'relative', overflow: 'hidden' }}>
         <Bar data={dadosGrafico} options={options} />
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -21,6 +22,7 @@ function GraficosPizza() {
   const [dadosDespesas, setDadosDespesas] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentChart, setCurrentChart] = useState(0); // 0 = receitas, 1 = despesas
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -161,43 +163,16 @@ function GraficosPizza() {
   const optionsReceitas = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {
-      padding: {
-        left: 10,
-        right: 10
-      }
-    },
     plugins: {
       legend: {
+        display: true,
         position: 'bottom',
-        align: 'start',
         labels: {
           usePointStyle: true,
-          padding: 6,
+          padding: 15,
           font: {
-            size: 9,
+            size: 12,
             weight: 'bold'
-          },
-          generateLabels: function(chart) {
-            const data = chart.data;
-            if (data.labels.length && data.datasets.length) {
-              return data.labels.map((label, i) => {
-                const dataset = data.datasets[0];
-                const value = dataset.data[i];
-                const total = dataset.data.reduce((a, b) => a + b, 0);
-                const percentual = ((value / total) * 100).toFixed(1);
-                return {
-                  text: `${label} (${percentual}%)`,
-                  fillStyle: dataset.backgroundColor[i],
-                  strokeStyle: dataset.borderColor[i],
-                  lineWidth: 2,
-                  pointStyle: 'circle',
-                  hidden: false,
-                  index: i
-                };
-              });
-            }
-            return [];
           }
         }
       },
@@ -205,12 +180,12 @@ function GraficosPizza() {
         display: true,
         text: 'Receitas por Tipo - Mês Atual',
         font: {
-          size: 11,
+          size: 14,
           weight: 'bold'
         },
         padding: {
-          top: 3,
-          bottom: 3
+          top: 10,
+          bottom: 10
         }
       },
       tooltip: {
@@ -225,6 +200,14 @@ function GraficosPizza() {
             }).format(valor)} (${percentual}%)`;
           }
         }
+      }
+    },
+    layout: {
+      padding: {
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 20
       }
     }
   };
@@ -232,43 +215,16 @@ function GraficosPizza() {
   const optionsDespesas = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {
-      padding: {
-        left: 10,
-        right: 10
-      }
-    },
     plugins: {
       legend: {
+        display: true,
         position: 'bottom',
-        align: 'start',
         labels: {
           usePointStyle: true,
-          padding: 6,
+          padding: 15,
           font: {
-            size: 9,
+            size: 12,
             weight: 'bold'
-          },
-          generateLabels: function(chart) {
-            const data = chart.data;
-            if (data.labels.length && data.datasets.length) {
-              return data.labels.map((label, i) => {
-                const dataset = data.datasets[0];
-                const value = dataset.data[i];
-                const total = dataset.data.reduce((a, b) => a + b, 0);
-                const percentual = ((value / total) * 100).toFixed(1);
-                return {
-                  text: `${label} (${percentual}%)`,
-                  fillStyle: dataset.backgroundColor[i],
-                  strokeStyle: dataset.borderColor[i],
-                  lineWidth: 2,
-                  pointStyle: 'circle',
-                  hidden: false,
-                  index: i
-                };
-              });
-            }
-            return [];
           }
         }
       },
@@ -276,12 +232,12 @@ function GraficosPizza() {
         display: true,
         text: 'Despesas por Tipo - Mês Atual',
         font: {
-          size: 11,
+          size: 14,
           weight: 'bold'
         },
         padding: {
-          top: 3,
-          bottom: 3
+          top: 10,
+          bottom: 10
         }
       },
       tooltip: {
@@ -297,7 +253,23 @@ function GraficosPizza() {
           }
         }
       }
+    },
+    layout: {
+      padding: {
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 20
+      }
     }
+  };
+
+  const nextChart = () => {
+    setCurrentChart(1);
+  };
+
+  const prevChart = () => {
+    setCurrentChart(0);
   };
 
   if (!userId) {
@@ -321,32 +293,49 @@ function GraficosPizza() {
     );
   }
 
+  const hasReceitas = dadosReceitas && dadosReceitas.labels.length > 0;
+  const hasDespesas = dadosDespesas && dadosDespesas.labels.length > 0;
+
   return (
-    <div className="graficos-pizza">
-      <div className="pizza-charts-container">
-        <div className="pizza-chart-card">
-          <div className="chart-container" style={{ height: '150px' }}>
-            {dadosReceitas && dadosReceitas.labels.length > 0 ? (
-              <Pie data={dadosReceitas} options={optionsReceitas} />
+    <div className="graficos-pizza-carrossel">
+      <div className="carrossel-container">
+        <button 
+          onClick={prevChart} 
+          className="btn-carrossel-side"
+          disabled={!hasReceitas}
+        >
+          <FaChevronLeft />
+        </button>
+        
+        <div className="chart-wrapper">
+          <div className="chart-container" style={{ height: '350px', width: '100%', position: 'relative' }}>
+            {currentChart === 0 ? (
+              hasReceitas ? (
+                <Pie data={dadosReceitas} options={optionsReceitas} />
+              ) : (
+                <div className="chart-empty">
+                  <p>Nenhuma receita registrada este mês</p>
+                </div>
+              )
             ) : (
-              <div className="chart-empty">
-                <p>Nenhuma receita registrada este mês</p>
-              </div>
+              hasDespesas ? (
+                <Pie data={dadosDespesas} options={optionsDespesas} />
+              ) : (
+                <div className="chart-empty">
+                  <p>Nenhuma despesa registrada este mês</p>
+                </div>
+              )
             )}
           </div>
         </div>
         
-        <div className="pizza-chart-card">
-          <div className="chart-container" style={{ height: '150px' }}>
-            {dadosDespesas && dadosDespesas.labels.length > 0 ? (
-              <Pie data={dadosDespesas} options={optionsDespesas} />
-            ) : (
-              <div className="chart-empty">
-                <p>Nenhuma despesa registrada este mês</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <button 
+          onClick={nextChart} 
+          className="btn-carrossel-side"
+          disabled={!hasDespesas}
+        >
+          <FaChevronRight />
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaShoppingCart, FaBox, FaUsers, FaCog } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaPlus, FaMinus, FaChartPie, FaCog } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -12,10 +12,11 @@ import ModalRelatorio from '../components/ModalRelatorio';
 function Principal() {
   const navigate = useNavigate();
   const [totais, setTotais] = useState({
-    totalVendas: 0,
-    totalProdutos: 0,
-    totalClientes: 0,
-    vendasHoje: 0
+    totalReceitas: 0,
+    totalDespesas: 0,
+    saldo: 0,
+    receitasMes: 0,
+    despesasMes: 0
   });
   const [loading, setLoading] = useState(true);
   const [showModalRelatorio, setShowModalRelatorio] = useState(false);
@@ -32,17 +33,63 @@ function Principal() {
   const fetchTotais = async () => {
     setLoading(true);
     try {
-      // Dados de exemplo para demonstração
-      const dadosExemplo = {
-        totalVendas: 15425.50,
-        totalProdutos: 150,
-        totalClientes: 85,
-        vendasHoje: 1250.00
-      };
+      // Buscar receitas e despesas do usuário
+      const [receitasRes, despesasRes] = await Promise.all([
+        axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+      ]);
+
+      const receitas = receitasRes.data;
+      const despesas = despesasRes.data;
+
+      // Calcular totais (apenas receitas recebidas e despesas pagas)
+      const totalReceitas = receitas
+        .filter(receita => receita.receita_recebido) // Apenas receitas recebidas
+        .reduce((sum, receita) => 
+          sum + parseFloat(receita.receita_valor || 0), 0
+        );
       
-      setTotais(dadosExemplo);
+      const totalDespesas = despesas
+        .filter(despesa => despesa.despesa_pago) // Apenas despesas pagas
+        .reduce((sum, despesa) => 
+          sum + parseFloat(despesa.despesa_valor || 0), 0
+        );
+
+      // Calcular totais do mês atual (apenas recebidas/pagas)
+      const mesAtual = new Date().getMonth();
+      const anoAtual = new Date().getFullYear();
+      
+      const receitasMes = receitas.filter(receita => {
+        const dataReceita = new Date(receita.receita_data);
+        return dataReceita.getMonth() === mesAtual && 
+               dataReceita.getFullYear() === anoAtual &&
+               receita.receita_recebido; // Apenas receitas recebidas
+      }).reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0);
+
+      const despesasMes = despesas.filter(despesa => {
+        const dataDespesa = new Date(despesa.despesa_data);
+        return dataDespesa.getMonth() === mesAtual && 
+               dataDespesa.getFullYear() === anoAtual &&
+               despesa.despesa_pago; // Apenas despesas pagas
+      }).reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
+
+      setTotais({
+        totalReceitas,
+        totalDespesas,
+        saldo: totalReceitas - totalDespesas,
+        receitasMes,
+        despesasMes
+      });
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
+      // Dados de exemplo para demonstração
+      setTotais({
+        totalReceitas: 15425.50,
+        totalDespesas: 8750.30,
+        saldo: 6675.20,
+        receitasMes: 3250.00,
+        despesasMes: 1850.00
+      });
     } finally {
       setLoading(false);
     }
@@ -83,81 +130,67 @@ function Principal() {
 
       <div className="dashboard-cards">
         <div className="dashboard-card positive"
-        onClick={() => navigate('/vendas')}
+        onClick={() => navigate('/receita')}
         style={{ cursor: 'pointer' }}
-        title="Vendas"
+        title="Receitas"
         >
           <div className="card-icon">
-            <FaShoppingCart />
+            <FaMoneyBillWave />
           </div>
           <div className="card-content">
-            <h3>Total Vendas</h3>
-            <span className="card-value">{formatarValor(totais.totalVendas)}</span>
-            <span className="card-description">Vendas Realizadas</span>
+            <h3>Total Receitas</h3>
+            <span className="card-value">{formatarValor(totais.totalReceitas)}</span>
+            <span className="card-description">Receitas Recebidas</span>
           </div>
         </div>
 
-        <div className="dashboard-card neutral"
-        onClick={() => navigate('/produtos')}
+        <div className="dashboard-card negative"
+        onClick={() => navigate('/despesa')}
         style={{ cursor: 'pointer' }}
-        title="Produtos"
+        title="Despesas"
         >
           <div className="card-icon">
-            <FaBox />
+            <FaMoneyCheckAlt />
           </div>
           <div className="card-content">
-            <h3>Produtos</h3>
-            <span className="card-value">{totais.totalProdutos}</span>
-            <span className="card-description">Produtos Cadastrados</span>
+            <h3>Total Despesas</h3>
+            <span className="card-value">{formatarValor(totais.totalDespesas)}</span>
+            <span className="card-description">Despesas Pagas</span>
           </div>
         </div>
 
-        <div className="dashboard-card positive"
-        onClick={() => navigate('/clientes')}
-        style={{ cursor: 'pointer' }}
-        title="Clientes"
+        <div className={`dashboard-card ${totais.saldo >= 0 ? 'positive' : 'negative'}`}
+        style={{ cursor: 'default' }}
+        title="Saldo"
         >
           <div className="card-icon">
-            <FaUsers />
+            <FaChartLine />
           </div>
           <div className="card-content">
-            <h3>Clientes</h3>
-            <span className="card-value">{totais.totalClientes}</span>
-            <span className="card-description">Clientes Cadastrados</span>
-          </div>
-        </div>
-
-        <div className="dashboard-card neutral"
-        onClick={() => navigate('/configuracoes')}
-        style={{ cursor: 'pointer' }}
-        title="Configurações"
-        >
-          <div className="card-icon">
-            <FaCog />
-          </div>
-          <div className="card-content">
-            <h3>Configurações</h3>
-            <span className="card-value">Sistema</span>
-            <span className="card-description">Configurações Gerais</span>
+            <h3>Saldo Atual</h3>
+            <span className="card-value">{formatarValor(totais.saldo)}</span>
+            <span className="card-description">Saldo Disponível</span>
           </div>
         </div>
       </div>
 
       <div className="home-stats">
         <div className="stat-summary">
-          <h3>Resumo do Dia</h3>
+          <h3>Resumo do Mês</h3>
           <div className="stat-items">
             <div className="stat-item">
-              <span className="stat-label">Vendas Hoje:</span>
-              <span className="stat-value positive">{formatarValor(totais.vendasHoje)}</span>
+              <span className="stat-label">Receitas do Mês:</span>
+              <span className="stat-value positive">{formatarValor(totais.receitasMes)}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Produtos em Estoque:</span>
-              <span className="stat-value neutral">{totais.totalProdutos}</span>
+              <span className="stat-label">Despesas do Mês:</span>
+              <span className="stat-value negative">{formatarValor(totais.despesasMes)}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Clientes Ativos:</span>
-              <span className="stat-value positive">{totais.totalClientes}</span>
+              <span className="stat-label">Saldo do Mês:</span>
+              <span className={`stat-value ${(totais.receitasMes - totais.despesasMes) >= 0 ? 'positive' : 'negative'}`}>
+                {formatarValor(totais.receitasMes - totais.despesasMes)}
+              </span>
             </div>
           </div>
         </div>
@@ -166,19 +199,19 @@ function Principal() {
       {/* Dashboard de Gráficos */}
       <div className="dashboard-charts">
         <div className="charts-header">
-          <h3>Análise de Vendas</h3>
-          <p>Visualize seus dados de vendas de forma interativa</p>
+          <h3>Análise Financeira</h3>
+          <p>Visualize seus dados financeiros de forma interativa</p>
         </div>
         <div className="charts-container">
           <div className="chart-card">
-            <h4>Evolução de Vendas - Últimos 12 Meses</h4>
+            <h4 style={{ textAlign: 'center' }}>Evolução Financeira - Últimos 12 Meses</h4>
             <div className="chart-content">
               <GraficoEvolucaoMensal />
             </div>
           </div>
           
           <div className="chart-card">
-            <h4>Distribuição por Categoria - Mês Atual</h4>
+            <h4 style={{ textAlign: 'center' }}>Distribuição por Categoria - Mês Atual</h4>
             <div className="chart-content">
               <GraficosPizza />
             </div>
