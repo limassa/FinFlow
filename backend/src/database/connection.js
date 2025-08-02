@@ -1,18 +1,19 @@
 const { Pool } = require('pg');
 
-// Configuração para Railway com fallback para variáveis individuais
-const DATABASE_URL = process.env.DATABASE_URL || 
-  `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'OumtwkgYJuWpNCAxJfLVAecULdKGjMEP'}@${process.env.DB_HOST || 'interchange.proxy.rlwy.net'}:${process.env.DB_PORT || '50880'}/${process.env.DB_NAME || 'railway'}`;
-
+// Configuração para ambiente de TESTE (Local)
 const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5433,
+  database: process.env.DB_NAME || 'FinFlowTeste',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'admin'
 });
 
 // Log de conexão para debug
-console.log('🔌 Configuração do banco de dados:');
-console.log('  URL:', DATABASE_URL.replace(/:[^:@]*@/, ':***@')); // Oculta a senha
-console.log('  SSL: enabled');
+console.log('🔌 Configuração do banco de dados - AMBIENTE TESTE:');
+console.log('  Host:', process.env.DB_HOST || 'localhost');
+console.log('  Porta:', process.env.DB_PORT || 5433);
+console.log('  Database:', process.env.DB_NAME || 'FinFlowTeste');
 console.log('  NODE_ENV:', process.env.NODE_ENV);
 
 // Testar conexão
