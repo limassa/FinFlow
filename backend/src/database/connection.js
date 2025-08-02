@@ -10,7 +10,7 @@ const pool = new Pool({
 });
 
 // Log de conexão para debug
-console.log('🔌 Configuração do banco de dados - AMBIENTE HOMOLOGAÇÃO:');
+console.log('🔌 Configuração do banco de dados - AMBIENTE PRODUÇÃO:');
 console.log('  URL:', DATABASE_URL.replace(/:[^:@]*@/, ':***@')); // Oculta a senha
 console.log('  SSL: enabled');
 console.log('  NODE_ENV:', process.env.NODE_ENV);
