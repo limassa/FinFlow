@@ -72,6 +72,45 @@ app.get('/', (req, res) => {
   });
 });
 
+// Rota para buscar versão do sistema
+app.get('/api/versao', async (req, res) => {
+  try {
+    const pool = require('./src/database/connection');
+    const result = await pool.query(`
+      SELECT 
+        versao_numero,
+        versao_nome,
+        versao_data,
+        versao_descricao,
+        versao_status,
+        versao_ambiente
+      FROM versao_sistema 
+      WHERE versao_status = 'ATIVA'
+      ORDER BY versao_id DESC 
+      LIMIT 1
+    `);
+    
+    if (result.rows.length > 0) {
+      res.json({
+        success: true,
+        versao: result.rows[0]
+      });
+    } else {
+      res.json({
+        success: false,
+        message: 'Nenhuma versão ativa encontrada'
+      });
+    }
+  } catch (err) {
+    console.error('❌ Erro ao buscar versão:', err);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erro ao buscar versão do sistema',
+      details: err.message 
+    });
+  }
+});
+
 // Rota temporária para listar usuários (remover em produção)
 app.get('/api/users', async (req, res) => {
   try {

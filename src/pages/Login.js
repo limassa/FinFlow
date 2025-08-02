@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { setUsuarioLogado } from '../functions/auth';
@@ -13,6 +13,8 @@ function Login() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  const [versao, setVersao] = useState(null);
+  const [versaoLoading, setVersaoLoading] = useState(true);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -65,6 +67,24 @@ function Login() {
       setLoading(false);
     }
   };
+
+  // Buscar versão do sistema
+  useEffect(() => {
+    const buscarVersao = async () => {
+      try {
+        const response = await axios.get(API_ENDPOINTS.VERSAO);
+        if (response.data.success) {
+          setVersao(response.data.versao);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar versão:', error);
+      } finally {
+        setVersaoLoading(false);
+      }
+    };
+
+    buscarVersao();
+  }, []);
 
   const handleCadastro = (e) => {
     e.preventDefault();
@@ -141,6 +161,23 @@ function Login() {
             <FaEnvelope />
             Precisa de ajuda?
           </button>
+        </div>
+
+        {/* Informações da Versão */}
+        <div className="version-info">
+          {versaoLoading ? (
+            <p className="version-loading">Carregando informações...</p>
+          ) : versao ? (
+            <div className="version-details">
+              <p className="version-number">v{versao.versao_numero}</p>
+              <p className="version-name">{versao.versao_nome}</p>
+              <p className="version-date">
+                {new Date(versao.versao_data).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+          ) : (
+            <p className="version-error">Versão não disponível</p>
+          )}
         </div>
       </form>
     </AuthBanner>

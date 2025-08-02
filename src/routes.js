@@ -4,9 +4,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Principal from './pages/Principal';
-import Vendas from './pages/Vendas';
-import Produtos from './pages/Produtos';
-import Clientes from './pages/Clientes';
+import Receita from './pages/Receita';
+import Despesa from './pages/Despesa';
+import Contas from './pages/Contas';
 import Configuracoes from './pages/Configuracoes';
 import FaleConosco from './pages/FaleConosco';
 import ForgotPassword from './pages/ForgotPassword';
@@ -42,26 +42,26 @@ function AppRoutes() {
           } 
         />
         <Route 
-          path="/vendas" 
+          path="/receita" 
           element={
             <ProtectedRoute>
-              <Vendas />
+              <Receita />
             </ProtectedRoute>
           } 
         />
         <Route 
-          path="/produtos" 
+          path="/despesa" 
           element={
             <ProtectedRoute>
-              <Produtos />
+              <Despesa />
             </ProtectedRoute>
           } 
         />
         <Route 
-          path="/clientes" 
+          path="/contas" 
           element={
             <ProtectedRoute>
-              <Clientes />
+              <Contas />
             </ProtectedRoute>
           } 
         />
