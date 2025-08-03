@@ -1,5 +1,5 @@
 // Configuração da API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://finflow-production-e4b3.up.railway.app';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 export const API_ENDPOINTS = {
   // Autenticação
