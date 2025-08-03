@@ -5,7 +5,7 @@ async function testarVersao() {
     console.log('🧪 Testando funcionalidade de versão...');
     
     // Testar endpoint de versão
-    const response = await axios.get('http://localhost:3001/api/versao');
+    const response = await axios.get('http://localhost:3001/versao');
     
     console.log('✅ Resposta da API:', response.data);
     

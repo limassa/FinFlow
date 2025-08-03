@@ -56,12 +56,12 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 1. **Teste o backend:**
 ```bash
-curl http://localhost:3001/api/test
+curl http://localhost:3001/test
 ```
 
 2. **Teste o login:**
 ```bash
-curl -X POST http://localhost:3001/api/login \
+curl -X POST http://localhost:3001/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@pdv.com","senha":"admin123"}'
 ```

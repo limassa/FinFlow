@@ -48,12 +48,12 @@ node ../teste-lembretes.js
 
 1. **Verificar vencimentos próximos:**
 ```bash
-curl -X GET "http://localhost:3001/api/lembretes/vencimentos?userId=1"
+curl -X GET "http://localhost:3001/lembretes/vencimentos?userId=1"
 ```
 
 2. **Testar envio de email:**
 ```bash
-curl -X POST "http://localhost:3001/api/lembretes/teste-email" \
+curl -X POST "http://localhost:3001/lembretes/teste-email" \
   -H "Content-Type: application/json" \
   -d '{"userId": 1}'
 ```
@@ -130,7 +130,7 @@ npm start
 curl http://localhost:3001/
 
 # Verificar configurações de lembretes
-curl "http://localhost:3001/api/user/lembretes?userId=1"
+curl "http://localhost:3001/user/lembretes?userId=1"
 ```
 
 ## 🎯 Cenários de Teste
