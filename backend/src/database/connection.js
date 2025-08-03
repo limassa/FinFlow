@@ -1,3 +1,7 @@
+// Carregar variáveis de ambiente
+require('dotenv').config({ path: './config.env' });
+require('dotenv').config();
+
 const { Pool } = require('pg');
 
 // Configuração para ambiente de TESTE (Local)
