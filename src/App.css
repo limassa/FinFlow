@@ -2544,7 +2544,7 @@ select.form-input:focus {
   padding: 0;
   width: 90%;
   max-width: 500px;
-  max-height: 85vh; /* Aumentar altura máxima */
+  max-height: 95vh; /* Aumentar ainda mais a altura máxima */
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
@@ -2603,11 +2603,11 @@ select.form-input:focus {
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 45px;
   min-height: 300px;
-  max-height: 60vh;
+  max-height: 30vh; /* Aumentar ainda mais a altura máxima do body */
   overflow-y: auto;
-  padding-bottom: 80px; /* Adicionar espaço extra para evitar corte do texto */
+  padding-bottom: 150px; /* Aumentar ainda mais o espaço extra */
 }
 
 /* Estilos para scrollbar do modal-body */
@@ -2672,6 +2672,7 @@ select.form-input:focus {
   padding: 15px;
   border-radius: 6px;
   margin-top: 20px;
+  margin-bottom: 20px; /* Adicionar margem inferior para separar do footer */
 }
 
 .relatorio-info h4 {
@@ -2695,7 +2696,7 @@ select.form-input:focus {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 20px;
+  padding: 10px 20px; /* Diminuir ainda mais o padding vertical */
   border-top: 1px solid #e9ecef;
   background: #f8f9fa;
   border-radius: 0 0 8px 8px;
