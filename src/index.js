@@ -16,6 +16,7 @@ import Dashboard from './pages/Dashboard';
 import Configuracoes from './pages/Configuracoes';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import DetalhesGrafico from './pages/DetalhesGrafico';
 
 import reportWebVitals from './reportWebVitals';
 
@@ -41,6 +42,7 @@ root.render(
           <Route path="despesa" element={<Despesa />} />
           <Route path="contas" element={<Contas />} />
           <Route path="calendario" element={<Calendario />} />
+          <Route path="detalhes-grafico" element={<DetalhesGrafico />} />
         </Route>
       </Routes>
     </Router>

@@ -7,6 +7,7 @@ import {
 } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -18,6 +19,7 @@ ChartJS.register(
 );
 
 function GraficosPizza() {
+  const navigate = useNavigate();
   const [dadosReceitas, setDadosReceitas] = useState(null);
   const [dadosDespesas, setDadosDespesas] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -272,6 +274,12 @@ function GraficosPizza() {
     setCurrentChart(0);
   };
 
+  const handleChartClick = () => {
+    // Determinar qual gráfico está ativo (receitas ou despesas)
+    const tipoAtivo = currentChart === 0 ? 'receitas' : 'despesas';
+    navigate('/layout/detalhes-grafico', { state: { defaultTab: tipoAtivo } });
+  };
+
   if (!userId) {
     return <div>Usuário não logado</div>;
   }
@@ -308,7 +316,12 @@ function GraficosPizza() {
         </button>
         
         <div className="chart-wrapper">
-          <div className="chart-container" style={{ height: '350px', width: '100%', position: 'relative' }}>
+          <div 
+            className="chart-container" 
+            style={{ height: '350px', width: '100%', position: 'relative', cursor: 'pointer' }}
+            onClick={handleChartClick}
+            title="Clique para ver detalhes"
+          >
             {currentChart === 0 ? (
               hasReceitas ? (
                 <Pie data={dadosReceitas} options={optionsReceitas} />
