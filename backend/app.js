@@ -1,6 +1,13 @@
 // Carregar variáveis de ambiente
-require('dotenv').config({ path: './config.env' });
-require('dotenv').config(); // Carregar .env se existir
+if (process.env.NODE_ENV === 'production') {
+  // Em produção, usar apenas variáveis de ambiente do Railway
+  console.log('🚀 Ambiente de produção detectado');
+} else {
+  // Em desenvolvimento, carregar arquivos de configuração
+  require('dotenv').config({ path: './config.env' });
+  require('dotenv').config(); // Carregar .env se existir
+  console.log('🔧 Ambiente de desenvolvimento detectado');
+}
 
 const express = require('express');
 const cors = require('cors');
@@ -63,13 +70,25 @@ app.get('/api/test-users', async (req, res) => {
   }
 });
 
-// Rota de teste para verificar se o servidor está funcionando
+// Rota de healthcheck para o Railway
 app.get('/', (req, res) => {
+  console.log('🔍 Healthcheck solicitado:', new Date().toISOString());
+  res.status(200).json({ 
+    message: 'Backend funcionando!', 
+    timestamp: new Date().toISOString(),
+    version: '2.1.2',
+    status: 'healthy',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Rota de teste para verificar se o servidor está funcionando
+app.get('/health', (req, res) => {
   res.json({ 
     message: 'Backend funcionando!', 
     timestamp: new Date().toISOString(),
-    version: '2.1.1', // Forçar deploy
-    commit: '7977100'
+    version: '2.1.2',
+    status: 'healthy'
   });
 });
 
@@ -638,7 +657,9 @@ app.put('/api/parcela-atual/:tipo/:id', async (req, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log('Servidor rodando na porta 3001');
-  console.log('Teste: http://localhost:3001/');
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });

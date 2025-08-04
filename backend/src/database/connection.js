@@ -1,6 +1,8 @@
 // Carregar variáveis de ambiente
-require('dotenv').config({ path: './config.env' });
-require('dotenv').config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: './config.env' });
+  require('dotenv').config();
+}
 
 const { Pool } = require('pg');
 
@@ -14,7 +16,8 @@ const pool = new Pool({
 });
 
 // Log de conexão para debug
-console.log('🔌 Configuração do banco de dados - AMBIENTE TESTE:');
+const ambiente = process.env.NODE_ENV || 'development';
+console.log(`🔌 Configuração do banco de dados - AMBIENTE ${ambiente.toUpperCase()}:`);
 console.log('  Host:', process.env.DB_HOST || 'localhost');
 console.log('  Porta:', process.env.DB_PORT || 5433);
 console.log('  Database:', process.env.DB_NAME || 'FinFlowTeste');
