@@ -12,6 +12,7 @@ const Calendario = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'receitas' ou 'despesas'
   const [modalData, setModalData] = useState([]);
+  const [debug, setDebug] = useState(true); // Debug mode
 
   const userId = localStorage.getItem('userId');
 
@@ -25,8 +26,13 @@ const Calendario = () => {
   const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   useEffect(() => {
+    console.log('🚀 Componente Calendario montado');
+    console.log('👤 User ID:', userId);
+    
     if (userId) {
       carregarDados();
+    } else {
+      console.error('❌ User ID não encontrado!');
     }
   }, [userId, currentDate]);
 
@@ -179,6 +185,43 @@ const Calendario = () => {
     return data.toLocaleDateString('pt-BR');
   };
 
+  // Debug: Versão simplificada para testar
+  if (debug) {
+    return (
+      <div className="calendario-container">
+        <h2>🔧 Debug - Calendário</h2>
+        <div style={{ padding: '20px', background: '#f0f0f0', margin: '10px 0' }}>
+          <h3>📊 Estado do Componente:</h3>
+          <p><strong>Loading:</strong> {loading ? 'Sim' : 'Não'}</p>
+          <p><strong>User ID:</strong> {userId || 'Não encontrado'}</p>
+          <p><strong>Receitas:</strong> {receitas.length}</p>
+          <p><strong>Despesas:</strong> {despesas.length}</p>
+          <p><strong>Data Atual:</strong> {currentDate.toLocaleDateString()}</p>
+        </div>
+        
+        <div style={{ padding: '20px', background: '#e8f5e8', margin: '10px 0' }}>
+          <h3>📅 Teste de Navegação:</h3>
+          <button onClick={() => navegarMes('anterior')} style={{ margin: '5px', padding: '10px' }}>
+            Mês Anterior
+          </button>
+          <button onClick={() => navegarMes('proximo')} style={{ margin: '5px', padding: '10px' }}>
+            Próximo Mês
+          </button>
+        </div>
+        
+        <div style={{ padding: '20px', background: '#fff3cd', margin: '10px 0' }}>
+          <h3>🎯 Teste de Dados:</h3>
+          <button onClick={carregarDados} style={{ margin: '5px', padding: '10px' }}>
+            Recarregar Dados
+          </button>
+          <button onClick={() => setDebug(false)} style={{ margin: '5px', padding: '10px', background: '#28a745', color: 'white' }}>
+            Mostrar Calendário Real
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="calendario-container">
@@ -186,6 +229,9 @@ const Calendario = () => {
       </div>
     );
   }
+
+  console.log('🎨 Renderizando calendário...');
+  console.log('📊 Estado atual:', { receitas: receitas.length, despesas: despesas.length });
 
   return (
     <div className="calendario-container">
