@@ -243,6 +243,62 @@ class EmailService {
       return false;
     }
   }
+
+  async sendContactFormEmail(contactData) {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'noreply@finflow.com',
+      to: process.env.EMAIL_USER || 'joaolmnmarket@gmail.com', // Email do suporte
+      subject: '📧 Nova mensagem - Fale Conosco FinFlow',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">📧 Nova Mensagem</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Fale Conosco</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Nova mensagem recebida</h2>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+              <h3 style="color: #333; margin-top: 0;">📋 Detalhes do Contato:</h3>
+              <p style="color: #666; margin: 5px 0;">
+                <strong>Nome:</strong> ${contactData.nome}<br>
+                <strong>Email:</strong> ${contactData.email}<br>
+                <strong>Telefone:</strong> ${contactData.telefone}<br>
+                <strong>Tipo:</strong> ${contactData.tipo}<br>
+                <strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff6b6b;">
+              <h3 style="color: #333; margin-top: 0;">💬 Mensagem:</h3>
+              <p style="color: #666; line-height: 1.6; white-space: pre-wrap;">${contactData.mensagem}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="mailto:${contactData.email}" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+                Responder ao Cliente
+              </a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+              Esta mensagem foi enviada através do formulário "Fale Conosco" do FinFlow.
+            </p>
+          </div>
+        </div>
+      `
+    };
+    
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log('Email de "Fale Conosco" enviado para o suporte');
+      return true;
+    } catch (error) {
+      console.error('Erro ao enviar email de "Fale Conosco":', error);
+      return false;
+    }
+  }
 }
 
 module.exports = new EmailService(); 

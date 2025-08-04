@@ -526,7 +526,7 @@ app.get('/api/user/lembretes', async (req, res) => {
     res.json({
       lembretesAtivos: user.usuario_lembretesativos,
       lembretesEmail: user.usuario_lembretesemail,
-      lembretesDiasAntes: user.usuario_lembretesdiasantes
+      lembretesDiasAntes: user.usuario_lembretesdiasantes || 5
     });
   } catch (err) {
     console.error('Erro ao buscar configuração de lembretes:', err);
@@ -535,10 +535,15 @@ app.get('/api/user/lembretes', async (req, res) => {
 });
 
 app.put('/api/user/lembretes', async (req, res) => {
-  const { userId, lembretesAtivos } = req.body;
+  const { userId, lembretesAtivos, lembretesEmail, lembretesDiasAntes, lembretesHorario } = req.body;
   
   try {
-    const result = await userRepository.updateLembretesConfig(userId, lembretesAtivos);
+    const result = await userRepository.updateLembretesConfig(userId, {
+      lembretesAtivos,
+      lembretesEmail,
+      lembretesDiasAntes,
+      lembretesHorario
+    });
     if (result) {
       res.json({ message: 'Configuração de lembretes atualizada com sucesso!' });
     } else {
@@ -547,6 +552,63 @@ app.put('/api/user/lembretes', async (req, res) => {
   } catch (err) {
     console.error('Erro ao atualizar configuração de lembretes:', err);
     res.status(500).json({ error: 'Erro ao atualizar configuração' });
+  }
+});
+
+// Rotas para gerenciar perfil do usuário
+app.get('/api/user/perfil', async (req, res) => {
+  const { userId } = req.query;
+  
+  try {
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    res.json({
+      nome: user.usuario_nome,
+      email: user.usuario_email,
+      telefone: user.usuario_telefone || ''
+    });
+  } catch (err) {
+    console.error('Erro ao buscar perfil do usuário:', err);
+    res.status(500).json({ error: 'Erro ao buscar perfil' });
+  }
+});
+
+app.put('/api/user/perfil', async (req, res) => {
+  const { userId, nome, email, telefone, novaSenha } = req.body;
+  
+  try {
+    // Verificar se o usuário existe
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    // Atualizar dados do usuário
+    const updateData = {
+      nome: nome || user.usuario_nome,
+      email: email || user.usuario_email,
+      telefone: telefone || user.usuario_telefone
+    };
+    
+    // Se uma nova senha foi fornecida, criptografá-la
+    if (novaSenha) {
+      const bcrypt = require('bcrypt');
+      const saltRounds = 10;
+      updateData.senha = await bcrypt.hash(novaSenha, saltRounds);
+    }
+    
+    const result = await userRepository.updateUserProfile(userId, updateData);
+    if (result) {
+      res.json({ message: 'Perfil atualizado com sucesso!' });
+    } else {
+      res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+  } catch (err) {
+    console.error('Erro ao atualizar perfil do usuário:', err);
+    res.status(500).json({ error: 'Erro ao atualizar perfil' });
   }
 });
 
@@ -635,6 +697,44 @@ app.put('/api/parcela-atual/:tipo/:id', async (req, res) => {
   } catch (err) {
     console.error('Erro ao atualizar parcela:', err);
     res.status(500).json({ error: 'Erro ao atualizar parcela' });
+  }
+});
+
+// Rota para "Fale Conosco"
+app.post('/api/fale-conosco', async (req, res) => {
+  const { nome, email, telefone, tipo, mensagem } = req.body;
+  
+  console.log('📧 Recebida mensagem de "Fale Conosco":', { nome, email, tipo });
+  
+  try {
+    // Validar campos obrigatórios
+    if (!nome || !email || !mensagem) {
+      return res.status(400).json({ error: 'Nome, email e mensagem são obrigatórios' });
+    }
+    
+    // Enviar email para o suporte
+    const emailEnviado = await emailService.sendContactFormEmail({
+      nome,
+      email,
+      telefone: telefone || 'Não informado',
+      tipo: tipo || 'Geral',
+      mensagem
+    });
+    
+    if (emailEnviado) {
+      console.log('✅ Email de "Fale Conosco" enviado com sucesso!');
+      res.json({ 
+        message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
+        status: 'success'
+      });
+    } else {
+      console.log('❌ Falha ao enviar email de "Fale Conosco"');
+      res.status(500).json({ error: 'Erro ao enviar mensagem. Tente novamente.' });
+    }
+    
+  } catch (err) {
+    console.error('❌ Erro ao processar "Fale Conosco":', err);
+    res.status(500).json({ error: 'Erro ao processar mensagem' });
   }
 });
 

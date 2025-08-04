@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUser, FaBell, FaPalette, FaShieldAlt, FaDownload, FaTrash, FaSave, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getUsuarioLogado } from '../functions/auth';
+import { API_ENDPOINTS } from '../config/api';
 
 import '../App.css';
 import InputMask from 'react-input-mask';
@@ -27,7 +28,7 @@ function Configuracoes() {
   const [lembretesConfig, setLembretesConfig] = useState({
     lembretesAtivos: true,
     lembretesEmail: true,
-    lembretesDiasAntes: 1,
+    lembretesDiasAntes: 5,
     lembretesHorario: '18:15'
   });
 
@@ -123,7 +124,7 @@ function Configuracoes() {
 
   const handleSalvarLembretes = async () => {
     try {
-      const response = await fetch('${API_ENDPOINTS.USER_LEMBRETES}', {
+      const response = await fetch(`${API_ENDPOINTS.USER_LEMBRETES}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
