@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUser, FaBell, FaBellSlash, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../functions/auth';
+import { API_ENDPOINTS } from '../config/api';
 import './UserMenu.css';
 
 function UserMenu() {
@@ -38,7 +39,7 @@ function UserMenu() {
     if (!user) return;
 
     try {
-      const response = await fetch('${API_ENDPOINTS.USER_LEMBRETES}', {
+      const response = await fetch(`${API_ENDPOINTS.USER_LEMBRETES}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
