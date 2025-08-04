@@ -2,13 +2,31 @@ const { Pool } = require('pg');
 const { execSync } = require('child_process');
 require('dotenv').config({ path: './backend/config.env' });
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-});
+// Determinar qual configuração de banco usar baseado na branch
+const branchName = execSync('git branch --show-current').toString().trim();
+
+let pool;
+if (branchName === 'production') {
+  // Usar configuração do Railway para produção
+  console.log('🚀 Usando configuração do Railway para produção...');
+  pool = new Pool({
+    host: 'interchange.proxy.rlwy.net',
+    port: '50880',
+    database: 'railway',
+    user: 'postgres',
+    password: 'OumtwkgYJuWpNCAxJfLVAecULdKGjMEP',
+  });
+} else {
+  // Usar configuração local para outras branches
+  console.log('🏠 Usando configuração local...');
+  pool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+  });
+}
 
 async function atualizarVersao() {
   try {
@@ -17,7 +35,6 @@ async function atualizarVersao() {
     // 1. Obter informações do commit atual
     const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
     const commitMessage = execSync('git log -1 --pretty=format:"%s"').toString().trim();
-    const branchName = execSync('git branch --show-current').toString().trim();
     const commitDate = execSync('git log -1 --pretty=format:"%ad" --date=short').toString().trim();
     
     // 2. Gerar número de versão baseado na data e commit
