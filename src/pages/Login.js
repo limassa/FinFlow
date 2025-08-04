@@ -51,9 +51,9 @@ function Login() {
         console.log('Salvando dados do usuário:', userData);
         setUsuarioLogado(userData);
         
-        console.log('Redirecionando para /principal');
+        console.log('Redirecionando para /layout/principal');
         // Redirecionar para a página principal
-        navigate('/principal');
+        navigate('/layout/principal');
       }
     } catch (error) {
       console.error('Erro no login:', error);

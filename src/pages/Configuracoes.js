@@ -204,7 +204,7 @@ function Configuracoes() {
         <h1><FaUser /> Configurações</h1>
         <button 
           className="btn-voltar"
-          onClick={() => navigate('/principal')}
+                      onClick={() => navigate('/layout/principal')}
         >
           Voltar ao Menu
         </button>

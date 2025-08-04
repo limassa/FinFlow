@@ -33,15 +33,14 @@ root.render(
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/fale-conosco" element={<FaleConosco />} />
         <Route path="/app" element={<App />}/>
-        <Route path="/" element={<Layout />}>
-          <Route path="/principal" element={<Principal />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
-          <Route path="/receita" element={<Receita />} />
-          <Route path="/despesa" element={<Despesa />} />
-          <Route path="/contas" element={<Contas />} />
-          <Route path="/calendario" element={<Calendario />} />
-          <Route path="/fale-conosco" element={<FaleConosco />} />
+        <Route path="/layout" element={<Layout />}>
+          <Route path="principal" element={<Principal />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="configuracoes" element={<Configuracoes />} />
+          <Route path="receita" element={<Receita />} />
+          <Route path="despesa" element={<Despesa />} />
+          <Route path="contas" element={<Contas />} />
+          <Route path="calendario" element={<Calendario />} />
         </Route>
       </Routes>
     </Router>

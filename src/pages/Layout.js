@@ -28,7 +28,7 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'home' ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered('home')}
         onMouseLeave={() => setHovered(null)}
-            onClick={() => navigate('/principal')}
+            onClick={() => navigate('/layout/principal')}
         style={{ cursor: 'pointer' }}
         title="Home">
             <span className="icon"><FaHome /></span>
@@ -38,7 +38,7 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered('contas')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/contas')}
+                    onClick={() => navigate('/layout/contas')}
         style={{ cursor: 'pointer' }}
         title="Contas">
             <span className="icon"><FaWallet /></span>
@@ -48,7 +48,7 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'receita' ? 'hovered' : ''}`}   
         onMouseEnter={() => setHovered('receita')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/receita')}
+                    onClick={() => navigate('/layout/receita')}
         style={{ cursor: 'pointer' }}
         title="Receita">
             <span className="icon"><FaMoneyBillWave /></span>
@@ -58,7 +58,7 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'despesa' ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered('despesa')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/despesa')}
+                    onClick={() => navigate('/layout/despesa')}
         style={{ cursor: 'pointer' }}
         title="Despesa">
             <span className="icon"><FaMoneyCheckAlt /></span>
@@ -68,7 +68,7 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'calendario' ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered('calendario')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/calendario')}
+                    onClick={() => navigate('/layout/calendario')}
         style={{ cursor: 'pointer' }}
         title="Calendário">
             <span className="icon"><FaCalendarAlt /></span>
