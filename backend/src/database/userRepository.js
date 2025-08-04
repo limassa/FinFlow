@@ -119,7 +119,7 @@ const userRepository = {
 
   async deleteReceita(id, userId) {
     const result = await pool.query(
-      'UPDATE Receita SET Receita_Ativo = FALSE, Receita_DtDelete = NOW(), Receita_UsuarioDelete = $1 WHERE Receita_Id = $2 RETURNING *',
+      'UPDATE receita SET receita_ativo = FALSE, receita_dtdelete = NOW(), receita_usuariodelete = $1 WHERE receita_id = $2 RETURNING *',
       [userId, id]
     );
     return result.rows[0];
@@ -127,15 +127,15 @@ const userRepository = {
 
   // Métodos para Despesas
   async getDespesas(userId, mes = null) {
-    let query = 'SELECT * FROM Despesa WHERE Usuario_Id = $1 AND Despesa_Ativo = TRUE';
+    let query = 'SELECT * FROM despesa WHERE usuario_id = $1 AND despesa_ativo = TRUE';
     let params = [userId];
     
     if (mes) {
-      query += ' AND DATE_TRUNC(\'month\', Despesa_Data) = DATE_TRUNC(\'month\', $2::date)';
+      query += ' AND DATE_TRUNC(\'month\', despesa_data) = DATE_TRUNC(\'month\', $2::date)';
       params.push(mes + '-01'); // Adiciona o dia 01 para formar uma data válida
     }
     
-    query += ' ORDER BY Despesa_Data DESC';
+    query += ' ORDER BY despesa_data DESC';
     
     const result = await pool.query(query, params);
     return result.rows;
@@ -180,11 +180,20 @@ const userRepository = {
     return result.rows;
   },
 
-  async createConta({ nome, tipo, saldo, usuario_id }) {
+  async createConta({ nome, tipo, saldo, incrementarSaldoTotal = true, usuario_id }) {
     const result = await pool.query(
       'INSERT INTO Conta (Conta_Nome, Conta_Tipo, Conta_Saldo, Usuario_Id) VALUES ($1, $2, $3, $4) RETURNING *',
       [nome, tipo, saldo || 0, usuario_id]
     );
+    
+    // Se incrementarSaldoTotal for true e houver saldo, adicionar ao saldo total do usuário
+    if (incrementarSaldoTotal && saldo && parseFloat(saldo) > 0) {
+      await pool.query(
+        'UPDATE Usuario SET Usuario_SaldoTotal = COALESCE(Usuario_SaldoTotal, 0) + $1 WHERE Usuario_Id = $2',
+        [parseFloat(saldo), usuario_id]
+      );
+    }
+    
     return result.rows[0];
   },
 

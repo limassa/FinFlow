@@ -394,9 +394,9 @@ app.get('/api/contas', async (req, res) => {
 });
 
 app.post('/api/contas', async (req, res) => {
-  const { nome, tipo, saldo, usuario_id } = req.body;
+  const { nome, tipo, saldo, incrementarSaldoTotal, usuario_id } = req.body;
   try {
-    const conta = await userRepository.createConta({ nome, tipo, saldo, usuario_id });
+    const conta = await userRepository.createConta({ nome, tipo, saldo, incrementarSaldoTotal, usuario_id });
     res.status(201).json(conta);
   } catch (err) {
     console.error('Erro ao criar conta:', err);

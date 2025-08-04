@@ -130,7 +130,7 @@ function Principal() {
 
       <div className="dashboard-cards">
         <div className="dashboard-card positive"
-        onClick={() => navigate('/receita')}
+                    onClick={() => navigate('/layout/receita')}
         style={{ cursor: 'pointer' }}
         title="Receitas"
         >
@@ -145,7 +145,7 @@ function Principal() {
         </div>
 
         <div className="dashboard-card negative"
-        onClick={() => navigate('/despesa')}
+                    onClick={() => navigate('/layout/despesa')}
         style={{ cursor: 'pointer' }}
         title="Despesas"
         >

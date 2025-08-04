@@ -10,6 +10,7 @@ function Contas() {
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
   const [saldo, setSaldo] = useState('');
+  const [incrementarSaldoTotal, setIncrementarSaldoTotal] = useState(true);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,6 +56,7 @@ function Contas() {
         nome, 
         tipo,
         saldo: saldo || 0,
+        incrementarSaldoTotal,
         usuario_id: userId
       });
       setNome('');
@@ -178,6 +180,16 @@ function Contas() {
                 value={saldo}
                 onChange={e => setSaldo(e.target.value)}
               />
+            </div>
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={incrementarSaldoTotal}
+                  onChange={e => setIncrementarSaldoTotal(e.target.checked)}
+                />
+                <span>Incrementar no Saldo Total</span>
+              </label>
             </div>
           </div>
           <div className="form-buttons">

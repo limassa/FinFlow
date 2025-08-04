@@ -107,7 +107,7 @@ function Dashboard() {
         <div className="dashboard-actions">
           <button 
             className="btn-secondary"
-            onClick={() => navigate('/principal')}
+            onClick={() => navigate('/layout/principal')}
           >
             Voltar ao Menu
           </button>
@@ -182,7 +182,7 @@ function Dashboard() {
         <div className="actions-grid">
           <button 
             className="action-btn"
-            onClick={() => navigate('/receita')}
+            onClick={() => navigate('/layout/receita')}
           >
             <FaChartLine />
             <span>Nova Receita</span>
@@ -190,7 +190,7 @@ function Dashboard() {
           
           <button 
             className="action-btn"
-            onClick={() => navigate('/despesa')}
+            onClick={() => navigate('/layout/despesa')}
           >
             <FaChartPie />
             <span>Nova Despesa</span>
@@ -198,7 +198,7 @@ function Dashboard() {
           
           <button 
             className="action-btn"
-            onClick={() => navigate('/contas')}
+            onClick={() => navigate('/layout/contas')}
           >
             <FaCog />
             <span>Gerenciar Contas</span>

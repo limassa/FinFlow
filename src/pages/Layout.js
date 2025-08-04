@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet } from 'react-icons/fa';
+import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt } from 'react-icons/fa';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
@@ -28,17 +28,27 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'home' ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered('home')}
         onMouseLeave={() => setHovered(null)}
-            onClick={() => navigate('/principal')}
+            onClick={() => navigate('/layout/principal')}
         style={{ cursor: 'pointer' }}
         title="Home">
             <span className="icon"><FaHome /></span>
             <span className="label">{hovered === 'home' && 'Home'}</span>
         </div>
+        {/*Contas*/}
+        <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('contas')}
+        onMouseLeave={() => setHovered(null)}
+                    onClick={() => navigate('/layout/contas')}
+        style={{ cursor: 'pointer' }}
+        title="Contas">
+            <span className="icon"><FaWallet /></span>
+            <span className="label">{hovered === 'contas' && 'Contas'}</span>
+        </div>
         {/*Receita*/}
         <div className={`sidebar-item ${hovered === 'receita' ? 'hovered' : ''}`}   
         onMouseEnter={() => setHovered('receita')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/receita')}
+                    onClick={() => navigate('/layout/receita')}
         style={{ cursor: 'pointer' }}
         title="Receita">
             <span className="icon"><FaMoneyBillWave /></span>
@@ -48,21 +58,21 @@ function Layout() {
         <div className={`sidebar-item ${hovered === 'despesa' ? 'hovered' : ''}`}
         onMouseEnter={() => setHovered('despesa')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/despesa')}
+                    onClick={() => navigate('/layout/despesa')}
         style={{ cursor: 'pointer' }}
         title="Despesa">
             <span className="icon"><FaMoneyCheckAlt /></span>
             <span className="label">{hovered === 'despesa' && 'Despesa'}</span>
         </div>
-        {/*Contas*/}
-        <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('contas')}
+        {/*Calendário*/}
+        <div className={`sidebar-item ${hovered === 'calendario' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('calendario')}
         onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/contas')}
+                    onClick={() => navigate('/layout/calendario')}
         style={{ cursor: 'pointer' }}
-        title="Contas">
-            <span className="icon"><FaWallet /></span>
-            <span className="label">{hovered === 'contas' && 'Contas'}</span>
+        title="Calendário">
+            <span className="icon"><FaCalendarAlt /></span>
+            <span className="label">{hovered === 'calendario' && 'Calendário'}</span>
         </div>
         {/*Fale Conosco*/}
         <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''}`}

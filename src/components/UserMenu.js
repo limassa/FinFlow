@@ -103,7 +103,7 @@ function UserMenu() {
             </span>
           </div>
 
-          <div className="menu-item" onClick={() => navigate('/configuracoes')}>
+                      <div className="menu-item" onClick={() => navigate('/layout/configuracoes')}>
             <FaCog />
             <span>Configurações</span>
           </div>

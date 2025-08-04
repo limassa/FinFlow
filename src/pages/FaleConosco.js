@@ -64,7 +64,7 @@ function FaleConosco() {
 
   const handleVoltar = () => {
     if (isLoggedIn) {
-      navigate('/principal');
+              navigate('/layout/principal');
     } else {
       navigate('/home');
     }
@@ -267,7 +267,7 @@ function FaleConosco() {
           <button 
             type="button" 
             className="dashboard-back-button"
-            onClick={() => navigate('/principal')}
+            onClick={() => navigate('/layout/principal')}
           >
             <FaArrowLeft />
             Voltar ao Dashboard
