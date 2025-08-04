@@ -146,7 +146,7 @@ const userRepository = {
     const dataVencimentoValue = dataVencimento && dataVencimento.trim() !== '' ? dataVencimento : null;
     
     const result = await pool.query(
-      'INSERT INTO despesa (despesa_descricao, despesa_valor, despesa_data, despesa_datavencimento, despesa_tipo, despesa_pago, conta_id, usuario_id, despesa_recorrente, despesa_frequencia, despesa_proximasparcelas) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+      'INSERT INTO despesa (despesa_descricao, despesa_valor, despesa_data, despesa_dtvencimento, despesa_tipo, despesa_pago, conta_id, usuario_id, despesa_recorrente, despesa_frequencia, despesa_proximasparcelas) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
       [descricao, valor, data, dataVencimentoValue, tipo, pago || false, conta_id || null, usuario_id, recorrente, frequencia, proximasParcelas]
     );
     return result.rows[0];
@@ -157,7 +157,7 @@ const userRepository = {
     const dataVencimentoValue = dataVencimento && dataVencimento.trim() !== '' ? dataVencimento : null;
     
     const result = await pool.query(
-      'UPDATE despesa SET despesa_descricao = $1, despesa_valor = $2, despesa_data = $3, despesa_datavencimento = $4, despesa_tipo = $5, despesa_pago = $6, conta_id = $7 WHERE despesa_id = $8 RETURNING *',
+      'UPDATE despesa SET despesa_descricao = $1, despesa_valor = $2, despesa_data = $3, despesa_dtvencimento = $4, despesa_tipo = $5, despesa_pago = $6, conta_id = $7 WHERE despesa_id = $8 RETURNING *',
       [descricao, valor, data, dataVencimentoValue, tipo, pago, conta_id || null, id]
     );
     return result.rows[0];
@@ -257,11 +257,81 @@ const userRepository = {
     return result.rows[0];
   },
 
-  async updateLembretesConfig(userId, lembretesAtivos) {
-    const result = await pool.query(
-      'UPDATE Usuario SET Usuario_LembretesAtivos = $1 WHERE Usuario_Id = $2 RETURNING Usuario_Id',
-      [lembretesAtivos, userId]
-    );
+  async updateLembretesConfig(userId, { lembretesAtivos, lembretesEmail, lembretesDiasAntes, lembretesHorario }) {
+    let query = 'UPDATE Usuario SET';
+    let params = [];
+    let paramIndex = 1;
+    
+    if (lembretesAtivos !== undefined) {
+      query += ` Usuario_LembretesAtivos = $${paramIndex}`;
+      params.push(lembretesAtivos);
+      paramIndex++;
+    }
+    
+    if (lembretesEmail !== undefined) {
+      if (paramIndex > 1) query += ',';
+      query += ` Usuario_LembretesEmail = $${paramIndex}`;
+      params.push(lembretesEmail);
+      paramIndex++;
+    }
+    
+    if (lembretesDiasAntes !== undefined) {
+      if (paramIndex > 1) query += ',';
+      query += ` Usuario_LembretesDiasAntes = $${paramIndex}`;
+      params.push(lembretesDiasAntes);
+      paramIndex++;
+    }
+    
+    if (lembretesHorario !== undefined) {
+      if (paramIndex > 1) query += ',';
+      query += ` Usuario_LembretesHorario = $${paramIndex}`;
+      params.push(lembretesHorario);
+      paramIndex++;
+    }
+    
+    query += ` WHERE Usuario_Id = $${paramIndex} RETURNING Usuario_Id`;
+    params.push(userId);
+    
+    const result = await pool.query(query, params);
+    return result.rows[0];
+  },
+
+  async updateUserProfile(userId, { nome, email, telefone, senha }) {
+    let query = 'UPDATE Usuario SET';
+    let params = [];
+    let paramIndex = 1;
+    
+    if (nome) {
+      query += ` Usuario_Nome = $${paramIndex}`;
+      params.push(nome);
+      paramIndex++;
+    }
+    
+    if (email) {
+      if (paramIndex > 1) query += ',';
+      query += ` Usuario_Email = $${paramIndex}`;
+      params.push(email);
+      paramIndex++;
+    }
+    
+    if (telefone) {
+      if (paramIndex > 1) query += ',';
+      query += ` Usuario_Telefone = $${paramIndex}`;
+      params.push(telefone);
+      paramIndex++;
+    }
+    
+    if (senha) {
+      if (paramIndex > 1) query += ',';
+      query += ` Usuario_Senha = $${paramIndex}`;
+      params.push(senha);
+      paramIndex++;
+    }
+    
+    query += ` WHERE Usuario_Id = $${paramIndex} RETURNING Usuario_Id`;
+    params.push(userId);
+    
+    const result = await pool.query(query, params);
     return result.rows[0];
   },
 

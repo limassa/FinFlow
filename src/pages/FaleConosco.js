@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import AuthBanner from '../components/AuthBanner';
 import { getUsuarioLogado } from '../functions/auth';
 import { FaArrowLeft } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../config/api';
+import axios from 'axios';
 import '../App.css';
+import InputMask from 'react-input-mask';
 
 function FaleConosco() {
   const navigate = useNavigate();
@@ -43,19 +46,23 @@ function FaleConosco() {
     setLoading(true);
     
     try {
-      // Aqui você pode integrar com sua API para enviar a mensagem
-      // Por enquanto, vamos simular o envio
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Enviar mensagem para a API
+      const response = await axios.post(API_ENDPOINTS.FALE_CONOSCO, formData);
       
-      alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
-      setFormData({
-        nome: '',
-        email: '',
-        telefone: '',
-        tipo: '',
-        mensagem: ''
-      });
+      if (response.data.status === 'success') {
+        alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+        setFormData({
+          nome: '',
+          email: '',
+          telefone: '',
+          tipo: '',
+          mensagem: ''
+        });
+      } else {
+        alert('Erro ao enviar mensagem. Tente novamente.');
+      }
     } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
       alert('Erro ao enviar mensagem. Tente novamente.');
     } finally {
       setLoading(false);
@@ -106,13 +113,14 @@ function FaleConosco() {
           
           <div className="form-group">
             <label className='form-label'>Telefone</label>
-            <input
-              type="tel"
-              name="telefone"
-              placeholder="(99) 99999-9999"
+            <InputMask
+              mask="(99) 99999-9999"
               value={formData.telefone}
               onChange={handleChange}
               className="form-input"
+              type="text"
+              name="telefone"
+              placeholder="(99) 99999-9999 teste"
             />
           </div>
           
@@ -219,12 +227,14 @@ function FaleConosco() {
           <div className="form-row">
             <div className="form-group">
               <label>Telefone</label>
-              <input
-                type="tel"
-                name="telefone"
-                placeholder="(99) 99999-9999"
+              <InputMask
+                mask="(99) 99999-9999"
                 value={formData.telefone}
                 onChange={handleChange}
+                className="form-input"
+                type="text"
+                name="telefone"
+                placeholder="(99) 99999-9999"
               />
             </div>
             <div className="form-group">
@@ -270,7 +280,7 @@ function FaleConosco() {
             onClick={() => navigate('/layout/principal')}
           >
             <FaArrowLeft />
-            Voltar ao Dashboard
+            Voltar para Home
           </button>
         </div>
       </div>
