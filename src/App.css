@@ -2544,7 +2544,7 @@ select.form-input:focus {
   padding: 0;
   width: 90%;
   max-width: 500px;
-  max-height: 80vh;
+  max-height: 85vh; /* Aumentar altura máxima */
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
@@ -2607,6 +2607,7 @@ select.form-input:focus {
   min-height: 300px;
   max-height: 60vh;
   overflow-y: auto;
+  padding-bottom: 80px; /* Adicionar espaço extra para evitar corte do texto */
 }
 
 /* Estilos para scrollbar do modal-body */
@@ -2701,6 +2702,7 @@ select.form-input:focus {
   position: sticky;
   bottom: 0;
   z-index: 10;
+  margin-top: auto; /* Garantir que o footer fique na parte inferior */
 }
 
 .btn-gerar-relatorio {
