@@ -39,7 +39,7 @@ Implementamos criptografia de senhas usando **bcrypt** para garantir a seguranç
 ### **2. Migrar Senhas Existentes (Opcional)**
 ```bash
 # Fazer uma requisição POST para migrar senhas antigas
-curl -X POST http://localhost:3001/api/migrate-passwords
+curl -X POST http://localhost:3001/migrate-passwords
 ```
 
 ### **3. Testar o Sistema**

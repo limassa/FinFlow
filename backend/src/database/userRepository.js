@@ -119,7 +119,7 @@ const userRepository = {
 
   async deleteReceita(id, userId) {
     const result = await pool.query(
-      'UPDATE Receita SET Receita_Ativo = FALSE, Receita_DtDelete = NOW(), Receita_UsuarioDelete = $1 WHERE Receita_Id = $2 RETURNING *',
+      'UPDATE receita SET receita_ativo = FALSE, receita_dtdelete = NOW(), receita_usuariodelete = $1 WHERE receita_id = $2 RETURNING *',
       [userId, id]
     );
     return result.rows[0];
@@ -127,15 +127,15 @@ const userRepository = {
 
   // Métodos para Despesas
   async getDespesas(userId, mes = null) {
-    let query = 'SELECT * FROM Despesa WHERE Usuario_Id = $1 AND Despesa_Ativo = TRUE';
+    let query = 'SELECT * FROM despesa WHERE usuario_id = $1 AND despesa_ativo = TRUE';
     let params = [userId];
     
     if (mes) {
-      query += ' AND DATE_TRUNC(\'month\', Despesa_Data) = DATE_TRUNC(\'month\', $2::date)';
+      query += ' AND DATE_TRUNC(\'month\', despesa_data) = DATE_TRUNC(\'month\', $2::date)';
       params.push(mes + '-01'); // Adiciona o dia 01 para formar uma data válida
     }
     
-    query += ' ORDER BY Despesa_Data DESC';
+    query += ' ORDER BY despesa_data DESC';
     
     const result = await pool.query(query, params);
     return result.rows;
@@ -146,7 +146,7 @@ const userRepository = {
     const dataVencimentoValue = dataVencimento && dataVencimento.trim() !== '' ? dataVencimento : null;
     
     const result = await pool.query(
-      'INSERT INTO Despesa (Despesa_Descricao, Despesa_Valor, Despesa_Data, Despesa_DtVencimento, Despesa_Tipo, Despesa_Pago, Conta_id, Usuario_Id, Despesa_Recorrente, Despesa_Frequencia, Despesa_ProximasParcelas) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+      'INSERT INTO despesa (despesa_descricao, despesa_valor, despesa_data, despesa_datavencimento, despesa_tipo, despesa_pago, conta_id, usuario_id, despesa_recorrente, despesa_frequencia, despesa_proximasparcelas) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
       [descricao, valor, data, dataVencimentoValue, tipo, pago || false, conta_id || null, usuario_id, recorrente, frequencia, proximasParcelas]
     );
     return result.rows[0];
@@ -157,7 +157,7 @@ const userRepository = {
     const dataVencimentoValue = dataVencimento && dataVencimento.trim() !== '' ? dataVencimento : null;
     
     const result = await pool.query(
-      'UPDATE Despesa SET Despesa_Descricao = $1, Despesa_Valor = $2, Despesa_Data = $3, Despesa_DtVencimento = $4, Despesa_Tipo = $5, Despesa_Pago = $6, Conta_id = $7 WHERE Despesa_Id = $8 RETURNING *',
+      'UPDATE despesa SET despesa_descricao = $1, despesa_valor = $2, despesa_data = $3, despesa_datavencimento = $4, despesa_tipo = $5, despesa_pago = $6, conta_id = $7 WHERE despesa_id = $8 RETURNING *',
       [descricao, valor, data, dataVencimentoValue, tipo, pago, conta_id || null, id]
     );
     return result.rows[0];
@@ -165,7 +165,7 @@ const userRepository = {
 
   async deleteDespesa(id) {
     const result = await pool.query(
-      'UPDATE Despesa SET Despesa_Ativo = FALSE, Despesa_DtDelete = NOW() WHERE Despesa_Id = $1 RETURNING *',
+      'UPDATE despesa SET despesa_ativo = FALSE, despesa_dtdelete = NOW() WHERE despesa_id = $1 RETURNING *',
       [id]
     );
     return result.rows[0];

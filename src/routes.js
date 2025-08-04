@@ -7,6 +7,7 @@ import Principal from './pages/Principal';
 import Receita from './pages/Receita';
 import Despesa from './pages/Despesa';
 import Contas from './pages/Contas';
+import Calendario from './pages/Calendario';
 import Configuracoes from './pages/Configuracoes';
 import FaleConosco from './pages/FaleConosco';
 import ForgotPassword from './pages/ForgotPassword';
@@ -62,6 +63,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Contas />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/calendario" 
+          element={
+            <ProtectedRoute>
+              <Calendario />
             </ProtectedRoute>
           } 
         />

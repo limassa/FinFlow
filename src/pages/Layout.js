@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet } from 'react-icons/fa';
+import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt } from 'react-icons/fa';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
@@ -63,6 +63,16 @@ function Layout() {
         title="Contas">
             <span className="icon"><FaWallet /></span>
             <span className="label">{hovered === 'contas' && 'Contas'}</span>
+        </div>
+        {/*Calendário*/}
+        <div className={`sidebar-item ${hovered === 'calendario' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('calendario')}
+        onMouseLeave={() => setHovered(null)}
+        onClick={() => navigate('/calendario')}
+        style={{ cursor: 'pointer' }}
+        title="Calendário">
+            <span className="icon"><FaCalendarAlt /></span>
+            <span className="label">{hovered === 'calendario' && 'Calendário'}</span>
         </div>
         {/*Fale Conosco*/}
         <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''}`}
