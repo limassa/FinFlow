@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaArrowLeft, FaReceipt, FaMoneyBillWave, FaMoneyCheckAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaReceipt, FaMoneyBillWave, FaMoneyCheckAlt, FaHome } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -15,9 +15,18 @@ const DetalhesGrafico = () => {
   // Usar o defaultTab do state da navegação, ou 'receitas' como padrão
   const [activeTab, setActiveTab] = useState(location.state?.defaultTab || 'receitas');
   const [mesAtual, setMesAtual] = useState(new Date());
-
+  
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
+
+  // Função para navegar para home e rolar para o topo
+  const navigateToHome = () => {
+    navigate('/layout/principal');
+    // Scroll para o topo após a navegação
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  };
 
   // Nomes dos meses
   const meses = [
@@ -123,7 +132,7 @@ const DetalhesGrafico = () => {
     <div className="detalhes-container">
       {/* Header */}
       <div className="detalhes-header">
-        <button onClick={() => navigate('/layout/principal')} className="btn-voltar">
+        <button onClick={navigateToHome} className="btn-voltar">
           <FaArrowLeft /> Voltar
         </button>
         <h2>Detalhes do Gráfico - {meses[mesAtual.getMonth()]} {mesAtual.getFullYear()}</h2>

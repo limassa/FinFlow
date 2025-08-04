@@ -38,31 +38,31 @@ function Login() {
       });
 
       console.log('Resposta recebida:', response.data);
-
-      if (response.data) {
-        // Salvar dados do usuário no localStorage
+      
+      if (response.data.success) {
+        // Salvar dados do usuário
         const userData = {
-          id: response.data.id,
-          nome: response.data.nome,
-          email: response.data.email,
-          telefone: response.data.telefone
+          id: response.data.user.id,
+          nome: response.data.user.usuario_nome,
+          email: response.data.user.usuario_email,
+          token: response.data.token
         };
         
         console.log('Salvando dados do usuário:', userData);
-        setUsuarioLogado(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
         
         console.log('Redirecionando para /layout/principal');
-        // Redirecionar para a página principal
         navigate('/layout/principal');
+        // Scroll para o topo após a navegação
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+        }, 100);
+      } else {
+        alert('Email ou senha incorretos');
       }
     } catch (error) {
       console.error('Erro no login:', error);
-      if (error.response) {
-        console.error('Resposta de erro:', error.response.data);
-        alert(error.response.data.error || 'Erro no login');
-      } else {
-        alert('Erro de conexão com o servidor');
-      }
+      alert('Erro ao fazer login. Tente novamente.');
     } finally {
       setLoading(false);
     }

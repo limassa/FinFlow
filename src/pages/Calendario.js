@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { FaHome } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
+import { useNavigate } from 'react-router-dom';
 import './Calendario.css';
 
 const Calendario = () => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [receitas, setReceitas] = useState([]);
@@ -16,6 +19,15 @@ const Calendario = () => {
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
+
+  // Função para navegar para home e rolar para o topo
+  const navigateToHome = () => {
+    navigate('/layout/principal');
+    // Scroll para o topo após a navegação
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  };
 
   // Nomes dos meses
   const meses = [
@@ -185,12 +197,21 @@ const Calendario = () => {
   return (
     <div className="calendario-container">
       <div className="calendario-header">
-        <button onClick={() => navegarMes('anterior')} className="btn-navegar">
-          ‹
-        </button>
-        <h2>{meses[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
-        <button onClick={() => navegarMes('proximo')} className="btn-navegar">
-          ›
+        <div className="header-content">
+          <button onClick={() => navegarMes('anterior')} className="btn-navegar">
+            ‹
+          </button>
+          <h2>{meses[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
+          <button onClick={() => navegarMes('proximo')} className="btn-navegar">
+            ›
+          </button>
+        </div>
+        <button 
+          onClick={navigateToHome}
+          className="btn-home"
+          title="Voltar para Home"
+        >
+          <FaHome /> Home
         </button>
       </div>
 

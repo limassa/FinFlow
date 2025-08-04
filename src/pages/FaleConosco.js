@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AuthBanner from '../components/AuthBanner';
-import { getUsuarioLogado } from '../functions/auth';
-import { FaArrowLeft } from 'react-icons/fa';
-import { API_ENDPOINTS } from '../config/api';
+import React, { useState, useEffect } from 'react';
+import { FaHome } from 'react-icons/fa';
 import axios from 'axios';
-import '../App.css';
+import { API_ENDPOINTS } from '../config/api';
+import { getUsuarioLogado } from '../functions/auth';
+import { useNavigate } from 'react-router-dom';
 import InputMask from 'react-input-mask';
+import '../App.css';
+import AuthBanner from '../components/AuthBanner';
+import { FaArrowLeft } from 'react-icons/fa';
 
 function FaleConosco() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ function FaleConosco() {
     mensagem: ''
   });
   const [loading, setLoading] = useState(false);
+  const [enviado, setEnviado] = useState(false);
   
   // Verifica se o usuário está logado
   const usuario = getUsuarioLogado();
@@ -25,6 +27,15 @@ function FaleConosco() {
   
   console.log('Usuário logado:', usuario);
   console.log('isLoggedIn:', isLoggedIn);
+
+  // Função para navegar para home e rolar para o topo
+  const navigateToHome = () => {
+    navigate('/layout/principal');
+    // Scroll para o topo após a navegação
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,7 +82,7 @@ function FaleConosco() {
 
   const handleVoltar = () => {
     if (isLoggedIn) {
-              navigate('/layout/principal');
+      navigateToHome();
     } else {
       navigate('/home');
     }
@@ -277,7 +288,7 @@ function FaleConosco() {
           <button 
             type="button" 
             className="dashboard-back-button"
-            onClick={() => navigate('/layout/principal')}
+            onClick={navigateToHome}
           >
             <FaArrowLeft />
             Voltar para Home

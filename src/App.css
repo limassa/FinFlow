@@ -271,6 +271,80 @@
   font-weight: 600;
 }
 
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Botão Home flutuante */
+.btn-home {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1000;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.btn-home:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5);
+  background: linear-gradient(135deg, #0056b3, #004085);
+}
+
+.btn-home:active {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 123, 255, 0.4);
+}
+
+.btn-home svg {
+  font-size: 16px;
+}
+
+/* Responsivo para telas menores */
+@media (max-width: 768px) {
+  .btn-home {
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 16px;
+    font-size: 13px;
+    min-width: 100px;
+  }
+  
+  .btn-home svg {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-home {
+    bottom: 15px;
+    right: 15px;
+    padding: 10px 14px;
+    font-size: 12px;
+    min-width: 90px;
+  }
+  
+  .btn-home svg {
+    font-size: 13px;
+  }
+}
+
 .receita-stats {
   display: flex;
   gap: 20px;
@@ -573,6 +647,14 @@
     align-items: flex-start;
   }
   
+  .header-content {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+
+  
   .receita-stats {
     width: 100%;
     justify-content: space-between;
@@ -627,6 +709,8 @@
   .sidebar-item .icon {
     font-size: 1.5rem;
   }
+  
+
 }
 
 /* Estilos para a tela Home */

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaWallet } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaWallet, FaHome } from 'react-icons/fa';
 import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
+import { useNavigate } from 'react-router-dom';
 import '../App.css';
 
 function Contas() {
+  const navigate = useNavigate();
   const [contas, setContas] = useState([]);
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
@@ -18,6 +20,15 @@ function Contas() {
   const userId = usuario ? usuario.id : null;
   console.log('Usuario logado em Contas:', usuario);
   console.log('UserId em Contas:', userId);
+
+  // Função para navegar para home e rolar para o topo
+  const navigateToHome = () => {
+    navigate('/layout/principal');
+    // Scroll para o topo após a navegação
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  };
 
   const tiposConta = [
     'Conta Corrente', 'Conta Poupança', 'Carteira', 'Cartão de Crédito',
@@ -132,7 +143,16 @@ function Contas() {
   return (
       <div className="receita-container">
       <div className="receita-header">
-        <h2>Conta</h2>
+        <div className="header-content">
+          <h2>Conta</h2>
+          <button 
+            onClick={navigateToHome}
+            className="btn-home"
+            title="Voltar para Home"
+          >
+            <FaHome /> Home
+          </button>
+        </div>
         <div className="receita-stats">
           <div className="stat-card">
             <span className="stat-label">Total</span>

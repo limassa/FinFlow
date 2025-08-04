@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
+import { useNavigate } from 'react-router-dom';
 import '../App.css';
 
 function Despesa() {
+  const navigate = useNavigate();
   const [despesas, setDespesas] = useState([]);
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
@@ -35,6 +37,15 @@ function Despesa() {
     'Veículos'
   ];        
   const [tipo, setTipo] = useState('');
+
+  // Função para navegar para home e rolar para o topo
+  const navigateToHome = () => {
+    navigate('/layout/principal');
+    // Scroll para o topo após a navegação
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
+  };
 
   // Gerar opções dos últimos 12 meses
   const gerarOpcoesMeses = () => {
@@ -242,7 +253,16 @@ function Despesa() {
   return (
     <div className="receita-container">
       <div className="receita-header">
-        <h2>Despesas</h2>
+        <div className="header-content">
+          <h2>Despesas</h2>
+          <button 
+            onClick={navigateToHome}
+            className="btn-home"
+            title="Voltar para Home"
+          >
+            <FaHome /> Home
+          </button>
+        </div>
         <div className="receita-stats">
           <div className="stat-card">
             <span className="stat-label">Total</span>

@@ -18,6 +18,8 @@ function Principal() {
     receitasMes: 0,
     despesasMes: 0
   });
+  const [receitas, setReceitas] = useState([]);
+  const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModalRelatorio, setShowModalRelatorio] = useState(false);
   
@@ -39,11 +41,15 @@ function Principal() {
         axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
       ]);
 
-      const receitas = receitasRes.data;
-      const despesas = despesasRes.data;
+      const receitasData = receitasRes.data;
+      const despesasData = despesasRes.data;
+
+      // Salvar dados para o modal de relatórios
+      setReceitas(receitasData);
+      setDespesas(despesasData);
 
       // Calcular totais (apenas receitas recebidas e despesas pagas)
-      const totalReceitas = receitas
+      const totalReceitas = receitasData
         .filter(receita => receita.receita_recebido) // Apenas receitas recebidas
         .reduce((sum, receita) => 
           sum + parseFloat(receita.receita_valor || 0), 0
@@ -59,14 +65,14 @@ function Principal() {
       const mesAtual = new Date().getMonth();
       const anoAtual = new Date().getFullYear();
       
-      const receitasMes = receitas.filter(receita => {
+      const receitasMes = receitasData.filter(receita => {
         const dataReceita = new Date(receita.receita_data);
         return dataReceita.getMonth() === mesAtual && 
                dataReceita.getFullYear() === anoAtual &&
                receita.receita_recebido; // Apenas receitas recebidas
       }).reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0);
 
-      const despesasMes = despesas.filter(despesa => {
+      const despesasMes = despesasData.filter(despesa => {
         const dataDespesa = new Date(despesa.despesa_data);
         return dataDespesa.getMonth() === mesAtual && 
                dataDespesa.getFullYear() === anoAtual &&
@@ -223,8 +229,8 @@ function Principal() {
       <ModalRelatorio 
         isOpen={showModalRelatorio}
         onClose={() => setShowModalRelatorio(false)}
-        receitas={[]}
-        despesas={[]}
+        receitas={receitas}
+        despesas={despesas}
       />
     </div>
   );

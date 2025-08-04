@@ -52,30 +52,49 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
       return;
     }
 
-    const periodo = `${formatarData(dataInicio)} a ${formatarData(dataFim)}`;
+    // Filtrar dados por período
+    const dataInicioObj = new Date(dataInicio);
+    // Ajustar data fim para incluir todo o dia (23:59:59)
+    const dataFimObj = new Date(dataFim);
+    dataFimObj.setHours(23, 59, 59, 999);
+    
+    const receitasFiltradas = receitas.filter(receita => {
+      const dataReceita = new Date(receita.receita_data);
+      return dataReceita >= dataInicioObj && dataReceita <= dataFimObj;
+    });
+
+    const despesasFiltradas = despesas.filter(despesa => {
+      const dataDespesa = new Date(despesa.despesa_data);
+      return dataDespesa >= dataInicioObj && dataDespesa <= dataFimObj;
+    });
+
+    // Usar as datas originais selecionadas pelo usuário para o período
+    const periodo = `${dataInicio.split('-').reverse().join('/')} a ${dataFim.split('-').reverse().join('/')}`;
     const relatorio = new RelatorioPDF();
     let doc;
 
     switch (tipoRelatorio) {
       case 'receitas':
-        doc = relatorio.generateReceitasReport(receitas, periodo);
+        doc = relatorio.generateReceitasReport(receitasFiltradas, periodo);
         break;
       case 'despesas':
-        doc = relatorio.generateDespesasReport(despesas, periodo);
+        doc = relatorio.generateDespesasReport(despesasFiltradas, periodo);
         break;
       case 'consolidado':
-        doc = relatorio.generateConsolidatedReport(receitas, despesas, periodo);
+        doc = relatorio.generateConsolidatedReport(receitasFiltradas, despesasFiltradas, periodo);
         break;
       case 'categoria':
-        doc = relatorio.generateCategoryReport(receitas, despesas, periodo);
+        doc = relatorio.generateCategoryReport(receitasFiltradas, despesasFiltradas, periodo);
         break;
       default:
         return;
     }
 
-    // O relatório será aberto em uma nova janela
-    // O usuário pode usar Ctrl+P para imprimir/salvar como PDF
-    onClose();
+    // Abrir o relatório em uma nova janela
+    if (doc) {
+      doc.save();
+    }
+    // Não fechar o modal para permitir gerar outros relatórios
   };
 
   return (
