@@ -31,20 +31,34 @@ const Calendario = () => {
   }, [userId, currentDate]);
 
   const carregarDados = async () => {
+    console.log('🔄 Carregando dados do calendário...');
+    console.log('📅 Data atual:', currentDate);
+    console.log('👤 User ID:', userId);
+    
     setLoading(true);
     try {
       const ano = currentDate.getFullYear();
       const mes = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const mesFormatado = `${ano}-${mes}`;
+      
+      console.log('📊 Buscando dados para:', mesFormatado);
       
       // Carregar receitas do mês
-      const receitasResponse = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}&mes=${ano}-${mes}`);
+      console.log('💰 Buscando receitas...');
+      const receitasResponse = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}&mes=${mesFormatado}`);
+      console.log('✅ Receitas carregadas:', receitasResponse.data.length);
       setReceitas(receitasResponse.data);
 
       // Carregar despesas do mês
-      const despesasResponse = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}&mes=${ano}-${mes}`);
+      console.log('💸 Buscando despesas...');
+      const despesasResponse = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}&mes=${mesFormatado}`);
+      console.log('✅ Despesas carregadas:', despesasResponse.data.length);
       setDespesas(despesasResponse.data);
+      
+      console.log('🎉 Dados carregados com sucesso!');
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
+      console.error('📋 Detalhes do erro:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -63,6 +77,10 @@ const Calendario = () => {
   };
 
   const gerarCalendario = () => {
+    console.log('📅 Gerando calendário...');
+    console.log('📊 Total de receitas:', receitas.length);
+    console.log('📊 Total de despesas:', despesas.length);
+    
     const ano = currentDate.getFullYear();
     const mes = currentDate.getMonth();
     
@@ -71,8 +89,11 @@ const Calendario = () => {
     const primeiroDiaSemana = primeiroDia.getDay();
     const totalDias = ultimoDia.getDate();
 
+    console.log(`📅 Mês: ${ano}-${mes + 1}, Dias: ${totalDias}`);
+
     const calendario = [];
     let diaAtual = 1;
+    let diasComDados = 0;
 
     // Gerar semanas
     for (let semana = 0; semana < 6; semana++) {
@@ -86,8 +107,20 @@ const Calendario = () => {
           const dataString = data.toISOString().split('T')[0];
           
           // Verificar se há receitas ou despesas neste dia
-          const receitasDoDia = receitas.filter(r => r.receita_data === dataString);
-          const despesasDoDia = despesas.filter(d => d.despesa_data === dataString);
+          const receitasDoDia = receitas.filter(r => {
+            const receitaData = new Date(r.receita_data).toISOString().split('T')[0];
+            return receitaData === dataString;
+          });
+          
+          const despesasDoDia = despesas.filter(d => {
+            const despesaData = new Date(d.despesa_data).toISOString().split('T')[0];
+            return despesaData === dataString;
+          });
+          
+          if (receitasDoDia.length > 0 || despesasDoDia.length > 0) {
+            diasComDados++;
+            console.log(`📅 Dia ${diaAtual}: ${receitasDoDia.length} receitas, ${despesasDoDia.length} despesas`);
+          }
           
           diasSemana.push({
             dia: diaAtual,
@@ -105,6 +138,7 @@ const Calendario = () => {
       calendario.push(diasSemana);
     }
 
+    console.log(`✅ Calendário gerado com ${diasComDados} dias com dados`);
     return calendario;
   };
 
