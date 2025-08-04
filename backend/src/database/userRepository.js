@@ -180,11 +180,20 @@ const userRepository = {
     return result.rows;
   },
 
-  async createConta({ nome, tipo, saldo, usuario_id }) {
+  async createConta({ nome, tipo, saldo, incrementarSaldoTotal = true, usuario_id }) {
     const result = await pool.query(
       'INSERT INTO Conta (Conta_Nome, Conta_Tipo, Conta_Saldo, Usuario_Id) VALUES ($1, $2, $3, $4) RETURNING *',
       [nome, tipo, saldo || 0, usuario_id]
     );
+    
+    // Se incrementarSaldoTotal for true e houver saldo, adicionar ao saldo total do usuário
+    if (incrementarSaldoTotal && saldo && parseFloat(saldo) > 0) {
+      await pool.query(
+        'UPDATE Usuario SET Usuario_SaldoTotal = COALESCE(Usuario_SaldoTotal, 0) + $1 WHERE Usuario_Id = $2',
+        [parseFloat(saldo), usuario_id]
+      );
+    }
+    
     return result.rows[0];
   },
 

@@ -10,6 +10,7 @@ import Receita from './pages/Receita';
 import Despesa from './pages/Despesa';
 import FaleConosco from './pages/FaleConosco';
 import Contas from './pages/Contas';
+import Calendario from './pages/Calendario';
 import Layout from './pages/Layout';
 import Dashboard from './pages/Dashboard';
 import Configuracoes from './pages/Configuracoes';
@@ -39,6 +40,7 @@ root.render(
           <Route path="/receita" element={<Receita />} />
           <Route path="/despesa" element={<Despesa />} />
           <Route path="/contas" element={<Contas />} />
+          <Route path="/calendario" element={<Calendario />} />
           <Route path="/fale-conosco" element={<FaleConosco />} />
         </Route>
       </Routes>

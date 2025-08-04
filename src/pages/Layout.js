@@ -34,6 +34,16 @@ function Layout() {
             <span className="icon"><FaHome /></span>
             <span className="label">{hovered === 'home' && 'Home'}</span>
         </div>
+        {/*Contas*/}
+        <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('contas')}
+        onMouseLeave={() => setHovered(null)}
+        onClick={() => navigate('/contas')}
+        style={{ cursor: 'pointer' }}
+        title="Contas">
+            <span className="icon"><FaWallet /></span>
+            <span className="label">{hovered === 'contas' && 'Contas'}</span>
+        </div>
         {/*Receita*/}
         <div className={`sidebar-item ${hovered === 'receita' ? 'hovered' : ''}`}   
         onMouseEnter={() => setHovered('receita')}
@@ -53,16 +63,6 @@ function Layout() {
         title="Despesa">
             <span className="icon"><FaMoneyCheckAlt /></span>
             <span className="label">{hovered === 'despesa' && 'Despesa'}</span>
-        </div>
-        {/*Contas*/}
-        <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('contas')}
-        onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/contas')}
-        style={{ cursor: 'pointer' }}
-        title="Contas">
-            <span className="icon"><FaWallet /></span>
-            <span className="label">{hovered === 'contas' && 'Contas'}</span>
         </div>
         {/*Calendário*/}
         <div className={`sidebar-item ${hovered === 'calendario' ? 'hovered' : ''}`}

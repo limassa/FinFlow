@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { getUsuarioLogado } from '../functions/auth';
 import './Calendario.css';
 
 const Calendario = () => {
@@ -12,9 +13,9 @@ const Calendario = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'receitas' ou 'despesas'
   const [modalData, setModalData] = useState([]);
-  const [debug, setDebug] = useState(true); // Debug mode
 
-  const userId = localStorage.getItem('userId');
+  const usuario = getUsuarioLogado();
+  const userId = usuario ? usuario.id : null;
 
   // Nomes dos meses
   const meses = [
@@ -26,45 +27,27 @@ const Calendario = () => {
   const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   useEffect(() => {
-    console.log('🚀 Componente Calendario montado');
-    console.log('👤 User ID:', userId);
-    
     if (userId) {
       carregarDados();
-    } else {
-      console.error('❌ User ID não encontrado!');
     }
   }, [userId, currentDate]);
 
   const carregarDados = async () => {
-    console.log('🔄 Carregando dados do calendário...');
-    console.log('📅 Data atual:', currentDate);
-    console.log('👤 User ID:', userId);
-    
     setLoading(true);
     try {
       const ano = currentDate.getFullYear();
       const mes = String(currentDate.getMonth() + 1).padStart(2, '0');
       const mesFormatado = `${ano}-${mes}`;
       
-      console.log('📊 Buscando dados para:', mesFormatado);
-      
       // Carregar receitas do mês
-      console.log('💰 Buscando receitas...');
       const receitasResponse = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}&mes=${mesFormatado}`);
-      console.log('✅ Receitas carregadas:', receitasResponse.data.length);
       setReceitas(receitasResponse.data);
 
       // Carregar despesas do mês
-      console.log('💸 Buscando despesas...');
       const despesasResponse = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}&mes=${mesFormatado}`);
-      console.log('✅ Despesas carregadas:', despesasResponse.data.length);
       setDespesas(despesasResponse.data);
-      
-      console.log('🎉 Dados carregados com sucesso!');
     } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error);
-      console.error('📋 Detalhes do erro:', error.response?.data || error.message);
+      console.error('Erro ao carregar dados:', error);
     } finally {
       setLoading(false);
     }
@@ -83,10 +66,6 @@ const Calendario = () => {
   };
 
   const gerarCalendario = () => {
-    console.log('📅 Gerando calendário...');
-    console.log('📊 Total de receitas:', receitas.length);
-    console.log('📊 Total de despesas:', despesas.length);
-    
     const ano = currentDate.getFullYear();
     const mes = currentDate.getMonth();
     
@@ -95,11 +74,8 @@ const Calendario = () => {
     const primeiroDiaSemana = primeiroDia.getDay();
     const totalDias = ultimoDia.getDate();
 
-    console.log(`📅 Mês: ${ano}-${mes + 1}, Dias: ${totalDias}`);
-
     const calendario = [];
     let diaAtual = 1;
-    let diasComDados = 0;
 
     // Gerar semanas
     for (let semana = 0; semana < 6; semana++) {
@@ -123,11 +99,6 @@ const Calendario = () => {
             return despesaData === dataString;
           });
           
-          if (receitasDoDia.length > 0 || despesasDoDia.length > 0) {
-            diasComDados++;
-            console.log(`📅 Dia ${diaAtual}: ${receitasDoDia.length} receitas, ${despesasDoDia.length} despesas`);
-          }
-          
           diasSemana.push({
             dia: diaAtual,
             data: dataString,
@@ -144,7 +115,6 @@ const Calendario = () => {
       calendario.push(diasSemana);
     }
 
-    console.log(`✅ Calendário gerado com ${diasComDados} dias com dados`);
     return calendario;
   };
 
@@ -153,6 +123,21 @@ const Calendario = () => {
     
     setSelectedDate(dia);
     setShowModal(true);
+    
+    // Determinar automaticamente qual tipo mostrar
+    if (dia.temDespesas && !dia.temReceitas) {
+      // Só tem despesas - mostrar despesas
+      setModalType('despesas');
+      setModalData(dia.despesas);
+    } else if (dia.temReceitas && !dia.temDespesas) {
+      // Só tem receitas - mostrar receitas
+      setModalType('receitas');
+      setModalData(dia.receitas);
+    } else if (dia.temReceitas && dia.temDespesas) {
+      // Tem ambos - mostrar despesas por padrão (vermelho)
+      setModalType('despesas');
+      setModalData(dia.despesas);
+    }
   };
 
   const abrirModal = (tipo) => {
@@ -185,42 +170,7 @@ const Calendario = () => {
     return data.toLocaleDateString('pt-BR');
   };
 
-  // Debug: Versão simplificada para testar
-  if (debug) {
-    return (
-      <div className="calendario-container">
-        <h2>🔧 Debug - Calendário</h2>
-        <div style={{ padding: '20px', background: '#f0f0f0', margin: '10px 0' }}>
-          <h3>📊 Estado do Componente:</h3>
-          <p><strong>Loading:</strong> {loading ? 'Sim' : 'Não'}</p>
-          <p><strong>User ID:</strong> {userId || 'Não encontrado'}</p>
-          <p><strong>Receitas:</strong> {receitas.length}</p>
-          <p><strong>Despesas:</strong> {despesas.length}</p>
-          <p><strong>Data Atual:</strong> {currentDate.toLocaleDateString()}</p>
-        </div>
-        
-        <div style={{ padding: '20px', background: '#e8f5e8', margin: '10px 0' }}>
-          <h3>📅 Teste de Navegação:</h3>
-          <button onClick={() => navegarMes('anterior')} style={{ margin: '5px', padding: '10px' }}>
-            Mês Anterior
-          </button>
-          <button onClick={() => navegarMes('proximo')} style={{ margin: '5px', padding: '10px' }}>
-            Próximo Mês
-          </button>
-        </div>
-        
-        <div style={{ padding: '20px', background: '#fff3cd', margin: '10px 0' }}>
-          <h3>🎯 Teste de Dados:</h3>
-          <button onClick={carregarDados} style={{ margin: '5px', padding: '10px' }}>
-            Recarregar Dados
-          </button>
-          <button onClick={() => setDebug(false)} style={{ margin: '5px', padding: '10px', background: '#28a745', color: 'white' }}>
-            Mostrar Calendário Real
-          </button>
-        </div>
-      </div>
-    );
-  }
+
 
   if (loading) {
     return (
@@ -230,8 +180,7 @@ const Calendario = () => {
     );
   }
 
-  console.log('🎨 Renderizando calendário...');
-  console.log('📊 Estado atual:', { receitas: receitas.length, despesas: despesas.length });
+
 
   return (
     <div className="calendario-container">
@@ -256,11 +205,11 @@ const Calendario = () => {
           {gerarCalendario().map((semana, semanaIndex) => (
             <div key={semanaIndex} className="semana">
               {semana.map((dia, diaIndex) => (
-                <div
-                  key={diaIndex}
-                  className={`dia ${!dia ? 'vazio' : ''} ${selectedDate?.data === dia?.data ? 'selecionado' : ''}`}
-                  onClick={() => handleDiaClick(dia)}
-                >
+                                                   <div
+                    key={diaIndex}
+                    className={`dia ${!dia ? 'vazio' : ''} ${selectedDate?.data === dia?.data ? 'selecionado' : ''}`}
+                    onClick={() => handleDiaClick(dia)}
+                  >
                   {dia && (
                     <>
                       <span className="numero-dia">{dia.dia}</span>
@@ -281,26 +230,26 @@ const Calendario = () => {
       {showModal && selectedDate && (
         <div className="modal-overlay" onClick={fecharModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{formatarData(selectedDate.data)}</h3>
-              <button onClick={fecharModal} className="btn-fechar">×</button>
-            </div>
+                         <div className={`modal-header ${modalType}`}>
+               <h3>{formatarData(selectedDate.data)}</h3>
+               <button onClick={fecharModal} className="btn-fechar">×</button>
+             </div>
             
             <div className="modal-buttons">
-              <button 
-                onClick={() => abrirModal('receitas')}
-                className={`btn-modal ${selectedDate.temReceitas ? 'ativo' : 'inativo'}`}
-                disabled={!selectedDate.temReceitas}
-              >
-                Receitas ({selectedDate.receitas.length})
-              </button>
-              <button 
-                onClick={() => abrirModal('despesas')}
-                className={`btn-modal ${selectedDate.temDespesas ? 'ativo' : 'inativo'}`}
-                disabled={!selectedDate.temDespesas}
-              >
-                Despesas ({selectedDate.despesas.length})
-              </button>
+                             <button 
+                 onClick={() => abrirModal('receitas')}
+                 className={`btn-modal ${selectedDate.temReceitas ? `ativo receitas` : 'inativo'}`}
+                 disabled={!selectedDate.temReceitas}
+               >
+                 Receitas ({selectedDate.receitas.length})
+               </button>
+               <button 
+                 onClick={() => abrirModal('despesas')}
+                 className={`btn-modal ${selectedDate.temDespesas ? `ativo despesas` : 'inativo'}`}
+                 disabled={!selectedDate.temDespesas}
+               >
+                 Despesas ({selectedDate.despesas.length})
+               </button>
             </div>
 
             {modalData.length > 0 && (
