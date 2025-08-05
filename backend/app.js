@@ -253,9 +253,13 @@ app.post('/api/login', async (req, res) => {
     
     if (user) {
       const userResponse = {
-        id: user.usuario_id,
-        nome: user.usuario_nome, 
-        email: user.usuario_email
+        success: true,
+        user: {
+          id: user.usuario_id,
+          usuario_nome: user.usuario_nome, 
+          usuario_email: user.usuario_email
+        },
+        token: 'dummy-token' // Token temporário
       };
       console.log('✅ Login bem-sucedido:', userResponse);
       res.json(userResponse);

@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const bcrypt = require('../backend/node_modules/bcrypt');
 
-// Configuração do banco (mesma do connection.js)
+// Configuração do banco FinFlow (Railway)
 const DATABASE_URL = process.env.DATABASE_URL || 
   `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'OumtwkgYJuWpNCAxJfLVAecULdKGjMEP'}@${process.env.DB_HOST || 'interchange.proxy.rlwy.net'}:${process.env.DB_PORT || '50880'}/${process.env.DB_NAME || 'railway'}`;
 
@@ -12,7 +12,7 @@ const pool = new Pool({
 
 async function testarConexao() {
   try {
-    console.log('🔍 Testando conexão com o banco...');
+    console.log('🔍 Testando conexão com o banco FinFlow...');
     const result = await pool.query('SELECT NOW() as current_time');
     console.log('✅ Conexão OK:', result.rows[0].current_time);
     return true;
@@ -46,7 +46,7 @@ async function verificarTabelaUsuario() {
 
 async function listarUsuarios() {
   try {
-    console.log('🔍 Listando usuários...');
+    console.log('🔍 Listando usuários FinFlow...');
     const result = await pool.query('SELECT Usuario_ID, Usuario_Email, Usuario_Nome, Usuario_Ativo FROM Usuario');
     console.log('📊 Usuários encontrados:', result.rows.length);
     
@@ -61,24 +61,24 @@ async function listarUsuarios() {
   }
 }
 
-async function testarLoginAdmin() {
+async function testarLoginUsuario(email, senha) {
   try {
-    console.log('🔍 Testando login do admin...');
+    console.log(`🔍 Testando login do usuário: ${email}`);
     
-    // Buscar usuário admin
+    // Buscar usuário
     const result = await pool.query(`
       SELECT Usuario_ID, Usuario_Email, Usuario_Nome, Usuario_Senha, Usuario_Ativo 
       FROM Usuario 
-      WHERE Usuario_Email = 'admin@pdv.com'
-    `);
+      WHERE Usuario_Email = $1
+    `, [email]);
     
     if (result.rows.length === 0) {
-      console.log('❌ Usuário admin@pdv.com não encontrado');
+      console.log(`❌ Usuário ${email} não encontrado`);
       return false;
     }
     
     const user = result.rows[0];
-    console.log('✅ Usuário admin encontrado:', {
+    console.log('✅ Usuário encontrado:', {
       id: user.usuario_id,
       email: user.usuario_email,
       nome: user.usuario_nome,
@@ -86,24 +86,23 @@ async function testarLoginAdmin() {
     });
     
     // Testar senha
-    const senhaTeste = 'admin123';
     let senhaValida = false;
     
     if (user.usuario_senha.startsWith('$2b$') || user.usuario_senha.startsWith('$2a$')) {
       // Senha criptografada
-      senhaValida = await bcrypt.compare(senhaTeste, user.usuario_senha);
+      senhaValida = await bcrypt.compare(senha, user.usuario_senha);
       console.log('🔐 Senha está criptografada');
     } else {
       // Senha não criptografada
-      senhaValida = (senhaTeste === user.usuario_senha);
+      senhaValida = (senha === user.usuario_senha);
       console.log('🔓 Senha não está criptografada');
     }
     
     if (senhaValida) {
-      console.log('✅ Senha do admin está correta!');
+      console.log('✅ Senha está correta!');
       return true;
     } else {
-      console.log('❌ Senha do admin está incorreta');
+      console.log('❌ Senha está incorreta');
       return false;
     }
     
@@ -113,40 +112,44 @@ async function testarLoginAdmin() {
   }
 }
 
-async function criarUsuarioAdmin() {
+async function testarAPI() {
   try {
-    console.log('🔍 Criando usuário admin...');
+    console.log('🔍 Testando API do FinFlow...');
     
-    // Verificar se já existe
-    const checkResult = await pool.query('SELECT Usuario_ID FROM Usuario WHERE Usuario_Email = $1', ['admin@pdv.com']);
+    const axios = require('axios');
+    const API_URL = 'https://finflow-production-e4b3.up.railway.app';
     
-    if (checkResult.rows.length > 0) {
-      console.log('⚠️ Usuário admin já existe');
-      return false;
-    }
+    // Teste de healthcheck
+    console.log('📡 Testando healthcheck...');
+    const healthResponse = await axios.get(`${API_URL}/`);
+    console.log('✅ Healthcheck OK:', healthResponse.data);
     
-    // Criar senha criptografada
-    const saltRounds = 10;
-    const senhaCriptografada = await bcrypt.hash('admin123', saltRounds);
+    // Teste de login via API
+    console.log('📡 Testando login via API...');
+    const loginData = {
+      email: 'teste@teste.com',
+      senha: '123456'
+    };
     
-    // Inserir usuário admin
-    const result = await pool.query(`
-      INSERT INTO Usuario (Usuario_Nome, Usuario_Email, Usuario_Senha, Usuario_Tipo, Usuario_Ativo) 
-      VALUES ($1, $2, $3, $4, $5) 
-      RETURNING Usuario_ID, Usuario_Email, Usuario_Nome
-    `, ['Administrador', 'admin@pdv.com', senhaCriptografada, 'admin', true]);
-    
-    console.log('✅ Usuário admin criado com sucesso:', result.rows[0]);
-    return true;
+    const loginResponse = await axios.post(`${API_URL}/api/login`, loginData);
+    console.log('✅ Login via API OK:', loginResponse.data);
+    console.log('📊 Estrutura da resposta:', {
+      success: loginResponse.data.success,
+      hasUser: !!loginResponse.data.user,
+      hasToken: !!loginResponse.data.token
+    });
     
   } catch (err) {
-    console.error('❌ Erro ao criar usuário admin:', err.message);
-    return false;
+    console.error('❌ Erro ao testar API:', err.message);
+    if (err.response) {
+      console.error('Status:', err.response.status);
+      console.error('Data:', err.response.data);
+    }
   }
 }
 
 async function executarTestes() {
-  console.log('🚀 Iniciando testes do sistema PDV...\n');
+  console.log('🚀 Iniciando testes do FinFlow...\n');
   
   // Teste 1: Conexão com banco
   const conexaoOk = await testarConexao();
@@ -160,35 +163,33 @@ async function executarTestes() {
   // Teste 2: Verificar tabela Usuario
   const tabelaOk = await verificarTabelaUsuario();
   if (!tabelaOk) {
-    console.log('❌ Tabela Usuario não existe. Execute o script SQL primeiro.');
+    console.log('❌ Tabela Usuario não existe.');
     process.exit(1);
   }
   
   console.log('');
   
   // Teste 3: Listar usuários
-  await listarUsuarios();
+  const usuarios = await listarUsuarios();
   
   console.log('');
   
-  // Teste 4: Testar login admin
-  const loginOk = await testarLoginAdmin();
-  
-  if (!loginOk) {
-    console.log('');
-    console.log('🔧 Tentando criar usuário admin...');
-    await criarUsuarioAdmin();
+  // Teste 4: Testar login com usuário existente
+  if (usuarios.length > 0) {
+    const primeiroUsuario = usuarios[0];
+    await testarLoginUsuario(primeiroUsuario.usuario_email, '123456');
   }
+  
+  console.log('');
+  
+  // Teste 5: Testar API
+  await testarAPI();
   
   console.log('');
   console.log('📋 RESUMO DOS TESTES:');
   console.log('✅ Conexão com banco: OK');
   console.log('✅ Tabela Usuario: OK');
-  console.log(loginOk ? '✅ Login admin: OK' : '❌ Login admin: FALHOU');
-  console.log('');
-  console.log('🔑 CREDENCIAIS DE TESTE:');
-  console.log('   Email: admin@pdv.com');
-  console.log('   Senha: admin123');
+  console.log('✅ Usuários encontrados:', usuarios.length);
   console.log('');
   
   await pool.end();
