@@ -15,4 +15,4 @@ services:
       - key: EMAIL_PASS
         sync: false
       - key: FRONTEND_URL
-        value: https://finflow.lizsoftwares.com 
+        value: https://finflow.lizsoftware.com.br 

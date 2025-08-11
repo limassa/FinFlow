@@ -28,13 +28,13 @@ module.exports = {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
     from: process.env.EMAIL_FROM || 'noreply@finflow.com',
-    frontendUrl: process.env.FRONTEND_URL || 'https://finflow.com'
+    frontendUrl: process.env.FRONTEND_URL || 'https://finflow.lizsoftware.com.br'
   },
 
   // Configurações de Segurança
   security: {
     cors: {
-      origin: process.env.FRONTEND_URL || 'https://finflow.com',
+      origin: process.env.FRONTEND_URL || 'https://finflow.lizsoftware.com.br',
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization']

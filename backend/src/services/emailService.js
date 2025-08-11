@@ -6,8 +6,8 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       service: 'gmail', // ou 'outlook', 'yahoo', etc.
       auth: {
-        user: process.env.EMAIL_USER || 'joaolmnmarket@gmail.com',
-        pass: process.env.EMAIL_PASS || 'ppth orme wylc paqn'
+        user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+        pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
       }
     });
   }
@@ -247,7 +247,7 @@ class EmailService {
   async sendContactFormEmail(contactData) {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'noreply@finflow.com',
-      to: process.env.EMAIL_USER || 'joaolmnmarket@gmail.com', // Email do suporte
+      to: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com', // Email do suporte
       subject: '📧 Nova mensagem - Fale Conosco FinFlow',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

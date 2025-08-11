@@ -8,8 +8,8 @@ module.exports = {
   DB_NAME: 'railway',
   DB_USER: 'postgres',
   DB_PASSWORD: 'OumtwkgYJuWpNCAxJfLVAecULdKGjMEP',
-  EMAIL_PASS: 'ppth orme wylc paqn',
-  EMAIL_USER: 'joaolmnmarket@gmail.com',
-  FRONTEND_URL: 'https://finflow.lizsoftwares.com',
+  EMAIL_PASS: 'xdas ngdw yeao sgou',
+  EMAIL_USER: 'contatoLizSoftware@gmail.com',
+  FRONTEND_URL: 'https://finflow.lizsoftware.com.br',
   PORT: '3001'
 }; 
