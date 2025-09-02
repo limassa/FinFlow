@@ -1,12 +1,30 @@
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 class EmailService {
   constructor() {
+    // Configurar SendGrid se disponível
+    if (process.env.SENDGRID_API_KEY) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      console.log('📧 SendGrid configurado como serviço principal');
+    }
+    
     // Configurações de fallback para diferentes cenários
     this.configuracoes = [
-      // Configuração 1: Gmail com timeout otimizado
+      // Configuração 1: SendGrid (prioridade máxima)
+      {
+        name: 'SendGrid API',
+        type: 'sendgrid',
+        priority: 1,
+        config: {
+          apiKey: process.env.SENDGRID_API_KEY
+        }
+      },
+      // Configuração 2: Gmail com timeout otimizado
       {
         name: 'Gmail Timeout Otimizado',
+        type: 'nodemailer',
+        priority: 2,
         config: {
           service: 'gmail',
           auth: {
@@ -23,9 +41,11 @@ class EmailService {
           maxRetries: 3
         }
       },
-      // Configuração 2: Gmail porta 465 (SSL) - mais compatível
+      // Configuração 3: Gmail porta 465 (SSL) - mais compatível
       {
         name: 'Gmail Porta 465 SSL',
+        type: 'nodemailer',
+        priority: 3,
         config: {
           host: 'smtp.gmail.com',
           port: 465,
@@ -39,9 +59,11 @@ class EmailService {
           socketTimeout: 30000
         }
       },
-      // Configuração 3: Gmail porta 587 sem pool - menos restritivo
+      // Configuração 4: Gmail porta 587 sem pool - menos restritivo
       {
         name: 'Gmail Porta 587 Sem Pool',
+        type: 'nodemailer',
+        priority: 4,
         config: {
           host: 'smtp.gmail.com',
           port: 587,
@@ -61,9 +83,13 @@ class EmailService {
       }
     ];
     
+    // Ordenar por prioridade
+    this.configuracoes.sort((a, b) => a.priority - b.priority);
+    
     // Transporter principal (será configurado dinamicamente)
     this.transporter = null;
     this.configuracaoAtual = null;
+    this.tipoAtual = null;
   }
   
   // Método para testar e configurar o melhor transporter
@@ -72,23 +98,41 @@ class EmailService {
     
     for (const config of this.configuracoes) {
       try {
-        console.log(`   🧪 Testando: ${config.name}`);
+        console.log(`   🧪 Testando: ${config.name} (Prioridade: ${config.priority})`);
         
-        const transporter = nodemailer.createTransport(config.config);
-        
-        // Testar conexão
-        await transporter.verify();
-        
-        // Se chegou aqui, a configuração funciona
-        this.transporter = transporter;
-        this.configuracaoAtual = config.name;
-        
-        console.log(`   ✅ Configuração funcionando: ${config.name}`);
-        return true;
+        if (config.type === 'sendgrid') {
+          // Testar SendGrid
+          if (!process.env.SENDGRID_API_KEY) {
+            console.log(`      ⚠️  SendGrid não configurado (SENDGRID_API_KEY ausente)`);
+            continue;
+          }
+          
+          // SendGrid não precisa de teste de conexão, vamos tentar enviar um email de teste
+          console.log(`      ✅ SendGrid configurado e disponível`);
+          this.transporter = 'sendgrid';
+          this.configuracaoAtual = config.name;
+          this.tipoAtual = 'sendgrid';
+          return true;
+          
+        } else if (config.type === 'nodemailer') {
+          // Testar Nodemailer
+          const transporter = nodemailer.createTransport(config.config);
+          
+          // Testar conexão
+          await transporter.verify();
+          
+          // Se chegou aqui, a configuração funciona
+          this.transporter = transporter;
+          this.configuracaoAtual = config.name;
+          this.tipoAtual = 'nodemailer';
+          
+          console.log(`      ✅ Configuração funcionando: ${config.name}`);
+          return true;
+        }
         
       } catch (error) {
-        console.log(`   ❌ Falha na configuração: ${config.name}`);
-        console.log(`      Erro: ${error.message}`);
+        console.log(`      ❌ Falha na configuração: ${config.name}`);
+        console.log(`         Erro: ${error.message}`);
         
         // Continuar para próxima configuração
         continue;
@@ -100,6 +144,29 @@ class EmailService {
     console.log('📧 Implementando fallback com console.log...');
     
     return false;
+  }
+  
+  // Método para enviar email com SendGrid
+  async sendEmailSendGrid(mailOptions) {
+    try {
+      const msg = {
+        to: mailOptions.to,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+        subject: mailOptions.subject,
+        html: mailOptions.html
+      };
+      
+      const response = await sgMail.send(msg);
+      console.log(`✅ Email enviado via SendGrid! Status: ${response[0].statusCode}`);
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Erro SendGrid:', error.message);
+      if (error.response) {
+        console.error('   Detalhes:', error.response.body);
+      }
+      return false;
+    }
   }
   
   // Método para enviar email com fallback
@@ -158,11 +225,23 @@ class EmailService {
     };
     
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email de boas-vindas enviado com sucesso!');
-      console.log(`   📧 Message ID: ${info.messageId}`);
-      console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
-      return true;
+      if (this.tipoAtual === 'sendgrid') {
+        // Usar SendGrid
+        const resultado = await this.sendEmailSendGrid(mailOptions);
+        if (resultado) {
+          console.log('✅ Email de boas-vindas enviado via SendGrid!');
+          console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          return true;
+        }
+      } else if (this.tipoAtual === 'nodemailer') {
+        // Usar Nodemailer
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email de boas-vindas enviado via Nodemailer!');
+        console.log(`   📧 Message ID: ${info.messageId}`);
+        console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+        return true;
+      }
+      
     } catch (error) {
       console.error('❌ Erro ao enviar email:', error.message);
       
@@ -173,10 +252,17 @@ class EmailService {
       if (reconfigurado) {
         // Tentar novamente com nova configuração
         try {
-          const info = await this.transporter.sendMail(mailOptions);
-          console.log('✅ Email enviado na segunda tentativa!');
-          console.log(`   🔧 Nova configuração: ${this.configuracaoAtual}`);
-          return true;
+          if (this.tipoAtual === 'sendgrid') {
+            const resultado = await this.sendEmailSendGrid(mailOptions);
+            if (resultado) {
+              console.log('✅ Email enviado na segunda tentativa via SendGrid!');
+              return true;
+            }
+          } else if (this.tipoAtual === 'nodemailer') {
+            const info = await this.transporter.sendMail(mailOptions);
+            console.log('✅ Email enviado na segunda tentativa via Nodemailer!');
+            return true;
+          }
         } catch (retryError) {
           console.error('❌ Falha na segunda tentativa:', retryError.message);
         }
@@ -186,6 +272,9 @@ class EmailService {
       console.log('📧 Usando fallback de email...');
       return this.fallbackEmail(user);
     }
+    
+    // Se chegou aqui, algo deu errado
+    return this.fallbackEmail(user);
   }
   
   // Fallback: simular envio de email
@@ -251,9 +340,20 @@ class EmailService {
         }
       }
       
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email de redefinição enviado com sucesso!');
-      return true;
+      if (this.tipoAtual === 'sendgrid') {
+        const resultado = await this.sendEmailSendGrid(mailOptions);
+        if (resultado) {
+          console.log('✅ Email de redefinição enviado via SendGrid!');
+          return true;
+        }
+      } else if (this.tipoAtual === 'nodemailer') {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email de redefinição enviado via Nodemailer!');
+        return true;
+      }
+      
+      return this.fallbackPasswordReset(user, resetToken);
+      
     } catch (error) {
       console.error('❌ Erro ao enviar email de redefinição:', error.message);
       return this.fallbackPasswordReset(user, resetToken);
@@ -272,190 +372,13 @@ class EmailService {
     return true;
   }
   
-  async sendSecurityAlert(user, action) {
-    const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@finflow.com',
-      to: user.email,
-      subject: 'Alerta de Segurança - FinFlow',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">⚠️ Alerta de Segurança</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Protegendo sua conta</p>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">Olá, ${user.nome}!</h2>
-            
-            <p style="color: #666; line-height: 1.6;">
-              Detectamos uma atividade em sua conta que pode ser de interesse para você:
-            </p>
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff6b6b;">
-              <h3 style="color: #333; margin-top: 0;">📋 Detalhes da Atividade:</h3>
-              <p style="color: #666; margin: 0;">
-                <strong>Ação:</strong> ${action}<br>
-                <strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}<br>
-                <strong>IP:</strong> Detectado automaticamente
-              </p>
-            </div>
-            
-            <p style="color: #666; line-height: 1.6;">
-              Se você reconhece esta atividade, não é necessário fazer nada. 
-              Caso contrário, recomendamos que você altere sua senha imediatamente.
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                Verificar Conta
-              </a>
-            </div>
-          </div>
-        </div>
-      `
-    };
-    
-    try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Alerta de segurança enviado para:', user.email);
-      return true;
-    } catch (error) {
-      console.error('Erro ao enviar alerta de segurança:', error);
-      return false;
-    }
-  }
-
-  async sendReminderEmail(user, vencimentos) {
-    if (!vencimentos || vencimentos.length === 0) {
-      return false;
-    }
-
-    const vencimentosList = vencimentos.map(venc => `
-      <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ff6b6b;">
-        <h4 style="color: #333; margin: 0 0 10px 0;">${venc.despesa_descricao}</h4>
-        <p style="color: #666; margin: 5px 0;">
-          <strong>Valor:</strong> R$ ${Number(venc.despesa_valor).toFixed(2).replace('.', ',')}<br>
-          <strong>Vencimento:</strong> ${new Date(venc.despesa_dtvencimento).toLocaleDateString('pt-BR')}<br>
-          <strong>Status:</strong> ${venc.despesa_pago ? 'Pago' : 'Pendente'}
-        </p>
-      </div>
-    `).join('');
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@finflow.com',
-      to: user.email,
-      subject: '🔔 Lembretes de Vencimento - FinFlow',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🔔 Lembretes de Vencimento</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Controle suas despesas</p>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">Olá, ${user.nome}!</h2>
-            
-            <p style="color: #666; line-height: 1.6;">
-              Você tem <strong>${vencimentos.length}</strong> despesa(s) com vencimento próximo:
-            </p>
-            
-            ${vencimentosList}
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-              <h3 style="color: #333; margin-top: 0;">💡 Dica:</h3>
-              <p style="color: #666; margin: 0;">
-                Configure lembretes automáticos nas suas configurações para receber 
-                notificações antes do vencimento das suas despesas.
-              </p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/principal" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                Acessar FinFlow
-              </a>
-            </div>
-            
-            <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-              Este email foi enviado automaticamente pelo sistema FinFlow.
-            </p>
-          </div>
-        </div>
-      `
-    };
-    
-    try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Lembrete de vencimento enviado para:', user.email);
-      return true;
-    } catch (error) {
-      console.error('Erro ao enviar lembrete de vencimento:', error);
-      return false;
-    }
-  }
-
-  async sendContactFormEmail(contactData) {
-    const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@finflow.com',
-      to: process.env.EMAIL_USER || 'joaolmnmarket@gmail.com', // Email do suporte
-      subject: '📧 Nova mensagem - Fale Conosco FinFlow',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">📧 Nova Mensagem</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Fale Conosco</p>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">Nova mensagem recebida</h2>
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-              <h3 style="color: #333; margin-top: 0;">📋 Detalhes do Contato:</h3>
-              <p style="color: #666; margin: 5px 0;">
-                <strong>Nome:</strong> ${contactData.nome}<br>
-                <strong>Email:</strong> ${contactData.email}<br>
-                <strong>Telefone:</strong> ${contactData.telefone}<br>
-                <strong>Tipo:</strong> ${contactData.tipo}<br>
-                <strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}
-              </p>
-            </div>
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff6b6b;">
-              <h3 style="color: #333; margin-top: 0;">💬 Mensagem:</h3>
-              <p style="color: #666; line-height: 1.6; white-space: pre-wrap;">${contactData.mensagem}</p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="mailto:${contactData.email}" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                Responder ao Cliente
-              </a>
-            </div>
-            
-            <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-              Esta mensagem foi enviada através do formulário "Fale Conosco" do FinFlow.
-            </p>
-          </div>
-        </div>
-      `
-    };
-    
-    try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Email de "Fale Conosco" enviado para o suporte');
-      return true;
-    } catch (error) {
-      console.error('Erro ao enviar email de "Fale Conosco":', error);
-      return false;
-    }
-  }
-
   // Método para verificar status do serviço
   async getStatus() {
     return {
       configurado: !!this.transporter,
       configuracaoAtual: this.configuracaoAtual,
+      tipoAtual: this.tipoAtual,
+      sendgridDisponivel: !!process.env.SENDGRID_API_KEY,
       timestamp: new Date().toISOString()
     };
   }
