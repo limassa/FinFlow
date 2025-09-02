@@ -176,13 +176,26 @@ app.post('/api/cadastro', async (req, res) => {
     // Criar usuário
     const user = await userRepository.createUser({ nome, telefone, email, senha });
     
-    // Enviar email de boas-vindas (em background para não bloquear a resposta)
-    emailService.sendWelcomeEmail({
-      nome: user.usuario_nome,
-      email: user.usuario_email
-    }).catch(err => {
-      console.error('Erro ao enviar email de boas-vindas:', err);
-    });
+    // Enviar email de boas-vindas com logs detalhados
+    console.log('📧 Iniciando envio de email de boas-vindas...');
+    console.log(`   Usuário: ${user.usuario_nome}`);
+    console.log(`   Email: ${user.usuario_email}`);
+    
+    try {
+      const emailResult = await emailService.sendWelcomeEmail({
+        nome: user.usuario_nome,
+        email: user.usuario_email
+      });
+      
+      if (emailResult) {
+        console.log('✅ Email de boas-vindas enviado com sucesso!');
+      } else {
+        console.log('❌ Falha ao enviar email de boas-vindas');
+      }
+    } catch (emailError) {
+      console.error('💥 Erro detalhado ao enviar email:', emailError);
+      console.error('   Stack:', emailError.stack);
+    }
     
     res.status(201).json({
       ...user,
