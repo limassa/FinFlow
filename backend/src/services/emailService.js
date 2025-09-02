@@ -2,31 +2,164 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    // Configuração do transporter com SMTP explícito para resolver problemas de timeout
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true para 465, false para outras portas
-      auth: {
-        user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
-        pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+    // Configurações SMTP múltiplas para fallback
+    this.smtpConfigs = [
+      // Configuração 1: Gmail com porta 587 (STARTTLS)
+      {
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+          pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+        },
+        connectionTimeout: 120000,
+        greetingTimeout: 60000,
+        socketTimeout: 120000,
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        retryDelay: 2000,
+        maxRetries: 5,
+        tls: {
+          rejectUnauthorized: false
+        }
       },
-      // Configurações para resolver problemas de timeout
-      connectionTimeout: 120000, // 2 minutos para conectar
-      greetingTimeout: 60000,    // 1 minuto para greeting
-      socketTimeout: 120000,     // 2 minutos para operações socket
-      // Configurações de pool para melhor performance
-      pool: true,
-      maxConnections: 3,
-      maxMessages: 50,
-      // Configurações de retry
-      retryDelay: 2000,
-      maxRetries: 5,
-      // Configurações de TLS
-      tls: {
-        rejectUnauthorized: false
+      // Configuração 2: Gmail com porta 465 (SSL)
+      {
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+          pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+        },
+        connectionTimeout: 120000,
+        greetingTimeout: 60000,
+        socketTimeout: 120000,
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        retryDelay: 2000,
+        maxRetries: 5,
+        tls: {
+          rejectUnauthorized: false
+        }
+      },
+      // Configuração 3: Gmail com porta 25 (fallback)
+      {
+        host: 'smtp.gmail.com',
+        port: 25,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+          pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+        },
+        connectionTimeout: 120000,
+        greetingTimeout: 60000,
+        socketTimeout: 120000,
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        retryDelay: 2000,
+        maxRetries: 5,
+        tls: {
+          rejectUnauthorized: false
+        }
       }
-    });
+    ];
+    
+    this.currentConfigIndex = 0;
+    this.transporter = null;
+  }
+  
+  async createTransporter(configIndex = 0) {
+    if (configIndex >= this.smtpConfigs.length) {
+      throw new Error('Todas as configurações SMTP falharam');
+    }
+    
+    const config = this.smtpConfigs[configIndex];
+    console.log(`🔧 Tentando configuração SMTP ${configIndex + 1}:`);
+    console.log(`   Host: ${config.host}:${config.port}`);
+    console.log(`   Secure: ${config.secure}`);
+    console.log(`   Timeout: ${config.connectionTimeout}ms`);
+    
+    return nodemailer.createTransport(config);
+  }
+  
+  async sendEmailWithFallback(mailOptions, maxRetries = 3) {
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`📧 Tentativa ${attempt}/${maxRetries} de envio de email...`);
+      
+      // Tentar cada configuração SMTP
+      for (let configIndex = 0; configIndex < this.smtpConfigs.length; configIndex++) {
+        try {
+          console.log(`   🔧 Testando configuração SMTP ${configIndex + 1}...`);
+          
+          const transporter = await this.createTransporter(configIndex);
+          
+          // Verificar conexão primeiro
+          console.log('   🔍 Verificando conexão SMTP...');
+          await new Promise((resolve, reject) => {
+            transporter.verify((error, success) => {
+              if (error) {
+                console.log(`   ❌ Falha na verificação: ${error.message}`);
+                reject(error);
+              } else {
+                console.log('   ✅ Conexão SMTP verificada com sucesso!');
+                resolve(success);
+              }
+            });
+          });
+          
+          // Enviar email
+          console.log('   🚀 Enviando email...');
+          const info = await transporter.sendMail(mailOptions);
+          
+          console.log('✅ Email enviado com sucesso!');
+          console.log(`   Message ID: ${info.messageId}`);
+          console.log(`   Configuração: SMTP ${configIndex + 1}`);
+          
+          return true;
+          
+        } catch (error) {
+          lastError = error;
+          console.log(`   ❌ Falha na configuração ${configIndex + 1}: ${error.message}`);
+          
+          if (error.code === 'ETIMEDOUT') {
+            console.log('   ⏰ Timeout detectado - tentando próxima configuração...');
+          } else if (error.code === 'ECONNREFUSED') {
+            console.log('   🚫 Conexão recusada - tentando próxima configuração...');
+          } else {
+            console.log(`   💥 Erro: ${error.code || 'Desconhecido'} - tentando próxima configuração...`);
+          }
+          
+          // Aguardar antes da próxima tentativa
+          if (configIndex < this.smtpConfigs.length - 1) {
+            console.log('   ⏳ Aguardando 3 segundos antes da próxima configuração...');
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+        }
+      }
+      
+      // Se chegou aqui, todas as configurações falharam nesta tentativa
+      if (attempt < maxRetries) {
+        console.log(`   🔄 Todas as configurações falharam na tentativa ${attempt}.`);
+        console.log(`   ⏳ Aguardando 5 segundos antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
+    
+    // Todas as tentativas falharam
+    console.log('💥 Todas as tentativas de envio falharam!');
+    console.log('📊 Resumo dos erros:');
+    console.log(`   Tentativas: ${maxRetries}`);
+    console.log(`   Configurações testadas: ${this.smtpConfigs.length}`);
+    console.log(`   Último erro: ${lastError.message}`);
+    
+    throw lastError;
   }
   
   async sendWelcomeEmail(user) {
@@ -75,11 +208,11 @@ class EmailService {
     };
     
     try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Email de boas-vindas enviado para:', user.email);
-      return true;
+      console.log('📧 Iniciando envio de email de boas-vindas com sistema de fallback...');
+      return await this.sendEmailWithFallback(mailOptions, 3);
     } catch (error) {
-      console.error('Erro ao enviar email de boas-vindas:', error);
+      console.error('💥 Erro final ao enviar email de boas-vindas:', error.message);
+      console.error('   Stack:', error.stack);
       return false;
     }
   }
@@ -129,11 +262,11 @@ class EmailService {
     };
     
     try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Email de redefinição de senha enviado para:', user.email);
-      return true;
+      console.log('📧 Iniciando envio de email de redefinição de senha com sistema de fallback...');
+      return await this.sendEmailWithFallback(mailOptions, 3);
     } catch (error) {
-      console.error('Erro ao enviar email de redefinição de senha:', error);
+      console.error('💥 Erro final ao enviar email de redefinição de senha:', error.message);
+      console.error('   Stack:', error.stack);
       return false;
     }
   }
@@ -183,11 +316,11 @@ class EmailService {
     };
     
     try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Alerta de segurança enviado para:', user.email);
-      return true;
+      console.log('📧 Iniciando envio de alerta de segurança com sistema de fallback...');
+      return await this.sendEmailWithFallback(mailOptions, 3);
     } catch (error) {
-      console.error('Erro ao enviar alerta de segurança:', error);
+      console.error('💥 Erro final ao enviar alerta de segurança:', error.message);
+      console.error('   Stack:', error.stack);
       return false;
     }
   }
@@ -252,11 +385,11 @@ class EmailService {
     };
     
     try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Lembrete de vencimento enviado para:', user.email);
-      return true;
+      console.log('📧 Iniciando envio de lembrete de vencimento com sistema de fallback...');
+      return await this.sendEmailWithFallback(mailOptions, 3);
     } catch (error) {
-      console.error('Erro ao enviar lembrete de vencimento:', error);
+      console.error('💥 Erro final ao enviar lembrete de vencimento:', error.message);
+      console.error('   Stack:', error.stack);
       return false;
     }
   }
@@ -308,11 +441,11 @@ class EmailService {
     };
     
     try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Email de "Fale Conosco" enviado para o suporte');
-      return true;
+      console.log('📧 Iniciando envio de email de "Fale Conosco" com sistema de fallback...');
+      return await this.sendEmailWithFallback(mailOptions, 3);
     } catch (error) {
-      console.error('Erro ao enviar email de "Fale Conosco":', error);
+      console.error('💥 Erro final ao enviar email de "Fale Conosco":', error.message);
+      console.error('   Stack:', error.stack);
       return false;
     }
   }
