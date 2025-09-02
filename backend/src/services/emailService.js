@@ -2,12 +2,29 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    // Configuração do transporter (você pode usar Gmail, Outlook, ou outros serviços)
+    // Configuração do transporter com SMTP explícito para resolver problemas de timeout
     this.transporter = nodemailer.createTransport({
-      service: 'gmail', // ou 'outlook', 'yahoo', etc.
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true para 465, false para outras portas
       auth: {
         user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
         pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+      },
+      // Configurações para resolver problemas de timeout
+      connectionTimeout: 120000, // 2 minutos para conectar
+      greetingTimeout: 60000,    // 1 minuto para greeting
+      socketTimeout: 120000,     // 2 minutos para operações socket
+      // Configurações de pool para melhor performance
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      // Configurações de retry
+      retryDelay: 2000,
+      maxRetries: 5,
+      // Configurações de TLS
+      tls: {
+        rejectUnauthorized: false
       }
     });
   }

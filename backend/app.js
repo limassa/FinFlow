@@ -764,6 +764,15 @@ app.post('/api/fale-conosco', async (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);
+  
+  // Mostrar URL correta baseada no ambiente
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`🔍 Healthcheck: https://finflow-backend-production.up.railway.app/health`);
+    console.log(`🌐 URL de Produção: https://finflow-backend-production.up.railway.app`);
+  } else {
+    console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);
+    console.log(`🌐 URL Local: http://localhost:${PORT}`);
+  }
+  
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
