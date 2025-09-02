@@ -8,8 +8,8 @@ const userRepository = {
     const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
     
     const result = await pool.query(
-      'INSERT INTO Usuario (Usuario_Email, Usuario_Senha, Usuario_Nome) VALUES ($1, $2, $3) RETURNING *',
-      [email, senhaCriptografada, nome]
+      'INSERT INTO Usuario (Usuario_Email, Usuario_Senha, Usuario_Nome, Usuario_Telefone) VALUES ($1, $2, $3, $4) RETURNING *',
+      [email, senhaCriptografada, nome, telefone]
     );
     return result.rows[0];
   },
