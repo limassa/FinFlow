@@ -13,14 +13,12 @@ class EmailService {
           user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
           pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
         },
-        connectionTimeout: 120000,
-        greetingTimeout: 60000,
-        socketTimeout: 120000,
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 50,
-        retryDelay: 2000,
-        maxRetries: 5,
+        connectionTimeout: 30000, // Reduzido para 30s
+        greetingTimeout: 30000,   // Reduzido para 30s
+        socketTimeout: 30000,     // Reduzido para 30s
+        pool: false,              // Desabilitado pool para evitar problemas
+        maxConnections: 1,
+        maxMessages: 1,
         tls: {
           rejectUnauthorized: false
         }
@@ -34,35 +32,31 @@ class EmailService {
           user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
           pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
         },
-        connectionTimeout: 120000,
-        greetingTimeout: 60000,
-        socketTimeout: 120000,
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 50,
-        retryDelay: 2000,
-        maxRetries: 5,
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        pool: false,
+        maxConnections: 1,
+        maxMessages: 1,
         tls: {
           rejectUnauthorized: false
         }
       },
-      // Configuração 3: Gmail com porta 25 (fallback)
+      // Configuração 3: Outlook como fallback
       {
-        host: 'smtp.gmail.com',
-        port: 25,
+        host: 'smtp-mail.outlook.com',
+        port: 587,
         secure: false,
         auth: {
           user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
           pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
         },
-        connectionTimeout: 120000,
-        greetingTimeout: 60000,
-        socketTimeout: 120000,
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 50,
-        retryDelay: 2000,
-        maxRetries: 5,
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        pool: false,
+        maxConnections: 1,
+        maxMessages: 1,
         tls: {
           rejectUnauthorized: false
         }
@@ -87,7 +81,7 @@ class EmailService {
     return nodemailer.createTransport(config);
   }
   
-  async sendEmailWithFallback(mailOptions, maxRetries = 3) {
+  async sendEmailWithFallback(mailOptions, maxRetries = 2) {
     let lastError = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -100,10 +94,15 @@ class EmailService {
           
           const transporter = await this.createTransporter(configIndex);
           
-          // Verificar conexão primeiro
+          // Verificar conexão primeiro (timeout reduzido)
           console.log('   🔍 Verificando conexão SMTP...');
           await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Timeout na verificação de conexão'));
+            }, 15000); // 15 segundos para verificação
+            
             transporter.verify((error, success) => {
+              clearTimeout(timeout);
               if (error) {
                 console.log(`   ❌ Falha na verificação: ${error.message}`);
                 reject(error);
@@ -128,7 +127,7 @@ class EmailService {
           lastError = error;
           console.log(`   ❌ Falha na configuração ${configIndex + 1}: ${error.message}`);
           
-          if (error.code === 'ETIMEDOUT') {
+          if (error.message.includes('timeout') || error.code === 'ETIMEDOUT') {
             console.log('   ⏰ Timeout detectado - tentando próxima configuração...');
           } else if (error.code === 'ECONNREFUSED') {
             console.log('   🚫 Conexão recusada - tentando próxima configuração...');
@@ -138,8 +137,8 @@ class EmailService {
           
           // Aguardar antes da próxima tentativa
           if (configIndex < this.smtpConfigs.length - 1) {
-            console.log('   ⏳ Aguardando 3 segundos antes da próxima configuração...');
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            console.log('   ⏳ Aguardando 2 segundos antes da próxima configuração...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
       }
@@ -147,8 +146,8 @@ class EmailService {
       // Se chegou aqui, todas as configurações falharam nesta tentativa
       if (attempt < maxRetries) {
         console.log(`   🔄 Todas as configurações falharam na tentativa ${attempt}.`);
-        console.log(`   ⏳ Aguardando 5 segundos antes da próxima tentativa...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log(`   ⏳ Aguardando 3 segundos antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
     
@@ -208,11 +207,69 @@ class EmailService {
     };
     
     try {
-      console.log('📧 Iniciando envio de email de boas-vindas com sistema de fallback...');
-      return await this.sendEmailWithFallback(mailOptions, 3);
+      console.log('📧 Iniciando envio de email de boas-vindas...');
+      
+      // Tentar configuração principal (Gmail 587)
+      try {
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+            pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+          },
+          connectionTimeout: 20000, // 20 segundos
+          greetingTimeout: 20000,   // 20 segundos
+          socketTimeout: 20000,     // 20 segundos
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        
+        console.log('   🔧 Tentando Gmail SMTP (porta 587)...');
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✅ Email enviado com sucesso via Gmail!');
+        console.log(`   Message ID: ${info.messageId}`);
+        return true;
+        
+      } catch (gmailError) {
+        console.log(`   ❌ Gmail falhou: ${gmailError.message}`);
+        console.log('   🔧 Tentando configuração alternativa...');
+        
+        // Tentar configuração alternativa (Gmail 465)
+        try {
+          const transporterAlt = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+              user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+              pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
+            },
+            connectionTimeout: 20000,
+            greetingTimeout: 20000,
+            socketTimeout: 20000,
+            tls: {
+              rejectUnauthorized: false
+            }
+          });
+          
+          console.log('   🔧 Tentando Gmail SSL (porta 465)...');
+          const infoAlt = await transporterAlt.sendMail(mailOptions);
+          console.log('✅ Email enviado com sucesso via Gmail SSL!');
+          console.log(`   Message ID: ${infoAlt.messageId}`);
+          return true;
+          
+        } catch (sslError) {
+          console.log(`   ❌ Gmail SSL falhou: ${sslError.message}`);
+          console.log('❌ Todas as configurações de email falharam');
+          return false;
+        }
+      }
+      
     } catch (error) {
       console.error('💥 Erro final ao enviar email de boas-vindas:', error.message);
-      console.error('   Stack:', error.stack);
       return false;
     }
   }
@@ -263,7 +320,7 @@ class EmailService {
     
     try {
       console.log('📧 Iniciando envio de email de redefinição de senha com sistema de fallback...');
-      return await this.sendEmailWithFallback(mailOptions, 3);
+      return await this.sendEmailWithFallback(mailOptions, 2);
     } catch (error) {
       console.error('💥 Erro final ao enviar email de redefinição de senha:', error.message);
       console.error('   Stack:', error.stack);
@@ -317,7 +374,7 @@ class EmailService {
     
     try {
       console.log('📧 Iniciando envio de alerta de segurança com sistema de fallback...');
-      return await this.sendEmailWithFallback(mailOptions, 3);
+      return await this.sendEmailWithFallback(mailOptions, 2);
     } catch (error) {
       console.error('💥 Erro final ao enviar alerta de segurança:', error.message);
       console.error('   Stack:', error.stack);
@@ -386,7 +443,7 @@ class EmailService {
     
     try {
       console.log('📧 Iniciando envio de lembrete de vencimento com sistema de fallback...');
-      return await this.sendEmailWithFallback(mailOptions, 3);
+      return await this.sendEmailWithFallback(mailOptions, 2);
     } catch (error) {
       console.error('💥 Erro final ao enviar lembrete de vencimento:', error.message);
       console.error('   Stack:', error.stack);
@@ -442,7 +499,7 @@ class EmailService {
     
     try {
       console.log('📧 Iniciando envio de email de "Fale Conosco" com sistema de fallback...');
-      return await this.sendEmailWithFallback(mailOptions, 3);
+      return await this.sendEmailWithFallback(mailOptions, 2);
     } catch (error) {
       console.error('💥 Erro final ao enviar email de "Fale Conosco":', error.message);
       console.error('   Stack:', error.stack);
