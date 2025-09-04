@@ -15,6 +15,7 @@ function Principal() {
     totalReceitas: 0,
     totalDespesas: 0,
     saldo: 0,
+    saldoContas: 0,
     receitasMes: 0,
     despesasMes: 0
   });
@@ -32,13 +33,18 @@ function Principal() {
     }
   }, [userId]);
 
+
+
+
+
   const fetchTotais = async () => {
     setLoading(true);
     try {
-      // Buscar receitas e despesas do usuário
-      const [receitasRes, despesasRes] = await Promise.all([
+      // Buscar receitas, despesas e saldo total das contas
+      const [receitasRes, despesasRes, saldoContasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`)
       ]);
 
       const receitasData = receitasRes.data;
@@ -55,7 +61,7 @@ function Principal() {
           sum + parseFloat(receita.receita_valor || 0), 0
         );
       
-      const totalDespesas = despesas
+      const totalDespesas = despesasData
         .filter(despesa => despesa.despesa_pago) // Apenas despesas pagas
         .reduce((sum, despesa) => 
           sum + parseFloat(despesa.despesa_valor || 0), 0
@@ -79,23 +85,59 @@ function Principal() {
                despesa.despesa_pago; // Apenas despesas pagas
       }).reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
 
-      setTotais({
+      const saldoContas = saldoContasRes.data.saldoTotal || 0;
+      
+      // Calcular saldo total usando a fórmula: Saldo das Contas + (Receitas - Despesas)
+      const saldoTotal = saldoContas + (totalReceitas - totalDespesas);
+      
+      console.log('📊 Dados recebidos na Principal:');
+      console.log('  - Total de Receitas:', totalReceitas);
+      console.log('  - Total de Despesas:', totalDespesas);
+      console.log('  - Saldo (Receitas - Despesas):', totalReceitas - totalDespesas);
+      console.log('  - Saldo das Contas (API):', saldoContas);
+      console.log('  - Saldo Total Calculado:', saldoTotal);
+      console.log('  - Fórmula: Saldo das Contas + (Receitas - Despesas)');
+      console.log('  - Cálculo:', `${saldoContas} + (${totalReceitas} - ${totalDespesas}) = ${saldoTotal}`);
+      console.log('  - Despesas recebidas:', despesasData.length);
+      console.log('  - Despesas pagas:', despesasData.filter(d => d.despesa_pago).length);
+      console.log('  - Resposta da API:', saldoContasRes.data);
+      console.log('  - URL da API chamada:', `${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`);
+      console.log('  - Status da resposta:', saldoContasRes.status);
+
+      const novosTotais = {
         totalReceitas,
         totalDespesas,
         saldo: totalReceitas - totalDespesas,
+        saldoContas: saldoTotal, // Usar o saldo total calculado
         receitasMes,
         despesasMes
-      });
+      };
+      
+      console.log('📊 Novos totais calculados:', novosTotais);
+      setTotais(novosTotais);
+      
+      // Log para debug
+      console.log('🔄 Estado atualizado com sucesso!');
+      console.log('📊 Estado atual dos totais:', novosTotais);
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
-      // Dados de exemplo para demonstração
-      setTotais({
-        totalReceitas: 15425.50,
-        totalDespesas: 8750.30,
-        saldo: 6675.20,
-        receitasMes: 3250.00,
-        despesasMes: 1850.00
-      });
+      // Fallback: buscar contas manualmente se a rota falhar
+      try {
+        const contasRes = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
+        const saldoContas = contasRes.data.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0);
+        setTotais(prev => ({ ...prev, saldoContas }));
+      } catch (fallbackErr) {
+        console.log('Erro no fallback:', fallbackErr);
+        // Dados de exemplo para demonstração
+        setTotais({
+          totalReceitas: 15425.50,
+          totalDespesas: 8750.30,
+          saldo: 6675.20,
+          saldoContas: 0,
+          receitasMes: 3250.00,
+          despesasMes: 1850.00
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -165,16 +207,16 @@ function Principal() {
           </div>
         </div>
 
-        <div className={`dashboard-card ${totais.saldo >= 0 ? 'positive' : 'negative'}`}
+        <div className={`dashboard-card ${totais.saldoContas >= 0 ? 'positive' : 'negative'}`}
         style={{ cursor: 'default' }}
-        title="Saldo"
+        title="Saldo Total (Contas + Receitas - Despesas)"
         >
           <div className="card-icon">
             <FaChartLine />
           </div>
           <div className="card-content">
-            <h3>Saldo Atual</h3>
-            <span className="card-value">{formatarValor(totais.saldo)}</span>
+            <h3>Saldo Total</h3>
+            <span className="card-value">{formatarValor(totais.saldoContas)}</span>
             <span className="card-description">Saldo Disponível</span>
           </div>
         </div>

@@ -12,7 +12,6 @@ function Contas() {
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
   const [saldo, setSaldo] = useState('');
-  const [incrementarSaldoTotal, setIncrementarSaldoTotal] = useState(true);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,12 +47,14 @@ function Contas() {
       const res = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
       console.log('Contas recebidas:', res.data);
       setContas(res.data);
+      
     } catch (err) {
       console.error('Erro ao buscar contas:', err);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,13 +68,13 @@ function Contas() {
         nome, 
         tipo,
         saldo: saldo || 0,
-        incrementarSaldoTotal,
+        incrementarSaldoTotal: true,
         usuario_id: userId
       });
       setNome('');
       setTipo('');
       setSaldo('');
-      fetchContas();
+      await fetchContas(); // Recarregar contas
       alert('Conta adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar conta');
@@ -104,7 +105,7 @@ function Contas() {
       setTipo('');
       setSaldo('');
       setEditId(null);
-      fetchContas();
+      await fetchContas(); // Recarregar contas
       alert('Conta atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar conta');
@@ -155,10 +156,6 @@ function Contas() {
         </div>
         <div className="receita-stats">
           <div className="stat-card">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{formatarValor(contas.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0))}</span>
-          </div>
-          <div className="stat-card">
             <span className="stat-label">Quantidade</span>
             <span className="stat-value">{contas.length}</span>
           </div>
@@ -202,14 +199,6 @@ function Contas() {
               />
             </div>
             <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={incrementarSaldoTotal}
-                  onChange={e => setIncrementarSaldoTotal(e.target.checked)}
-                />
-                <span>Incrementar no Saldo Total</span>
-              </label>
             </div>
           </div>
           <div className="form-buttons">
