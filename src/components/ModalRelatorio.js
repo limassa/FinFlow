@@ -236,7 +236,7 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
               <li><strong>Categoria:</strong> Agrupamento por tipo de receita/despesa</li>
             </ul>
             <p style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-              <strong>Como usar:</strong> Selecione o período desejado e clique em "Gerar Relatório". 
+              <strong>Como usar:</strong> Selecione o período desejado e clique em &quot;Gerar Relatório&quot;. 
               O relatório será aberto em uma nova janela. Use Ctrl+P para imprimir ou salvar como PDF.
             </p>
           </div>

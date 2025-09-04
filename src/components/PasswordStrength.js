@@ -58,7 +58,7 @@ const PasswordStrength = ({ password, onPasswordChange, showRequirements = true 
     // Verificar se contém pelo menos um caractere especial
     validations.push({
       text: 'Pelo menos um caractere especial (!@#$%^&*()_+-=[]{}|;:,.<>?)',
-      valid: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+      valid: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
     });
     
     // Verificar se não contém sequências comuns
@@ -100,7 +100,7 @@ const PasswordStrength = ({ password, onPasswordChange, showRequirements = true 
     if (/[a-z]/.test(password)) score += 1;
     if (/[A-Z]/.test(password)) score += 1;
     if (/\d/.test(password)) score += 1;
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 1;
+    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) score += 1;
     
     // Determinar força baseada no score
     if (score <= 2) return { score, label: 'Fraca', color: '#ff4757' };
