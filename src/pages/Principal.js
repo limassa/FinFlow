@@ -57,7 +57,7 @@ function Principal() {
           sum + parseFloat(receita.receita_valor || 0), 0
         );
       
-      const totalDespesas = despesas
+      const totalDespesas = despesasData
         .filter(despesa => despesa.despesa_pago) // Apenas despesas pagas
         .reduce((sum, despesa) => 
           sum + parseFloat(despesa.despesa_valor || 0), 0
@@ -84,6 +84,9 @@ function Principal() {
       const saldoContas = saldoContasRes.data.saldoTotal || 0;
       
       console.log('📊 Dados recebidos na Principal:');
+      console.log('  - Total de Despesas:', totalDespesas);
+      console.log('  - Despesas recebidas:', despesasData.length);
+      console.log('  - Despesas pagas:', despesasData.filter(d => d.despesa_pago).length);
       console.log('  - Saldo Total das Contas (API):', saldoContas);
       console.log('  - Resposta da API:', saldoContasRes.data);
 
