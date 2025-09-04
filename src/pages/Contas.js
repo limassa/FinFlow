@@ -9,11 +9,9 @@ import '../App.css';
 function Contas() {
   const navigate = useNavigate();
   const [contas, setContas] = useState([]);
-  const [saldoTotal, setSaldoTotal] = useState(0);
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
   const [saldo, setSaldo] = useState('');
-  const [incrementarSaldoTotal, setIncrementarSaldoTotal] = useState(true);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,8 +48,6 @@ function Contas() {
       console.log('Contas recebidas:', res.data);
       setContas(res.data);
       
-      // Buscar saldo total usando a nova rota
-      await fetchSaldoTotal();
     } catch (err) {
       console.error('Erro ao buscar contas:', err);
     } finally {
@@ -59,19 +55,6 @@ function Contas() {
     }
   };
 
-  const fetchSaldoTotal = async () => {
-    try {
-      console.log('Buscando saldo total para userId:', userId);
-      const res = await axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`);
-      console.log('Saldo total recebido:', res.data);
-      setSaldoTotal(res.data.saldoTotal || 0);
-    } catch (err) {
-      console.error('Erro ao buscar saldo total:', err);
-      // Fallback: calcular manualmente se a rota falhar
-      const saldoManual = contas.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0);
-      setSaldoTotal(saldoManual);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,13 +68,13 @@ function Contas() {
         nome, 
         tipo,
         saldo: saldo || 0,
-        incrementarSaldoTotal,
+        incrementarSaldoTotal: true,
         usuario_id: userId
       });
       setNome('');
       setTipo('');
       setSaldo('');
-      await fetchContas(); // Recarregar contas e saldo total
+      await fetchContas(); // Recarregar contas
       alert('Conta adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar conta');
@@ -122,7 +105,7 @@ function Contas() {
       setTipo('');
       setSaldo('');
       setEditId(null);
-      await fetchContas(); // Recarregar contas e saldo total
+      await fetchContas(); // Recarregar contas
       alert('Conta atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar conta');
@@ -173,10 +156,6 @@ function Contas() {
         </div>
         <div className="receita-stats">
           <div className="stat-card">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{formatarValor(saldoTotal)}</span>
-          </div>
-          <div className="stat-card">
             <span className="stat-label">Quantidade</span>
             <span className="stat-value">{contas.length}</span>
           </div>
@@ -220,14 +199,6 @@ function Contas() {
               />
             </div>
             <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={incrementarSaldoTotal}
-                  onChange={e => setIncrementarSaldoTotal(e.target.checked)}
-                />
-                <span>Incrementar no Saldo Total</span>
-              </label>
             </div>
           </div>
           <div className="form-buttons">

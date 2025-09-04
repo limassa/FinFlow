@@ -33,6 +33,10 @@ function Principal() {
     }
   }, [userId]);
 
+
+
+
+
   const fetchTotais = async () => {
     setLoading(true);
     try {
@@ -83,21 +87,38 @@ function Principal() {
 
       const saldoContas = saldoContasRes.data.saldoTotal || 0;
       
+      // Calcular saldo total usando a fórmula: Saldo das Contas + (Receitas - Despesas)
+      const saldoTotal = saldoContas + (totalReceitas - totalDespesas);
+      
       console.log('📊 Dados recebidos na Principal:');
+      console.log('  - Total de Receitas:', totalReceitas);
       console.log('  - Total de Despesas:', totalDespesas);
+      console.log('  - Saldo (Receitas - Despesas):', totalReceitas - totalDespesas);
+      console.log('  - Saldo das Contas (API):', saldoContas);
+      console.log('  - Saldo Total Calculado:', saldoTotal);
+      console.log('  - Fórmula: Saldo das Contas + (Receitas - Despesas)');
+      console.log('  - Cálculo:', `${saldoContas} + (${totalReceitas} - ${totalDespesas}) = ${saldoTotal}`);
       console.log('  - Despesas recebidas:', despesasData.length);
       console.log('  - Despesas pagas:', despesasData.filter(d => d.despesa_pago).length);
-      console.log('  - Saldo Total das Contas (API):', saldoContas);
       console.log('  - Resposta da API:', saldoContasRes.data);
+      console.log('  - URL da API chamada:', `${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`);
+      console.log('  - Status da resposta:', saldoContasRes.status);
 
-      setTotais({
+      const novosTotais = {
         totalReceitas,
         totalDespesas,
         saldo: totalReceitas - totalDespesas,
-        saldoContas,
+        saldoContas: saldoTotal, // Usar o saldo total calculado
         receitasMes,
         despesasMes
-      });
+      };
+      
+      console.log('📊 Novos totais calculados:', novosTotais);
+      setTotais(novosTotais);
+      
+      // Log para debug
+      console.log('🔄 Estado atualizado com sucesso!');
+      console.log('📊 Estado atual dos totais:', novosTotais);
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
       // Fallback: buscar contas manualmente se a rota falhar
@@ -188,13 +209,13 @@ function Principal() {
 
         <div className={`dashboard-card ${totais.saldoContas >= 0 ? 'positive' : 'negative'}`}
         style={{ cursor: 'default' }}
-        title="Saldo Total das Contas"
+        title="Saldo Total (Contas + Receitas - Despesas)"
         >
           <div className="card-icon">
             <FaChartLine />
           </div>
           <div className="card-content">
-            <h3>Saldo Total das Contas</h3>
+            <h3>Saldo Total</h3>
             <span className="card-value">{formatarValor(totais.saldoContas)}</span>
             <span className="card-description">Saldo Disponível</span>
           </div>
