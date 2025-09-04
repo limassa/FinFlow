@@ -186,12 +186,10 @@ const userRepository = {
       [nome, tipo, saldo || 0, usuario_id]
     );
     
-    // Se incrementarSaldoTotal for true e houver saldo, adicionar ao saldo total do usuário
+    // Nota: Funcionalidade de saldo total removida pois a coluna não existe na tabela Usuario
+    // Se incrementarSaldoTotal for true e houver saldo, apenas logar (não atualizar banco)
     if (incrementarSaldoTotal && saldo && parseFloat(saldo) > 0) {
-      await pool.query(
-        'UPDATE Usuario SET Usuario_SaldoTotal = COALESCE(Usuario_SaldoTotal, 0) + $1 WHERE Usuario_Id = $2',
-        [parseFloat(saldo), usuario_id]
-      );
+      console.log(`💰 Saldo inicial de R$ ${parseFloat(saldo).toFixed(2)} adicionado à conta "${nome}"`);
     }
     
     return result.rows[0];
