@@ -450,6 +450,18 @@ app.delete('/api/contas/:id', async (req, res) => {
   }
 });
 
+// Rota para calcular o saldo total das contas
+app.get('/api/contas/saldo-total', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const saldoTotal = await userRepository.getSaldoTotalContas(userId);
+    res.json({ saldoTotal });
+  } catch (err) {
+    console.error('Erro ao calcular saldo total:', err);
+    res.status(500).json({ error: 'Erro ao calcular saldo total' });
+  }
+});
+
 // Rota para migrar senhas antigas para criptografadas (executar apenas uma vez)
 app.post('/api/migrate-passwords', async (req, res) => {
   try {

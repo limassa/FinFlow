@@ -499,6 +499,15 @@ const userRepository = {
     }
   },
 
+  // Função para calcular o saldo total das contas do usuário
+  async getSaldoTotalContas(userId) {
+    const result = await pool.query(
+      'SELECT COALESCE(SUM(Conta_Saldo), 0) as saldo_total FROM Conta WHERE Usuario_Id = $1 AND Conta_Ativo = TRUE',
+      [userId]
+    );
+    return parseFloat(result.rows[0].saldo_total || 0);
+  },
+
   // Outras funções reutilizáveis...
 };
 
