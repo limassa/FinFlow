@@ -82,6 +82,10 @@ function Principal() {
       }).reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
 
       const saldoContas = saldoContasRes.data.saldoTotal || 0;
+      
+      console.log('📊 Dados recebidos na Principal:');
+      console.log('  - Saldo Total das Contas (API):', saldoContas);
+      console.log('  - Resposta da API:', saldoContasRes.data);
 
       setTotais({
         totalReceitas,
@@ -179,16 +183,16 @@ function Principal() {
           </div>
         </div>
 
-        <div className={`dashboard-card ${totais.saldo >= 0 ? 'positive' : 'negative'}`}
+        <div className={`dashboard-card ${totais.saldoContas >= 0 ? 'positive' : 'negative'}`}
         style={{ cursor: 'default' }}
-        title="Saldo"
+        title="Saldo Total das Contas"
         >
           <div className="card-icon">
             <FaChartLine />
           </div>
           <div className="card-content">
-            <h3>Saldo Atual</h3>
-            <span className="card-value">{formatarValor(totais.saldo)}</span>
+            <h3>Saldo Total das Contas</h3>
+            <span className="card-value">{formatarValor(totais.saldoContas)}</span>
             <span className="card-description">Saldo Disponível</span>
           </div>
         </div>
