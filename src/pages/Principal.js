@@ -15,6 +15,7 @@ function Principal() {
     totalReceitas: 0,
     totalDespesas: 0,
     saldo: 0,
+    saldoContas: 0,
     receitasMes: 0,
     despesasMes: 0
   });
@@ -35,10 +36,11 @@ function Principal() {
   const fetchTotais = async () => {
     setLoading(true);
     try {
-      // Buscar receitas e despesas do usuário
-      const [receitasRes, despesasRes] = await Promise.all([
+      // Buscar receitas, despesas e saldo total das contas
+      const [receitasRes, despesasRes, saldoContasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`)
       ]);
 
       const receitasData = receitasRes.data;
@@ -79,23 +81,35 @@ function Principal() {
                despesa.despesa_pago; // Apenas despesas pagas
       }).reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
 
+      const saldoContas = saldoContasRes.data.saldoTotal || 0;
+
       setTotais({
         totalReceitas,
         totalDespesas,
         saldo: totalReceitas - totalDespesas,
+        saldoContas,
         receitasMes,
         despesasMes
       });
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
-      // Dados de exemplo para demonstração
-      setTotais({
-        totalReceitas: 15425.50,
-        totalDespesas: 8750.30,
-        saldo: 6675.20,
-        receitasMes: 3250.00,
-        despesasMes: 1850.00
-      });
+      // Fallback: buscar contas manualmente se a rota falhar
+      try {
+        const contasRes = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
+        const saldoContas = contasRes.data.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0);
+        setTotais(prev => ({ ...prev, saldoContas }));
+      } catch (fallbackErr) {
+        console.log('Erro no fallback:', fallbackErr);
+        // Dados de exemplo para demonstração
+        setTotais({
+          totalReceitas: 15425.50,
+          totalDespesas: 8750.30,
+          saldo: 6675.20,
+          saldoContas: 0,
+          receitasMes: 3250.00,
+          despesasMes: 1850.00
+        });
+      }
     } finally {
       setLoading(false);
     }

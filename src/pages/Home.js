@@ -8,7 +8,8 @@ function Home() {
   const [totais, setTotais] = useState({
     totalReceitas: 0,
     totalDespesas: 0,
-    saldo: 0
+    saldo: 0,
+    saldoContas: 0
   });
   const [loading, setLoading] = useState(true);
   
@@ -24,22 +25,33 @@ function Home() {
   const fetchTotais = async () => {
     setLoading(true);
     try {
-      const [receitasRes, despesasRes] = await Promise.all([
+      const [receitasRes, despesasRes, saldoContasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`)
       ]);
 
       const totalReceitas = receitasRes.data.reduce((sum, receita) => sum + parseFloat(receita.valor), 0);
       const totalDespesas = despesasRes.data.reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
       const saldo = totalReceitas - totalDespesas;
+      const saldoContas = saldoContasRes.data.saldoTotal || 0;
 
       setTotais({
         totalReceitas,
         totalDespesas,
-        saldo
+        saldo,
+        saldoContas
       });
     } catch (err) {
       console.log('Erro ao buscar totais:', err);
+      // Fallback: buscar contas manualmente se a rota falhar
+      try {
+        const contasRes = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
+        const saldoContas = contasRes.data.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0);
+        setTotais(prev => ({ ...prev, saldoContas }));
+      } catch (fallbackErr) {
+        console.log('Erro no fallback:', fallbackErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -72,15 +84,15 @@ function Home() {
       </div>
 
       <div className="dashboard-cards">
-        <div className={`dashboard-card ${totais.saldo >= 0 ? 'positive' : 'negative'}`}>
+        <div className={`dashboard-card ${totais.saldoContas >= 0 ? 'positive' : 'negative'}`}>
           <div className="card-icon">
             <FaChartLine />
           </div>
           <div className="card-content">
-            <h3>Saldo Total</h3>
-            <span className="card-value">{formatarValor(totais.saldo)}</span>
+            <h3>Saldo Total das Contas</h3>
+            <span className="card-value">{formatarValor(totais.saldoContas)}</span>
             <span className="card-description">
-              {totais.saldo >= 0 ? 'Saldo positivo' : 'Saldo negativo'}
+              {totais.saldoContas >= 0 ? 'Saldo positivo' : 'Saldo negativo'}
             </span>
           </div>
         </div>
