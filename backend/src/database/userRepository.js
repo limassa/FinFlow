@@ -8,8 +8,8 @@ const userRepository = {
     const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
     
     const result = await pool.query(
-      'INSERT INTO Usuario (Usuario_Email, Usuario_Senha, Usuario_Nome, Usuario_Telefone) VALUES ($1, $2, $3, $4) RETURNING *',
-      [email, senhaCriptografada, nome, telefone]
+      'INSERT INTO Usuario (Usuario_Email, Usuario_Senha, Usuario_Nome) VALUES ($1, $2, $3) RETURNING *',
+      [email, senhaCriptografada, nome]
     );
     return result.rows[0];
   },
@@ -497,6 +497,15 @@ const userRepository = {
       const result = await pool.query(updateQuery, [novoStatus, id]);
       return result.rows[0];
     }
+  },
+
+  // Função para calcular o saldo total das contas do usuário
+  async getSaldoTotalContas(userId) {
+    const result = await pool.query(
+      'SELECT COALESCE(SUM(Conta_Saldo), 0) as saldo_total FROM Conta WHERE Usuario_Id = $1 AND Conta_Ativo = TRUE',
+      [userId]
+    );
+    return parseFloat(result.rows[0].saldo_total || 0);
   },
 
   // Outras funções reutilizáveis...

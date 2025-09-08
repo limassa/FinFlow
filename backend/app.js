@@ -176,24 +176,12 @@ app.post('/api/cadastro', async (req, res) => {
     // Criar usuário
     const user = await userRepository.createUser({ nome, telefone, email, senha });
     
-    // Enviar email de boas-vindas em background (não bloqueia o cadastro)
-    console.log('📧 Iniciando envio de email de boas-vindas em background...');
-    console.log(`   Usuário: ${user.usuario_nome}`);
-    console.log(`   Email: ${user.usuario_email}`);
-    
-    // Enviar email em background para não bloquear a resposta
+    // Enviar email de boas-vindas (em background para não bloquear a resposta)
     emailService.sendWelcomeEmail({
       nome: user.usuario_nome,
       email: user.usuario_email
-    }).then(emailResult => {
-      if (emailResult) {
-        console.log('✅ Email de boas-vindas enviado com sucesso!');
-      } else {
-        console.log('❌ Falha ao enviar email de boas-vindas');
-      }
-    }).catch(emailError => {
-      console.error('💥 Erro ao enviar email de boas-vindas:', emailError.message);
-      console.error('   Stack:', emailError.stack);
+    }).catch(err => {
+      console.error('Erro ao enviar email de boas-vindas:', err);
     });
     
     res.status(201).json({
@@ -459,6 +447,18 @@ app.delete('/api/contas/:id', async (req, res) => {
   } catch (err) {
     console.error('Erro ao deletar conta:', err);
     res.status(500).json({ error: 'Erro ao deletar conta' });
+  }
+});
+
+// Rota para calcular o saldo total das contas
+app.get('/api/contas/saldo-total', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const saldoTotal = await userRepository.getSaldoTotalContas(userId);
+    res.json({ saldoTotal });
+  } catch (err) {
+    console.error('Erro ao calcular saldo total:', err);
+    res.status(500).json({ error: 'Erro ao calcular saldo total' });
   }
 });
 
@@ -776,15 +776,6 @@ app.post('/api/fale-conosco', async (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  
-  // Mostrar URL correta baseada no ambiente
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`🔍 Healthcheck: https://finflow-backend-production.up.railway.app/health`);
-    console.log(`🌐 URL de Produção: https://finflow-backend-production.up.railway.app`);
-  } else {
-    console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);
-    console.log(`🌐 URL Local: http://localhost:${PORT}`);
-  }
-  
+  console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
