@@ -231,7 +231,15 @@ function Receita() {
 
 
   const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR');
+    if (!data) return '00/00/0000';
+    try {
+      // Usar split para evitar problemas de fuso horário
+      const dataFormatada = data.split('T')[0]; // YYYY-MM-DD
+      const [ano, mes, dia] = dataFormatada.split('-');
+      return `${dia}/${mes}/${ano}`;
+    } catch (error) {
+      return '00/00/0000';
+    }
   };
 
   const formatarValor = (valor) => {

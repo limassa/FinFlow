@@ -178,8 +178,15 @@ const Calendario = () => {
   };
 
   const formatarData = (dataString) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR');
+    if (!dataString) return '00/00/0000';
+    try {
+      // Usar split para evitar problemas de fuso horário
+      const dataFormatada = dataString.split('T')[0]; // YYYY-MM-DD
+      const [ano, mes, dia] = dataFormatada.split('-');
+      return `${dia}/${mes}/${ano}`;
+    } catch (error) {
+      return '00/00/0000';
+    }
   };
 
 

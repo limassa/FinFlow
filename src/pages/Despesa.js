@@ -248,7 +248,10 @@ function Despesa() {
   const formatarData = (data) => {
     if (!data) return '00/00/0000';
     try {
-      return new Date(data).toLocaleDateString('pt-BR');
+      // Usar split para evitar problemas de fuso horário
+      const dataFormatada = data.split('T')[0]; // YYYY-MM-DD
+      const [ano, mes, dia] = dataFormatada.split('-');
+      return `${dia}/${mes}/${ano}`;
     } catch (error) {
       return '00/00/0000';
     }

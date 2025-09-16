@@ -13,8 +13,10 @@ export const formatarData = (data) => {
   if (!data) return '-';
   
   try {
-    const dataObj = new Date(data);
-    return dataObj.toLocaleDateString('pt-BR');
+    // Usar split para evitar problemas de fuso horário
+    const dataFormatada = data.split('T')[0]; // YYYY-MM-DD
+    const [ano, mes, dia] = dataFormatada.split('-');
+    return `${dia}/${mes}/${ano}`;
   } catch (error) {
     return '-';
   }
