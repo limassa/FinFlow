@@ -486,7 +486,7 @@ function Despesa() {
                       <FaEdit />
                     </button>
                     <button 
-                      onClick={() => handleDelete(despesa.id)}
+                      onClick={() => handleDelete(despesa.despesa_id)}
                       className="btn-delete"
                       title="Excluir"
                     >

@@ -329,6 +329,13 @@ app.put('/api/receitas/:id', async (req, res) => {
 
 app.delete('/api/receitas/:id', async (req, res) => {
   const { id } = req.params;
+  
+  // Validar se o ID é válido
+  if (!id || id === 'undefined' || isNaN(parseInt(id))) {
+    console.error('ID inválido para deleção de receita:', id);
+    return res.status(400).json({ error: 'ID inválido para deleção' });
+  }
+  
   try {
     await userRepository.deleteReceita(id);
     res.status(204).send();
@@ -393,6 +400,13 @@ app.put('/api/despesas/:id', async (req, res) => {
 
 app.delete('/api/despesas/:id', async (req, res) => {
   const { id } = req.params;
+  
+  // Validar se o ID é válido
+  if (!id || id === 'undefined' || isNaN(parseInt(id))) {
+    console.error('ID inválido para deleção:', id);
+    return res.status(400).json({ error: 'ID inválido para deleção' });
+  }
+  
   try {
     await userRepository.deleteDespesa(id);
     res.status(204).send();
