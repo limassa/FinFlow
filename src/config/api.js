@@ -1,6 +1,11 @@
 // Configuração da API
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Debug: Log da URL da API
+console.log('🔗 API_BASE_URL configurada:', API_BASE_URL);
+console.log('🔗 REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+console.log('🔗 Ambiente:', process.env.NODE_ENV);
+
 export const API_ENDPOINTS = {
   // Autenticação
   LOGIN: `${API_BASE_URL}/api/login`,
