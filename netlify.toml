@@ -8,7 +8,14 @@
   NODE_VERSION = "18"
   NPM_VERSION = "8"
 
-# Configuração para React Router (SPA)
+# Redirecionar rotas da API para o Railway
+[[redirects]]
+  from = "/api/*"
+  to = "https://finflow-production-e4b3.up.railway.app/api/:splat"
+  status = 200
+  force = true
+
+# Configuração para React Router (SPA) - apenas para rotas que não são API
 [[redirects]]
   from = "/*"
   to = "/index.html"
