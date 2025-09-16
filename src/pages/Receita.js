@@ -155,7 +155,9 @@ function Receita() {
     setDescricao(receita.receita_descricao);
     setValor(receita.receita_valor);
     // Formatar a data para o formato YYYY-MM-DD que o input date espera
-    const dataFormatada = receita.receita_data ? new Date(receita.receita_data).toISOString().split('T')[0] : '';
+    // Usar método mais seguro para evitar problemas de fuso horário
+    const dataFormatada = receita.receita_data ? 
+      receita.receita_data.split('T')[0] : '';
     setData(dataFormatada);
     setTipo(receita.receita_tipo);
     setRecebido(receita.receita_recebido || false);

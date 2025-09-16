@@ -152,10 +152,13 @@ function Despesa() {
     setDescricao(despesa.despesa_descricao);
     setValor(despesa.despesa_valor);
     // Formatar a data para o formato YYYY-MM-DD que o input date espera
-    const dataFormatada = despesa.despesa_data ? new Date(despesa.despesa_data).toISOString().split('T')[0] : '';
+    // Usar método mais seguro para evitar problemas de fuso horário
+    const dataFormatada = despesa.despesa_data ? 
+      despesa.despesa_data.split('T')[0] : '';
     setData(dataFormatada);
     // Formatar a data de vencimento para o formato YYYY-MM-DD
-    const dataVencimentoFormatada = despesa.despesa_dtvencimento ? new Date(despesa.despesa_dtvencimento).toISOString().split('T')[0] : '';
+    const dataVencimentoFormatada = despesa.despesa_dtvencimento ? 
+      despesa.despesa_dtvencimento.split('T')[0] : '';
     setDataVencimento(dataVencimentoFormatada);
     setTipo(despesa.despesa_tipo);
     setPago(despesa.despesa_pago || false);
