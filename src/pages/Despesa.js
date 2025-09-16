@@ -169,10 +169,22 @@ function Despesa() {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir esta despesa? Esta ação pode ser desfeita.')) {
       try {
-        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
+        console.log('🗑️ Tentando deletar despesa ID:', id);
+        console.log('🔗 URL:', `${API_ENDPOINTS.DESPESAS}/${id}`);
+        
+        const response = await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
+        console.log('✅ Despesa deletada com sucesso:', response.status);
+        
         fetchDespesas();
+        alert('Despesa excluída com sucesso!');
       } catch (err) {
-        alert('Erro ao deletar despesa');
+        console.error('❌ Erro ao deletar despesa:', err);
+        console.error('📊 Status:', err.response?.status);
+        console.error('📊 Data:', err.response?.data);
+        console.error('📊 Headers:', err.response?.headers);
+        
+        const errorMessage = err.response?.data?.error || err.message || 'Erro desconhecido';
+        alert(`Erro ao deletar despesa: ${errorMessage}`);
       }
     }
   };
