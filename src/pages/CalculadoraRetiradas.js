@@ -35,7 +35,7 @@ function CalculadoraRetiradas() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Para campos de moeda, aplicar máscara de calculadora
+    // Para campos de moeda, aplicar máscara de calculadora com separador de milhares
     if (name === 'valorInicial' || name === 'retiradaMensal') {
       // Remove caracteres não numéricos
       let cleanValue = value.replace(/[^\d]/g, '');
@@ -57,11 +57,50 @@ function CalculadoraRetiradas() {
       // Remover zeros à esquerda da parte inteira
       const formattedInteger = integerPart.replace(/^0+/, '') || '0';
       
-      const formattedValue = `${formattedInteger},${decimalPart}`;
+      // Adicionar separador de milhares
+      const formattedIntegerWithThousands = formattedInteger.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      
+      const formattedValue = `${formattedIntegerWithThousands},${decimalPart}`;
       
       setFormData(prev => ({
         ...prev,
         [name]: formattedValue
+      }));
+    } else if (name === 'taxaJuros') {
+      // Para campo de taxa de juros, permitir digitação normal mas limitar a 100
+      let cleanValue = value.replace(/[^\d.,]/g, '');
+      
+      // Se tem vírgula, manter vírgula
+      if (cleanValue.includes(',')) {
+        const parts = cleanValue.split(',');
+        if (parts.length > 2) {
+          cleanValue = parts[0] + ',' + parts.slice(1).join('');
+        }
+        // Limitar a 2 casas decimais após vírgula
+        if (parts.length === 2 && parts[1].length > 2) {
+          cleanValue = parts[0] + ',' + parts[1].substring(0, 2);
+        }
+      } else if (cleanValue.includes('.')) {
+        // Se tem ponto, manter ponto
+        const parts = cleanValue.split('.');
+        if (parts.length > 2) {
+          cleanValue = parts[0] + '.' + parts.slice(1).join('');
+        }
+        // Limitar a 2 casas decimais após ponto
+        if (parts.length === 2 && parts[1].length > 2) {
+          cleanValue = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+      }
+      
+      // Limitar valor máximo a 100
+      const numericValue = parseFloat(cleanValue.replace(',', '.'));
+      if (!isNaN(numericValue) && numericValue > 100) {
+        cleanValue = '100';
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: cleanValue
       }));
     } else {
       setFormData(prev => ({
@@ -128,25 +167,31 @@ function CalculadoraRetiradas() {
 
       // Calcular mês a mês
       for (let mes = 1; mes <= tempoMeses; mes++) {
-        // Aplicar juros sobre o saldo atual
-        saldoAtual = saldoAtual * (1 + taxaMensal);
+        // Calcular juros sobre o saldo atual (antes da retirada)
+        const jurosDoMes = saldoAtual * taxaMensal;
+        
+        // Aplicar juros ao saldo
+        saldoAtual += jurosDoMes;
         
         // Fazer retirada mensal
+        let valorRetirado = 0;
         if (saldoAtual >= retiradaMensal) {
+          valorRetirado = retiradaMensal;
           saldoAtual -= retiradaMensal;
           totalRetirado += retiradaMensal;
         } else {
           // Se não há saldo suficiente, retira o que tem
+          valorRetirado = saldoAtual;
           totalRetirado += saldoAtual;
           saldoAtual = 0;
         }
 
-        // Armazenar detalhes de todos os meses
+        // Armazenar detalhes do mês
         detalhesMensais.push({
           mes,
           saldo: saldoAtual,
-          retirado: Math.min(retiradaMensal, saldoAtual + retiradaMensal),
-          juros: (saldoAtual + retiradaMensal) * taxaMensal
+          retirado: valorRetirado,
+          juros: jurosDoMes
         });
       }
 
@@ -196,7 +241,7 @@ function CalculadoraRetiradas() {
           </label>
           <input
             name="valorInicial"
-            placeholder="Digite o valor (ex: 1000000)"
+            placeholder="Digite o valor (ex: 1.000,00)"
             value={formData.valorInicial}
             onChange={handleInputChange}
             className="form-input"
@@ -210,7 +255,7 @@ function CalculadoraRetiradas() {
           </label>
           <input
             name="retiradaMensal"
-            placeholder="Digite o valor (ex: 10000)"
+            placeholder="Digite o valor (ex: 1.000,00)"
             value={formData.retiradaMensal}
             onChange={handleInputChange}
             className="form-input"
@@ -226,7 +271,7 @@ function CalculadoraRetiradas() {
             <input
               type="number"
               name="taxaJuros"
-              placeholder="Ex: 10"
+              placeholder="Ex: 10,5"
               value={formData.taxaJuros}
               onChange={handleInputChange}
               className="form-input"
