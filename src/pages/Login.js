@@ -4,7 +4,7 @@ import axios from 'axios';
 import { setUsuarioLogado } from '../functions/auth';
 import { funcoes } from '../functions/function.js';
 import AuthBanner from '../components/AuthBanner';
-import { FaEnvelope } from 'react-icons/fa';
+import { FaEnvelope, FaCalculator } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../config/api';
 import '../App.css';
 
@@ -91,6 +91,11 @@ function Login() {
     navigate('/cadastro');
   };
 
+  const handleCalculadora = (e) => {
+    e.preventDefault();
+    navigate('/calculadora-juros');
+  };
+
   return (
     <AuthBanner 
       title="Bem-vindo de volta!"
@@ -150,6 +155,18 @@ function Login() {
         >
           Criar nova conta
         </button>
+
+        {/* Botão da Calculadora */}
+        <div className="calculadora-section">
+          <button
+            type="button"
+            className="calculadora-button"
+            onClick={handleCalculadora}
+          >
+            <FaCalculator />
+            Calculadora de Juros Compostos
+          </button>
+        </div>
 
         {/* Botão de Ajuda */}
         <div className="help-section">
