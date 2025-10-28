@@ -37,7 +37,7 @@ function CalculadoraJuros() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Para campos de moeda, aplicar máscara de calculadora
+    // Para campos de moeda, aplicar máscara de calculadora com separador de milhares
     if (name === 'valorInicial' || name === 'aporteMensal') {
       // Remove caracteres não numéricos
       let cleanValue = value.replace(/[^\d]/g, '');
@@ -59,11 +59,50 @@ function CalculadoraJuros() {
       // Remover zeros à esquerda da parte inteira
       const formattedInteger = integerPart.replace(/^0+/, '') || '0';
       
-      const formattedValue = `${formattedInteger},${decimalPart}`;
+      // Adicionar separador de milhares
+      const formattedIntegerWithThousands = formattedInteger.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      
+      const formattedValue = `${formattedIntegerWithThousands},${decimalPart}`;
       
       setFormData(prev => ({
         ...prev,
         [name]: formattedValue
+      }));
+    } else if (name === 'taxaJuros') {
+      // Para campo de taxa de juros, permitir digitação normal mas limitar a 100
+      let cleanValue = value.replace(/[^\d.,]/g, '');
+      
+      // Se tem vírgula, manter vírgula
+      if (cleanValue.includes(',')) {
+        const parts = cleanValue.split(',');
+        if (parts.length > 2) {
+          cleanValue = parts[0] + ',' + parts.slice(1).join('');
+        }
+        // Limitar a 2 casas decimais após vírgula
+        if (parts.length === 2 && parts[1].length > 2) {
+          cleanValue = parts[0] + ',' + parts[1].substring(0, 2);
+        }
+      } else if (cleanValue.includes('.')) {
+        // Se tem ponto, manter ponto
+        const parts = cleanValue.split('.');
+        if (parts.length > 2) {
+          cleanValue = parts[0] + '.' + parts.slice(1).join('');
+        }
+        // Limitar a 2 casas decimais após ponto
+        if (parts.length === 2 && parts[1].length > 2) {
+          cleanValue = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+      }
+      
+      // Limitar valor máximo a 100
+      const numericValue = parseFloat(cleanValue.replace(',', '.'));
+      if (!isNaN(numericValue) && numericValue > 100) {
+        cleanValue = '100';
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: cleanValue
       }));
     } else {
       setFormData(prev => ({
@@ -192,7 +231,7 @@ function CalculadoraJuros() {
             </label>
             <input
               name="valorInicial"
-              placeholder="Digite o valor (ex: 1000)"
+              placeholder="Digite o valor (ex: 1.000,00)"
               value={formData.valorInicial}
               onChange={handleInputChange}
               className="form-input"
@@ -208,7 +247,7 @@ function CalculadoraJuros() {
               <input
                 type="number"
                 name="taxaJuros"
-                placeholder="Ex: 12"
+                placeholder="Ex: 12,5"
                 value={formData.taxaJuros}
                 onChange={handleInputChange}
                 className="form-input"
@@ -259,7 +298,7 @@ function CalculadoraJuros() {
             </label>
             <input
               name="aporteMensal"
-              placeholder="Digite o valor (ex: 500)"
+              placeholder="Digite o valor (ex: 500,00)"
               value={formData.aporteMensal}
               onChange={handleInputChange}
               className="form-input"
