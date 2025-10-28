@@ -17,6 +17,8 @@ import Configuracoes from './pages/Configuracoes';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import DetalhesGrafico from './pages/DetalhesGrafico';
+import CalculadoraJuros from './pages/CalculadoraJuros';
+import CalculadoraRetiradas from './pages/CalculadoraRetiradas';
 
 import reportWebVitals from './reportWebVitals';
 
@@ -33,6 +35,8 @@ root.render(
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/fale-conosco" element={<FaleConosco />} />
+        <Route path="/calculadora-juros" element={<CalculadoraJuros />} />
+        <Route path="/calculadora-retiradas" element={<CalculadoraRetiradas />} />
         <Route path="/app" element={<App />}/>
         <Route path="/layout" element={<Layout />}>
           <Route path="principal" element={<Principal />} />

@@ -3657,8 +3657,336 @@ select.form-input:focus {
   }
 }
 
+/* Estilos da Calculadora de Juros Compostos */
+.calculadora-fullscreen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+}
 
+.calculadora-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+}
 
+.calculadora-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.calculadora-header p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.calculadora-form-full {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.calculadora-form-full .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.calculadora-form-full .form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.calculadora-form-full .form-input {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.calculadora-form-full .form-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.calculadora-form-full .form-button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.calculadora-form-full .form-button.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.calculadora-form-full .form-button.primary:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.calculadora-form-full .form-button.secondary {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 2px solid #e9ecef;
+}
+
+.calculadora-form-full .form-button.secondary:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.calculadora-section {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.calculadora-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.calculadora-button:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.calculadora-button:active {
+  transform: translateY(0);
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-group .form-input {
+  flex: 2;
+}
+
+.form-select {
+  background: white;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  color: #333;
+  min-width: 80px;
+  max-width: 100px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.form-select:hover {
+  border-color: #667eea;
+}
+
+.resultados-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.resultados-container h3 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.resultados-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.resultado-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.resultado-card.secundario {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.resultado-card.terciario {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.resultado-card .card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.resultado-card h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.resultado-card .card-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.detalhes-mensais {
+  margin-bottom: 2rem;
+}
+
+.detalhes-mensais h4 {
+  color: #333;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.tabela-detalhes {
+  background: #f8f9fa;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.tabela-header {
+  background: #e9ecef;
+  display: grid;
+  grid-template-columns: 1fr 2fr 2fr 2fr;
+  padding: 1rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.tabela-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 2fr 2fr;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.tabela-row:last-child {
+  border-bottom: none;
+}
+
+.tabela-row:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.info-adicional {
+  background: #e3f2fd;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+}
+
+.info-adicional p {
+  margin: 0.5rem 0;
+  color: #1976d2;
+}
+
+.info-adicional strong {
+  color: #0d47a1;
+}
+
+/* Responsividade para Calculadora */
+@media (max-width: 768px) {
+  .calculadora-fullscreen {
+    padding: 1rem;
+  }
+
+  .calculadora-header h1 {
+    font-size: 2rem;
+  }
+
+  .calculadora-header p {
+    font-size: 1rem;
+  }
+
+  .calculadora-form-full {
+    padding: 1.5rem;
+  }
+
+  .resultados-container {
+    padding: 1.5rem;
+  }
+
+  .resultados-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .tabela-header,
+  .tabela-row {
+    grid-template-columns: 1fr 2fr 2fr 2fr;
+    text-align: center;
+    font-size: 0.8rem;
+  }
+
+  .tabela-header span,
+  .tabela-row span {
+    padding: 0.25rem 0.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .input-group {
+    flex-direction: column;
+  }
+
+  .form-select {
+    min-width: auto;
+  }
+}
 
 
 
