@@ -3900,7 +3900,7 @@ select.form-input:focus {
 .tabela-header {
   background: #e9ecef;
   display: grid;
-  grid-template-columns: 1fr 2fr 2fr 2fr;
+  grid-template-columns: 1fr 2fr 2fr 2fr 2fr;
   padding: 1rem;
   font-weight: 600;
   color: #495057;
@@ -3908,7 +3908,7 @@ select.form-input:focus {
 
 .tabela-row {
   display: grid;
-  grid-template-columns: 1fr 2fr 2fr 2fr;
+  grid-template-columns: 1fr 2fr 2fr 2fr 2fr;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #dee2e6;
   color: #495057;
@@ -3966,9 +3966,9 @@ select.form-input:focus {
 
   .tabela-header,
   .tabela-row {
-    grid-template-columns: 1fr 2fr 2fr 2fr;
+    grid-template-columns: 1fr 1.5fr 1.5fr 1.5fr 1.5fr;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 
   .tabela-header span,

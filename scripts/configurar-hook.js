@@ -3,7 +3,7 @@ const path = require('path');
 
 function configurarHook() {
   try {
-    console.log('🔧 Configurando hook do Git...');
+    console.log('🔧 Configurando hooks do Git...');
     
     // 1. Verificar se existe o diretório .git/hooks
     const hooksDir = path.join(__dirname, '..', '.git', 'hooks');
@@ -14,18 +14,31 @@ function configurarHook() {
     
     // 2. Criar o arquivo post-commit
     const postCommitPath = path.join(hooksDir, 'post-commit');
-    const hookScript = `#!/bin/sh
+    const postCommitScript = `#!/bin/sh
 node "${path.join(__dirname, 'post-commit-hook.js')}"
 `;
     
-    fs.writeFileSync(postCommitPath, hookScript);
-    
-    // 3. Tornar o arquivo executável
+    fs.writeFileSync(postCommitPath, postCommitScript);
     fs.chmodSync(postCommitPath, '755');
     
     console.log('✅ Hook pós-commit configurado com sucesso!');
     console.log('   Arquivo:', postCommitPath);
-    console.log('\n📋 Agora a tabela de versão será atualizada automaticamente a cada commit');
+    
+    // 3. Criar o arquivo post-checkout
+    const postCheckoutPath = path.join(hooksDir, 'post-checkout');
+    const postCheckoutScript = `#!/bin/sh
+node "${path.join(__dirname, 'post-checkout-hook.js')}" "$1" "$2" "$3"
+`;
+    
+    fs.writeFileSync(postCheckoutPath, postCheckoutScript);
+    fs.chmodSync(postCheckoutPath, '755');
+    
+    console.log('✅ Hook pós-checkout configurado com sucesso!');
+    console.log('   Arquivo:', postCheckoutPath);
+    
+    console.log('\n📋 Agora a tabela de versão será atualizada automaticamente:');
+    console.log('   - A cada commit (post-commit)');
+    console.log('   - A cada checkout de branch (post-checkout)');
     console.log('   Branches rastreadas: teste, production, homologacao');
     
   } catch (error) {

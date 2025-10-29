@@ -148,7 +148,8 @@ function CalculadoraRetiradas() {
       // Converter taxa para mensal
       let taxaMensal;
       if (tipoTaxa === 'anual') {
-        taxaMensal = taxaJuros / 100 / 12;
+        // Taxa mensal efetiva usando juros compostos (como o Investidor Sardinha)
+        taxaMensal = Math.pow(1 + taxaJuros / 100, 1/12) - 1;
       } else {
         taxaMensal = taxaJuros / 100;
       }
@@ -167,17 +168,16 @@ function CalculadoraRetiradas() {
 
       // Calcular mês a mês
       let jurosTotais = 0;
+      
       for (let mes = 1; mes <= tempoMeses; mes++) {
         // Calcular juros sobre o saldo atual (antes da retirada)
+        const saldoAntesJuros = saldoAtual;
         const jurosDoMes = saldoAtual * taxaMensal;
-        
-        // Somar aos juros totais
-        jurosTotais += jurosDoMes;
         
         // Aplicar juros ao saldo
         saldoAtual += jurosDoMes;
         
-        // Fazer retirada mensal
+        // Fazer retirada mensal (depois de aplicar juros)
         let valorRetirado = 0;
         if (saldoAtual >= retiradaMensal) {
           valorRetirado = retiradaMensal;
@@ -189,6 +189,9 @@ function CalculadoraRetiradas() {
           totalRetirado += saldoAtual;
           saldoAtual = 0;
         }
+        
+        // Somar aos juros totais
+        jurosTotais += jurosDoMes;
 
         // Armazenar detalhes do mês
         detalhesMensais.push({
