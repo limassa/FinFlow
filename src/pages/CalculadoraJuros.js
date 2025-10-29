@@ -148,7 +148,8 @@ function CalculadoraJuros() {
       // Converter taxa para mensal
       let taxaMensal;
       if (tipoTaxa === 'anual') {
-        taxaMensal = taxaJuros / 100 / 12;
+        // Taxa mensal efetiva usando base de dias (como o Investidor Sardinha)
+        taxaMensal = Math.pow(1 + taxaJuros / 100, 1/12) - 1;
       } else {
         taxaMensal = taxaJuros / 100;
       }
@@ -165,12 +166,18 @@ function CalculadoraJuros() {
       let totalAportes = valorInicial;
       const detalhesMensais = [];
 
-      // Calcular mês a mês
+      // Calcular mês a mês (começando do mês 1)
       for (let mes = 1; mes <= periodoMeses; mes++) {
-        // Aplicar juros sobre o montante atual
+        // Armazenar montante antes de aplicar juros
+        const montanteAntesJuros = montanteFinal;
+        
+        // Aplicar juros ao montante atual
         montanteFinal = montanteFinal * (1 + taxaMensal);
         
-        // Adicionar aporte mensal (se houver)
+        // Calcular juros mensal (diferença entre montante com juros e sem juros)
+        const jurosDoMes = montanteFinal - montanteAntesJuros;
+        
+        // Adicionar aporte mensal DEPOIS de aplicar juros
         if (aporteMensal > 0) {
           montanteFinal += aporteMensal;
           totalAportes += aporteMensal;
@@ -180,7 +187,9 @@ function CalculadoraJuros() {
         detalhesMensais.push({
           mes,
           montante: montanteFinal,
-          juros: montanteFinal - totalAportes
+          totalInvestido: totalAportes,
+          jurosMensal: jurosDoMes,
+          jurosAcumulado: montanteFinal - totalAportes
         });
       }
 
@@ -383,14 +392,18 @@ function CalculadoraJuros() {
               <div className="tabela-detalhes">
                 <div className="tabela-header">
                   <span>Mês</span>
+                  <span>Total Investido</span>
+                  <span>Juros Mensal</span>
                   <span>Montante</span>
                   <span>Juros Acumulados</span>
                 </div>
                 {resultado.detalhesMensais.map((detalhe, index) => (
                   <div key={index} className="tabela-row">
                     <span>{detalhe.mes}</span>
+                    <span>{formatarValor(detalhe.totalInvestido)}</span>
+                    <span>{formatarValor(detalhe.jurosMensal)}</span>
                     <span>{formatarValor(detalhe.montante)}</span>
-                    <span>{formatarValor(detalhe.juros)}</span>
+                    <span>{formatarValor(detalhe.jurosAcumulado)}</span>
                   </div>
                 ))}
               </div>
