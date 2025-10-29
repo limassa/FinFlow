@@ -21,8 +21,8 @@ function CalculadoraJuros() {
   // Função para converter valor formatado para número
   const parseCurrency = (value) => {
     if (!value) return 0;
-    // Remove vírgula e converte para ponto decimal
-    return parseFloat(value.replace(',', '.')) || 0;
+    // Remove separador de milhares (ponto) e converte vírgula para ponto decimal
+    return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
   };
 
   // Função para converter número para valor formatado

@@ -19,8 +19,8 @@ function CalculadoraRetiradas() {
   // Função para converter valor formatado para número
   const parseCurrency = (value) => {
     if (!value) return 0;
-    // Remove vírgula e converte para ponto decimal
-    return parseFloat(value.replace(',', '.')) || 0;
+    // Remove separador de milhares (ponto) e converte vírgula para ponto decimal
+    return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
   };
 
   // Função para converter número para valor formatado
@@ -166,9 +166,13 @@ function CalculadoraRetiradas() {
       const detalhesMensais = [];
 
       // Calcular mês a mês
+      let jurosTotais = 0;
       for (let mes = 1; mes <= tempoMeses; mes++) {
         // Calcular juros sobre o saldo atual (antes da retirada)
         const jurosDoMes = saldoAtual * taxaMensal;
+        
+        // Somar aos juros totais
+        jurosTotais += jurosDoMes;
         
         // Aplicar juros ao saldo
         saldoAtual += jurosDoMes;
@@ -194,8 +198,6 @@ function CalculadoraRetiradas() {
           juros: jurosDoMes
         });
       }
-
-      const jurosTotais = totalRetirado - valorInicial;
 
       setResultado({
         valorInicial,
