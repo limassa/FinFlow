@@ -416,6 +416,97 @@ app.delete('/api/despesas/:id', async (req, res) => {
   }
 });
 
+// Rotas para Metas de Despesa
+app.get('/api/metas-despesa', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const pool = require('./src/database/connection');
+    const result = await pool.query(
+      `SELECT * FROM meta_despesa WHERE usuario_id = $1 AND is_active = true ORDER BY categoria`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar metas:', err);
+    res.status(500).json({ error: 'Erro ao buscar metas de despesa' });
+  }
+});
+
+app.post('/api/metas-despesa', async (req, res) => {
+  const { categoria, valor_meta, periodo, mes, ano, usuario_id } = req.body;
+  try {
+    const pool = require('./src/database/connection');
+    
+    // Verificar se já existe uma meta para esta categoria/periodo
+    const existing = await pool.query(
+      `SELECT * FROM meta_despesa 
+       WHERE usuario_id = $1 AND categoria = $2 AND periodo = $3 
+       AND ano = $4 AND (mes = $5 OR $5 IS NULL) AND is_active = true`,
+      [usuario_id, categoria, periodo, ano, mes]
+    );
+    
+    let result;
+    if (existing.rows.length > 0) {
+      // Atualizar meta existente
+      result = await pool.query(
+        `UPDATE meta_despesa 
+         SET valor_meta = $1, updated_at = CURRENT_TIMESTAMP 
+         WHERE meta_id = $2 
+         RETURNING *`,
+        [valor_meta, existing.rows[0].meta_id]
+      );
+    } else {
+      // Criar nova meta
+      result = await pool.query(
+        `INSERT INTO meta_despesa (categoria, valor_meta, periodo, mes, ano, usuario_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING *`,
+        [categoria, valor_meta, periodo, mes, ano, usuario_id]
+      );
+    }
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar/atualizar meta:', err);
+    res.status(500).json({ error: 'Erro ao salvar meta de despesa' });
+  }
+});
+
+app.put('/api/metas-despesa/:id', async (req, res) => {
+  const { id } = req.params;
+  const { valor_meta } = req.body;
+  try {
+    const pool = require('./src/database/connection');
+    const result = await pool.query(
+      `UPDATE meta_despesa SET valor_meta = $1, updated_at = CURRENT_TIMESTAMP WHERE meta_id = $2 RETURNING *`,
+      [valor_meta, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Meta não encontrada' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar meta:', err);
+    res.status(500).json({ error: 'Erro ao atualizar meta de despesa' });
+  }
+});
+
+app.delete('/api/metas-despesa/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const pool = require('./src/database/connection');
+    // Soft delete - apenas desativa a meta
+    await pool.query(
+      `UPDATE meta_despesa SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE meta_id = $1`,
+      [id]
+    );
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar meta:', err);
+    res.status(500).json({ error: 'Erro ao deletar meta de despesa' });
+  }
+});
+
 // Rotas para Contas
 app.get('/api/contas', async (req, res) => {
   const { userId } = req.query;
