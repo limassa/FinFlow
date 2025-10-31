@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -24,6 +24,12 @@ function Despesa() {
   const [frequencia, setFrequencia] = useState('mensal');
   const [proximasParcelas, setProximasParcelas] = useState(12);
   
+  // Estados para metas
+  const [metas, setMetas] = useState([]);
+  const [mostrarMetas, setMostrarMetas] = useState(false);
+  const [metaCategoria, setMetaCategoria] = useState('');
+  const [metaValor, setMetaValor] = useState('');
+  
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
 
@@ -34,7 +40,12 @@ function Despesa() {
     'Moradia',
     'Aluguel',
     'Outros',
-    'Veículos'
+    'Veículos',
+    'Poupança',
+    'Investimento',
+    'Educação',
+    'Lazer',
+    'Presentes'
   ];        
   const [tipo, setTipo] = useState('');
 
@@ -72,6 +83,7 @@ function Despesa() {
       console.log('🔄 Chamando fetchDespesas...');
       fetchDespesas();
       fetchContas();
+      fetchMetas();
     }
   }, [userId, mesFiltro]);
 
@@ -81,6 +93,15 @@ function Despesa() {
       setContas(res.data);
     } catch (err) {
       console.log('Erro ao buscar contas:', err);
+    }
+  };
+
+  const fetchMetas = async () => {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.METAS_DESPESA}?userId=${userId}`);
+      setMetas(res.data);
+    } catch (err) {
+      console.log('Erro ao buscar metas:', err);
     }
   };
 
@@ -264,6 +285,79 @@ function Despesa() {
     }).format(valor);
   };
 
+  const handleSalvarMeta = async () => {
+    if (!metaCategoria || !metaValor) {
+      alert('Preencha todos os campos');
+      return;
+    }
+
+    try {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = hoje.getMonth() + 1;
+      
+      await axios.post(API_ENDPOINTS.METAS_DESPESA, {
+        categoria: metaCategoria,
+        valor_meta: parseFloat(metaValor),
+        periodo: 'mensal',
+        mes: mes,
+        ano: ano,
+        usuario_id: userId
+      });
+      
+      setMetaCategoria('');
+      setMetaValor('');
+      fetchMetas();
+      alert('Meta salva com sucesso!');
+    } catch (err) {
+      console.error('Erro ao salvar meta:', err);
+      alert('Erro ao salvar meta');
+    }
+  };
+
+  const handleExcluirMeta = async (metaId) => {
+    if (!confirm('Deseja realmente excluir esta meta?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_ENDPOINTS.METAS_DESPESA}/${metaId}`);
+      fetchMetas();
+      alert('Meta excluída com sucesso!');
+    } catch (err) {
+      console.error('Erro ao excluir meta:', err);
+      alert('Erro ao excluir meta');
+    }
+  };
+
+  // Calcular totais por categoria e comparar com metas
+  const calcularTotaisPorCategoria = () => {
+    const totais = {};
+    const hoje = new Date();
+    const mesAtual = mesFiltro || hoje.toISOString().slice(0, 7);
+    
+    despesas
+      .filter(d => d.despesa_pago && d.despesa_data?.slice(0, 7) === mesAtual)
+      .forEach(despesa => {
+        if (!totais[despesa.despesa_tipo]) {
+          totais[despesa.despesa_tipo] = 0;
+        }
+        totais[despesa.despesa_tipo] += parseFloat(despesa.despesa_valor || 0);
+      });
+    
+    return totais;
+  };
+
+  // Calcular total geral de despesas do mês
+  const calcularTotalGeral = () => {
+    const hoje = new Date();
+    const mesAtual = mesFiltro || hoje.toISOString().slice(0, 7);
+    
+    return despesas
+      .filter(d => d.despesa_pago && d.despesa_data?.slice(0, 7) === mesAtual)
+      .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
+  };
+
   if (!userId) {
     return <div>Usuário não logado</div>;
   }
@@ -440,6 +534,88 @@ function Despesa() {
             )}
           </div>
         </form>
+      </div>
+
+      {/* Seção de Metas */}
+      <div className="metas-container">
+        <div className="metas-header" onClick={() => setMostrarMetas(!mostrarMetas)}>
+          <h3><FaBullseye /> Metas de Despesas por Categoria</h3>
+          <span>{mostrarMetas ? '▼' : '▶'}</span>
+        </div>
+        
+        {mostrarMetas && (
+          <>
+            <div className="metas-form">
+              <div className="metas-inputs">
+                <select value={metaCategoria} onChange={e => setMetaCategoria(e.target.value)}>
+                  <option value="">Selecione a categoria</option>
+                  {tiposDespesa.map(tipo => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="% da meta (ex: 30)"
+                  value={metaValor}
+                  onChange={e => setMetaValor(e.target.value)}
+                />
+                <button onClick={handleSalvarMeta} className="btn-adicionar">
+                  <FaPlus /> Adicionar Meta
+                </button>
+              </div>
+            </div>
+
+            {metas.length > 0 && (
+              <div className="metas-grid">
+                <div className="metas-grid-header">
+                  <div>Categoria</div>
+                  <div>Meta %</div>
+                  <div>Gasto Atual (%)</div>
+                  <div>Diferença</div>
+                  <div>Ações</div>
+                </div>
+                {metas.map(meta => {
+                  const totais = calcularTotaisPorCategoria();
+                  const gastoAtual = totais[meta.categoria] || 0;
+                  const totalGeral = calcularTotalGeral();
+                  
+                  // Converter valor_meta para número
+                  const metaPercentual = parseFloat(meta.valor_meta) || 0;
+                  
+                  // Calcular o percentual que a categoria representa do total
+                  const percentualAtual = totalGeral > 0 ? (gastoAtual / totalGeral) * 100 : 0;
+                  
+                  // Comparar com a meta percentual
+                  const diferenca = Math.abs(percentualAtual - metaPercentual);
+                  const status = percentualAtual <= metaPercentual * 1.1 ? 'ok' : 'atencao';
+                  
+                  return (
+                    <div key={meta.meta_id} className={`metas-grid-row ${status}`}>
+                      <div>{meta.categoria}</div>
+                      <div>{metaPercentual.toFixed(1)}%</div>
+                      <div>{formatarValor(gastoAtual)} ({percentualAtual.toFixed(1)}%)</div>
+                      <div>
+                        {status === 'ok' && <FaCheckCircle className="status-ok" />}
+                        {status === 'atencao' && <FaExclamationCircle className="status-atencao" />}
+                        {diferenca.toFixed(1)}%
+                      </div>
+                      <div>
+                        <button 
+                          onClick={() => handleExcluirMeta(meta.meta_id)}
+                          className="btn-delete"
+                          title="Excluir meta"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Grid de Despesas */}

@@ -3988,6 +3988,137 @@ select.form-input:focus {
   }
 }
 
+/* Estilos para Metas de Despesa */
+.metas-container {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.metas-header {
+  padding: 20px 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metas-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+}
+
+.metas-header span {
+  font-size: 14px;
+  transition: transform 0.3s;
+}
+
+.metas-form {
+  padding: 20px 25px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.metas-inputs {
+  display: grid;
+  grid-template-columns: 2fr 2fr auto;
+  gap: 15px;
+  align-items: center;
+}
+
+.metas-inputs select,
+.metas-inputs input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.metas-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.metas-grid-header {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1fr 0.8fr;
+  padding: 15px 25px;
+  background: #e9ecef;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #ddd;
+}
+
+.metas-grid-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1fr 0.8fr;
+  padding: 15px 25px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  transition: background-color 0.3s;
+}
+
+.metas-grid-row:hover {
+  background: #f8f9fa;
+}
+
+.metas-grid-row.ok {
+  border-left: 4px solid #4CAF50;
+}
+
+.metas-grid-row.atencao {
+  border-left: 4px solid #FF9800;
+}
+
+.metas-grid-row.excedido {
+  border-left: 4px solid #F44336;
+}
+
+.metas-grid-row .status-ok {
+  color: #4CAF50;
+  margin-right: 5px;
+}
+
+.metas-grid-row .status-atencao {
+  color: #FF9800;
+  margin-right: 5px;
+}
+
+.metas-grid-row .status-excedido {
+  color: #F44336;
+  margin-right: 5px;
+}
+
+/* Responsividade para Metas */
+@media (max-width: 768px) {
+  .metas-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .metas-grid-header,
+  .metas-grid-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .metas-grid-row > div:before {
+    content: attr(data-label) ': ';
+    font-weight: 600;
+    color: #666;
+  }
+
+  .metas-grid-header > div {
+    display: none;
+  }
+}
+
 
 
 
