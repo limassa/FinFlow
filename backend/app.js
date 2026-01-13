@@ -14,6 +14,7 @@ const cors = require('cors');
 const userRepository = require('./src/database/userRepository');
 const PasswordValidator = require('./src/utils/passwordValidator');
 const emailService = require('./src/services/emailService');
+const whatsappService = require('./src/services/whatsappService');
 
 const app = express();
 app.use(cors());
@@ -96,19 +97,58 @@ app.get('/health', (req, res) => {
 app.get('/api/versao', async (req, res) => {
   try {
     const pool = require('./src/database/connection');
-    const result = await pool.query(`
-      SELECT 
-        versao_numero,
-        versao_nome,
-        versao_data,
-        versao_descricao,
-        versao_status,
-        versao_ambiente
-      FROM versao_sistema 
-      WHERE versao_status = 'ATIVA'
-      ORDER BY versao_id DESC 
-      LIMIT 1
-    `);
+    
+    // Tentar buscar com diferentes formatos de nome de tabela (case-sensitive)
+    let result;
+    try {
+      // Tentar sem aspas primeiro (minúsculas - formato padrão do script SQL)
+      result = await pool.query(`
+        SELECT 
+          versao_numero,
+          versao_nome,
+          versao_data,
+          versao_descricao,
+          versao_status,
+          versao_ambiente,
+          versao_mobile
+        FROM versao_sistema 
+        WHERE versao_status = 'ATIVA'
+        ORDER BY versao_id DESC 
+        LIMIT 1
+      `);
+    } catch (err1) {
+      try {
+        // Tentar com aspas (PostgreSQL case-sensitive)
+        result = await pool.query(`
+          SELECT 
+            versao_numero,
+            versao_nome,
+            versao_data,
+            versao_descricao,
+            versao_status,
+            versao_ambiente,
+            versao_mobile
+          FROM "Versao_Sistema" 
+          WHERE "Versao_Status" = 'ATIVA'
+          ORDER BY "Versao_Id" DESC 
+          LIMIT 1
+        `);
+      } catch (err2) {
+        // Tabela não existe - retornar versão padrão
+        console.log('⚠️ Tabela versao_sistema não encontrada, retornando versão padrão');
+        return res.json({
+          success: true,
+          versao: {
+            versao_numero: '1.0.0',
+            versao_nome: 'FinFlow',
+            versao_data: new Date().toISOString(),
+            versao_descricao: 'Versão de desenvolvimento',
+            versao_status: 'ATIVA',
+            versao_ambiente: process.env.NODE_ENV || 'development'
+          }
+        });
+      }
+    }
     
     if (result.rows.length > 0) {
       res.json({
@@ -116,17 +156,121 @@ app.get('/api/versao', async (req, res) => {
         versao: result.rows[0]
       });
     } else {
+      // Nenhuma versão ativa encontrada - retornar versão padrão
       res.json({
-        success: false,
-        message: 'Nenhuma versão ativa encontrada'
+        success: true,
+        versao: {
+          versao_numero: '1.0.0',
+          versao_nome: 'FinFlow',
+          versao_data: new Date().toISOString(),
+          versao_descricao: 'Versão de desenvolvimento',
+          versao_status: 'ATIVA',
+          versao_ambiente: process.env.NODE_ENV || 'development'
+        }
       });
     }
   } catch (err) {
-    console.error('❌ Erro ao buscar versão:', err);
-    res.status(500).json({ 
-      success: false,
-      error: 'Erro ao buscar versão do sistema',
-      details: err.message 
+    // Em caso de erro, retornar versão padrão ao invés de erro 500
+    console.error('❌ Erro ao buscar versão:', err.message);
+    res.json({
+      success: true,
+      versao: {
+        versao_numero: '1.0.0',
+        versao_nome: 'FinFlow',
+        versao_data: new Date().toISOString(),
+        versao_descricao: 'Versão de desenvolvimento',
+        versao_status: 'ATIVA',
+        versao_ambiente: process.env.NODE_ENV || 'development'
+      }
+    });
+  }
+});
+
+// Rota para buscar versão mobile
+app.get('/api/versao/mobile', async (req, res) => {
+  try {
+    const pool = require('./src/database/connection');
+    
+    // Tentar buscar versão mobile
+    let result;
+    try {
+      result = await pool.query(`
+        SELECT 
+          versao_mobile,
+          versao_nome,
+          versao_data,
+          versao_descricao,
+          versao_status,
+          versao_ambiente
+        FROM versao_sistema 
+        WHERE versao_status = 'ATIVA'
+          AND versao_mobile IS NOT NULL
+        ORDER BY versao_id DESC 
+        LIMIT 1
+      `);
+    } catch (err1) {
+      try {
+        result = await pool.query(`
+          SELECT 
+            "Versao_Mobile" as versao_mobile,
+            "Versao_Nome" as versao_nome,
+            "Versao_Data" as versao_data,
+            "Versao_Descricao" as versao_descricao,
+            "Versao_Status" as versao_status,
+            "Versao_Ambiente" as versao_ambiente
+          FROM "Versao_Sistema" 
+          WHERE "Versao_Status" = 'ATIVA'
+            AND "Versao_Mobile" IS NOT NULL
+          ORDER BY "Versao_Id" DESC 
+          LIMIT 1
+        `);
+      } catch (err2) {
+        // Retornar versão padrão
+        return res.json({
+          success: true,
+          versao: {
+            versao_mobile: 'M.1.1.01',
+            versao_nome: 'FinFlow Mobile',
+            versao_data: new Date().toISOString(),
+            versao_descricao: 'Versão de desenvolvimento',
+            versao_status: 'ATIVA',
+            versao_ambiente: process.env.NODE_ENV || 'development'
+          }
+        });
+      }
+    }
+    
+    if (result.rows.length > 0 && result.rows[0].versao_mobile) {
+      res.json({
+        success: true,
+        versao: result.rows[0]
+      });
+    } else {
+      // Nenhuma versão mobile encontrada - retornar versão padrão
+      res.json({
+        success: true,
+        versao: {
+          versao_mobile: 'M.1.1.01',
+          versao_nome: 'FinFlow Mobile',
+          versao_data: new Date().toISOString(),
+          versao_descricao: 'Versão de desenvolvimento',
+          versao_status: 'ATIVA',
+          versao_ambiente: process.env.NODE_ENV || 'development'
+        }
+      });
+    }
+  } catch (err) {
+    console.error('❌ Erro ao buscar versão mobile:', err.message);
+    res.json({
+      success: true,
+      versao: {
+        versao_mobile: 'M.1.1.01',
+        versao_nome: 'FinFlow Mobile',
+        versao_data: new Date().toISOString(),
+        versao_descricao: 'Versão de desenvolvimento',
+        versao_status: 'ATIVA',
+        versao_ambiente: process.env.NODE_ENV || 'development'
+      }
     });
   }
 });
@@ -252,12 +396,17 @@ app.post('/api/login', async (req, res) => {
     console.log('📊 Resultado do login:', user);
     
     if (user) {
+      // Normalizar campos do usuário (pode vir em maiúsculas ou minúsculas)
+      const userId = user.usuario_id || user.Usuario_Id || user.id;
+      const userNome = user.usuario_nome || user.Usuario_Nome || user.nome;
+      const userEmail = user.usuario_email || user.Usuario_Email || user.email;
+      
       const userResponse = {
         success: true,
         user: {
-          id: user.usuario_id,
-          usuario_nome: user.usuario_nome, 
-          usuario_email: user.usuario_email
+          id: userId,
+          usuario_nome: userNome, 
+          usuario_email: userEmail
         },
         token: 'dummy-token' // Token temporário
       };
@@ -546,12 +695,25 @@ app.put('/api/contas/:id', async (req, res) => {
 
 app.delete('/api/contas/:id', async (req, res) => {
   const { id } = req.params;
+  
+  // Validar ID
+  if (!id || id === 'undefined' || id === 'null') {
+    console.error('Erro ao deletar conta: ID inválido ou undefined');
+    return res.status(400).json({ error: 'ID da conta é obrigatório' });
+  }
+  
   try {
     const conta = await userRepository.deleteConta(id);
+    if (!conta) {
+      return res.status(404).json({ error: 'Conta não encontrada' });
+    }
     res.json(conta);
   } catch (err) {
     console.error('Erro ao deletar conta:', err);
-    res.status(500).json({ error: 'Erro ao deletar conta' });
+    res.status(500).json({ 
+      error: 'Erro ao deletar conta',
+      details: err.message 
+    });
   }
 });
 
@@ -663,10 +825,31 @@ app.get('/api/user/lembretes', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
+    // Normalizar campos (pode vir em maiúsculas ou minúsculas)
+    const lembretesAtivos = user.usuario_lembretesativos !== undefined 
+      ? user.usuario_lembretesativos 
+      : (user.Usuario_LembretesAtivos !== undefined ? user.Usuario_LembretesAtivos : false);
+    
+    const lembretesEmail = user.usuario_lembretesemail !== undefined 
+      ? user.usuario_lembretesemail 
+      : (user.Usuario_LembretesEmail !== undefined ? user.Usuario_LembretesEmail : false);
+    
+    const lembretesWhatsApp = user.usuario_lembreteswhatsapp !== undefined 
+      ? user.usuario_lembreteswhatsapp 
+      : (user.Usuario_LembretesWhatsApp !== undefined ? user.Usuario_LembretesWhatsApp : false);
+    
+    const lembretesDiasAntes = user.usuario_lembretesdiasantes !== undefined 
+      ? user.usuario_lembretesdiasantes 
+      : (user.Usuario_LembretesDiasAntes !== undefined ? user.Usuario_LembretesDiasAntes : 5);
+    
+    const lembretesHorario = user.usuario_lembreteshorario || user.Usuario_LembretesHorario || '18:15';
+    
     res.json({
-      lembretesAtivos: user.usuario_lembretesativos,
-      lembretesEmail: user.usuario_lembretesemail,
-      lembretesDiasAntes: user.usuario_lembretesdiasantes || 5
+      lembretesAtivos,
+      lembretesEmail,
+      lembretesWhatsApp,
+      lembretesDiasAntes,
+      lembretesHorario
     });
   } catch (err) {
     console.error('Erro ao buscar configuração de lembretes:', err);
@@ -675,12 +858,13 @@ app.get('/api/user/lembretes', async (req, res) => {
 });
 
 app.put('/api/user/lembretes', async (req, res) => {
-  const { userId, lembretesAtivos, lembretesEmail, lembretesDiasAntes, lembretesHorario } = req.body;
+  const { userId, lembretesAtivos, lembretesEmail, lembretesWhatsApp, lembretesDiasAntes, lembretesHorario } = req.body;
   
   try {
     const result = await userRepository.updateLembretesConfig(userId, {
       lembretesAtivos,
       lembretesEmail,
+      lembretesWhatsApp,
       lembretesDiasAntes,
       lembretesHorario
     });
@@ -691,7 +875,16 @@ app.put('/api/user/lembretes', async (req, res) => {
     }
   } catch (err) {
     console.error('Erro ao atualizar configuração de lembretes:', err);
-    res.status(500).json({ error: 'Erro ao atualizar configuração' });
+    const errorMessage = err.message || 'Erro ao atualizar configuração';
+    // Verificar se o erro é relacionado à coluna WhatsApp não existir
+    if (errorMessage.includes('Usuario_LembretesWhatsApp') || errorMessage.includes('usuario_lembreteswhatsapp') || errorMessage.includes('column') || errorMessage.includes('does not exist')) {
+      res.status(500).json({ 
+        error: 'A coluna de WhatsApp não foi criada no banco de dados. Execute o script adicionar-coluna-whatsapp.js primeiro.',
+        details: errorMessage
+      });
+    } else {
+      res.status(500).json({ error: errorMessage });
+    }
   }
 });
 
@@ -705,10 +898,21 @@ app.get('/api/user/perfil', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
+    // Normalizar campos (pode vir em maiúsculas ou minúsculas)
+    const usuarioNome = user.usuario_nome || user.Usuario_Nome || user.USUARIO_NOME || user.nome || '';
+    const usuarioEmail = user.usuario_email || user.Usuario_Email || user.USUARIO_EMAIL || user.email || '';
+    const usuarioTelefone = user.usuario_telefone || user.Usuario_Telefone || user.USUARIO_TELEFONE || user.telefone || '';
+    
+    console.log('📊 Dados do perfil normalizados:', {
+      nome: usuarioNome,
+      email: usuarioEmail,
+      telefone: usuarioTelefone
+    });
+    
     res.json({
-      nome: user.usuario_nome,
-      email: user.usuario_email,
-      telefone: user.usuario_telefone || ''
+      nome: usuarioNome,
+      email: usuarioEmail,
+      telefone: usuarioTelefone
     });
   } catch (err) {
     console.error('Erro ao buscar perfil do usuário:', err);
@@ -717,7 +921,7 @@ app.get('/api/user/perfil', async (req, res) => {
 });
 
 app.put('/api/user/perfil', async (req, res) => {
-  const { userId, nome, email, telefone, novaSenha } = req.body;
+  const { userId, nome, email, telefone, novaSenha, senhaAtual } = req.body;
   
   try {
     // Verificar se o usuário existe
@@ -726,25 +930,92 @@ app.put('/api/user/perfil', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
-    // Atualizar dados do usuário
-    const updateData = {
-      nome: nome || user.usuario_nome,
-      email: email || user.usuario_email,
-      telefone: telefone || user.usuario_telefone
-    };
+    // Normalizar campos do usuário atual (pode vir em maiúsculas ou minúsculas)
+    const usuarioNomeAtual = user.usuario_nome || user.Usuario_Nome || user.USUARIO_NOME || user.nome || '';
+    const usuarioEmailAtual = user.usuario_email || user.Usuario_Email || user.USUARIO_EMAIL || user.email || '';
+    const usuarioTelefoneAtual = user.usuario_telefone || user.Usuario_Telefone || user.USUARIO_TELEFONE || user.telefone || '';
     
-    // Se uma nova senha foi fornecida, criptografá-la
+    // Se uma nova senha foi fornecida, verificar senha atual primeiro
     if (novaSenha) {
+      if (!senhaAtual) {
+        return res.status(400).json({ error: 'Senha atual é obrigatória para alterar a senha' });
+      }
+      
+      // Normalizar senha do usuário
+      const usuarioSenha = user.usuario_senha || user.Usuario_Senha || user.USUARIO_SENHA || user.senha;
+      
       const bcrypt = require('bcrypt');
+      let senhaValida = false;
+      
+      if (usuarioSenha && (usuarioSenha.startsWith('$2b$') || usuarioSenha.startsWith('$2a$'))) {
+        senhaValida = await bcrypt.compare(senhaAtual, usuarioSenha);
+      } else {
+        senhaValida = (senhaAtual === usuarioSenha);
+      }
+      
+      if (!senhaValida) {
+        return res.status(401).json({ error: 'Senha atual incorreta' });
+      }
+      
       const saltRounds = 10;
-      updateData.senha = await bcrypt.hash(novaSenha, saltRounds);
-    }
-    
-    const result = await userRepository.updateUserProfile(userId, updateData);
-    if (result) {
-      res.json({ message: 'Perfil atualizado com sucesso!' });
+      const senhaCriptografada = await bcrypt.hash(novaSenha, saltRounds);
+      
+      // Atualizar dados do usuário (incluindo senha)
+      const updateData = {
+        nome: nome || usuarioNomeAtual,
+        email: email || usuarioEmailAtual,
+        telefone: telefone || usuarioTelefoneAtual,
+        senha: senhaCriptografada
+      };
+      
+      const result = await userRepository.updateUserProfile(userId, updateData);
+      if (result) {
+        // Buscar dados atualizados para retornar
+        const userAtualizado = await userRepository.findUserById(userId);
+        const usuarioNome = userAtualizado.usuario_nome || userAtualizado.Usuario_Nome || userAtualizado.USUARIO_NOME || userAtualizado.nome || '';
+        const usuarioEmail = userAtualizado.usuario_email || userAtualizado.Usuario_Email || userAtualizado.USUARIO_EMAIL || userAtualizado.email || '';
+        const usuarioTelefone = userAtualizado.usuario_telefone || userAtualizado.Usuario_Telefone || userAtualizado.USUARIO_TELEFONE || userAtualizado.telefone || '';
+        
+        res.json({ 
+          message: 'Perfil atualizado com sucesso!',
+          nome: usuarioNome,
+          email: usuarioEmail,
+          telefone: usuarioTelefone
+        });
+      } else {
+        res.status(404).json({ error: 'Usuário não encontrado' });
+      }
     } else {
-      res.status(404).json({ error: 'Usuário não encontrado' });
+      // Atualizar dados do usuário (sem senha)
+      const updateData = {
+        nome: nome || usuarioNomeAtual,
+        email: email || usuarioEmailAtual,
+        telefone: telefone || usuarioTelefoneAtual
+      };
+      
+      const result = await userRepository.updateUserProfile(userId, updateData);
+      if (result) {
+        // Buscar dados atualizados para retornar
+        const userAtualizado = await userRepository.findUserById(userId);
+        const usuarioNome = userAtualizado.usuario_nome || userAtualizado.Usuario_Nome || userAtualizado.USUARIO_NOME || userAtualizado.nome || '';
+        const usuarioEmail = userAtualizado.usuario_email || userAtualizado.Usuario_Email || userAtualizado.USUARIO_EMAIL || userAtualizado.email || '';
+        const usuarioTelefone = userAtualizado.usuario_telefone || userAtualizado.Usuario_Telefone || userAtualizado.USUARIO_TELEFONE || userAtualizado.telefone || '';
+        
+        console.log('📊 Perfil atualizado - dados retornados:', {
+          nome: usuarioNome,
+          email: usuarioEmail,
+          telefone: usuarioTelefone
+        });
+        
+        res.json({ 
+          message: 'Perfil atualizado com sucesso!',
+          nome: usuarioNome,
+          email: usuarioEmail,
+          telefone: usuarioTelefone
+        });
+      } else {
+        res.status(404).json({ error: 'Usuário não encontrado' });
+      }
     }
   } catch (err) {
     console.error('Erro ao atualizar perfil do usuário:', err);
@@ -762,6 +1033,178 @@ app.get('/api/lembretes/vencimentos', async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar vencimentos próximos:', err);
     res.status(500).json({ error: 'Erro ao buscar vencimentos' });
+  }
+});
+
+// Rota para testar envio de lembretes por WhatsApp
+app.post('/api/lembretes/teste-whatsapp', async (req, res) => {
+  const { userId } = req.body;
+  
+  console.log('📱 Teste de lembretes WhatsApp iniciado para userId:', userId);
+  
+  try {
+    // Buscar usuário
+    console.log('📋 Buscando usuário...');
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      console.log('❌ Usuário não encontrado');
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    // Normalizar campos do usuário (pode vir em maiúsculas ou minúsculas)
+    const usuarioNome = user.usuario_nome || user.Usuario_Nome || user.USUARIO_NOME || user.nome || '';
+    const usuarioTelefone = user.usuario_telefone || user.Usuario_Telefone || user.USUARIO_TELEFONE || user.telefone || '';
+    const usuarioLembretesWhatsApp = user.usuario_lembreteswhatsapp !== undefined 
+      ? user.usuario_lembreteswhatsapp 
+      : (user.Usuario_LembretesWhatsApp !== undefined 
+          ? user.Usuario_LembretesWhatsApp 
+          : (user.USUARIO_LEMBRETESWHATSAPP !== undefined 
+              ? user.USUARIO_LEMBRETESWHATSAPP 
+              : false));
+    
+    console.log('✅ Usuário encontrado:', usuarioNome, usuarioTelefone);
+    console.log('📊 Campos normalizados:', {
+      nome: usuarioNome,
+      telefone: usuarioTelefone,
+      lembretesWhatsApp: usuarioLembretesWhatsApp,
+      camposDisponiveis: Object.keys(user)
+    });
+    
+    // Verificar se lembretes por WhatsApp estão ativos
+    if (!usuarioLembretesWhatsApp) {
+      console.log('❌ Lembretes por WhatsApp desativados');
+      console.log('   Campo no banco:', user.Usuario_LembretesWhatsApp, user.usuario_lembreteswhatsapp);
+      return res.status(400).json({ error: 'Lembretes por WhatsApp estão desativados para este usuário' });
+    }
+    
+    // Verificar se usuário tem telefone cadastrado
+    if (!usuarioTelefone) {
+      console.log('❌ Usuário não possui telefone cadastrado');
+      return res.status(400).json({ error: 'Usuário não possui telefone cadastrado' });
+    }
+    
+    // Buscar vencimentos próximos
+    console.log('📅 Buscando vencimentos próximos...');
+    const vencimentos = await userRepository.getVencimentosProximos(userId);
+    console.log('📊 Vencimentos encontrados:', vencimentos.length);
+    
+    if (vencimentos.length === 0) {
+      console.log('❌ Nenhum vencimento próximo encontrado');
+      console.log('   💡 Verifique:');
+      console.log('      - Despesa está ativa');
+      console.log('      - Despesa não está paga');
+      console.log('      - Data de vencimento está dentro do período configurado');
+      console.log('      - Data de vencimento não é NULL');
+      
+      // Buscar todas as despesas do usuário para debug
+      try {
+        const todasDespesas = await userRepository.getDespesas(userId);
+        console.log(`   📋 Total de despesas do usuário: ${todasDespesas.length}`);
+        if (todasDespesas.length > 0) {
+          console.log('   📋 Despesas encontradas:');
+          todasDespesas.slice(0, 5).forEach((d, i) => {
+            const despesaAtiva = d.despesa_ativo !== false && d.Despesa_Ativo !== false;
+            const despesaPaga = d.despesa_pago || d.Despesa_Pago;
+            const dataVenc = d.despesa_dtvencimento || d.Despesa_DtVencimento;
+            console.log(`      ${i + 1}. ${d.despesa_descricao || d.Despesa_Descricao}`);
+            console.log(`         Ativa: ${despesaAtiva}, Paga: ${despesaPaga}, Vencimento: ${dataVenc}`);
+          });
+        }
+      } catch (debugErr) {
+        console.log('   ⚠️ Erro ao buscar despesas para debug:', debugErr.message);
+      }
+      
+      return res.status(404).json({ 
+        message: 'Nenhuma despesa com vencimento próximo encontrada',
+        info: 'Para testar, crie uma despesa com vencimento nos próximos dias (conforme configurado nas configurações)',
+        debug: 'Verifique os logs do backend para mais detalhes'
+      });
+    }
+    
+    // Verificar conexão com Evolution API antes de enviar
+    console.log('🔍 Verificando conexão com Evolution API...');
+    console.log(`   URL: ${process.env.EVOLUTION_API_URL || 'http://localhost:8080'}`);
+    console.log(`   Instância: ${process.env.EVOLUTION_INSTANCE_NAME || 'finflow'}`);
+    console.log(`   API Key configurada: ${!!process.env.EVOLUTION_API_KEY}`);
+    
+    const isConnected = await whatsappService.checkConnection();
+    if (!isConnected) {
+      console.log('❌ Instância do WhatsApp não está conectada');
+      return res.status(500).json({ 
+        error: 'Instância do WhatsApp não está conectada',
+        details: 'Verifique se a Evolution API está rodando e se a instância está conectada (QR Code escaneado)',
+        url: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
+        instance: process.env.EVOLUTION_INSTANCE_NAME || 'finflow'
+      });
+    }
+    
+    console.log('✅ Conexão com Evolution API OK!');
+    
+    // Formatar número de telefone
+    const phoneNumber = whatsappService.formatPhoneNumber(usuarioTelefone);
+    console.log(`📱 Telefone formatado: ${phoneNumber}`);
+    
+    if (!phoneNumber) {
+      console.log('❌ Número de telefone inválido');
+      return res.status(400).json({ 
+        error: 'Número de telefone inválido',
+        telefone: usuarioTelefone
+      });
+    }
+    
+    // Enviar WhatsApp de teste
+    console.log('📱 Enviando WhatsApp de teste...');
+    console.log(`   Destinatário: ${phoneNumber}`);
+    console.log(`   Vencimentos: ${vencimentos.length}`);
+    
+    try {
+      const whatsappEnviado = await whatsappService.sendReminderMessage({
+        nome: usuarioNome,
+        telefone: usuarioTelefone
+      }, vencimentos);
+      
+      if (whatsappEnviado) {
+        console.log('✅ WhatsApp enviado com sucesso!');
+        res.json({ 
+          message: 'WhatsApp de teste enviado com sucesso!',
+          vencimentos: vencimentos.length,
+          destinatario: usuarioTelefone,
+          phoneNumber: phoneNumber
+        });
+      } else {
+        console.log('❌ Falha ao enviar WhatsApp');
+        console.log('   Verifique os logs acima para mais detalhes');
+        res.status(500).json({ 
+          error: 'Erro ao enviar WhatsApp de teste',
+          details: 'O envio falhou. Verifique os logs do backend para mais detalhes.',
+          url: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
+          instance: process.env.EVOLUTION_INSTANCE_NAME || 'finflow',
+          phoneNumber: phoneNumber
+        });
+      }
+    } catch (sendError) {
+      console.error('❌ Erro ao enviar WhatsApp:', sendError);
+      console.error('   Stack:', sendError.stack);
+      if (sendError.response) {
+        console.error('   Status HTTP:', sendError.response.status);
+        console.error('   Resposta:', JSON.stringify(sendError.response.data));
+      }
+      res.status(500).json({ 
+        error: 'Erro ao enviar WhatsApp de teste',
+        details: sendError.message || 'Erro desconhecido',
+        url: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
+        instance: process.env.EVOLUTION_INSTANCE_NAME || 'finflow',
+        phoneNumber: phoneNumber
+      });
+    }
+    
+  } catch (err) {
+    console.error('❌ Erro detalhado:', err);
+    console.error('   Stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Erro ao testar envio de lembretes',
+      details: err.message || 'Erro desconhecido'
+    });
   }
 });
 

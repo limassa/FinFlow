@@ -43,6 +43,8 @@ jspm_packages/
 
 # dotenv environment variables file
 .env
+backend/config.production.env
+backend/config.env
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
