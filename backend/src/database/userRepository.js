@@ -500,26 +500,23 @@ const userRepository = {
     // Verificar se a coluna WhatsApp existe antes de tentar atualizar
     let whatsAppColumnExists = false;
     try {
+      // Tentar verificar com maiúsculas primeiro
       const checkColumn = await pool.query(`
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_name = 'Usuario' 
-        AND column_name = 'Usuario_LembretesWhatsApp'
+        WHERE (table_name = 'Usuario' OR table_name = 'usuario')
+        AND (column_name = 'Usuario_LembretesWhatsApp' OR column_name = 'usuario_lembreteswhatsapp')
       `);
-      if (checkColumn.rows.length === 0) {
-        // Tentar minúscula
-        const checkColumnLower = await pool.query(`
-          SELECT column_name 
-          FROM information_schema.columns 
-          WHERE table_name = 'usuario' 
-          AND column_name = 'usuario_lembreteswhatsapp'
-        `);
-        whatsAppColumnExists = checkColumnLower.rows.length > 0;
+      whatsAppColumnExists = checkColumn.rows.length > 0;
+      
+      if (whatsAppColumnExists) {
+        console.log('✅ Coluna WhatsApp encontrada:', checkColumn.rows[0].column_name);
       } else {
-        whatsAppColumnExists = true;
+        console.log('⚠️ Coluna WhatsApp não encontrada - será ignorada na atualização');
       }
     } catch (err) {
-      console.log('⚠️ Erro ao verificar coluna WhatsApp, tentando continuar:', err.message);
+      console.log('⚠️ Erro ao verificar coluna WhatsApp, assumindo que não existe:', err.message);
+      whatsAppColumnExists = false;
     }
 
     // Tentar com aspas duplas primeiro (case-sensitive)

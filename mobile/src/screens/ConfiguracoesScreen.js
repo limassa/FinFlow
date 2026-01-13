@@ -232,10 +232,11 @@ export default function ConfiguracoesScreen() {
         errorMessage = error.response.data?.error || error.response.data?.message || `Erro ${error.response.status}: ${error.response.statusText}`;
         
         // Se o erro for sobre a coluna WhatsApp não existir, mostrar mensagem específica
-        if (errorMessage.includes('WhatsApp') || errorMessage.includes('coluna') || errorMessage.includes('does not exist')) {
+        // Mas só se realmente for esse o erro (não mostrar se for outro tipo de erro)
+        if (errorMessage.includes('coluna') && (errorMessage.includes('does not exist') || errorMessage.includes('não foi criada'))) {
           Alert.alert(
             'Atenção', 
-            'A funcionalidade de WhatsApp ainda não está disponível. A coluna precisa ser criada no banco de dados primeiro.'
+            'A coluna de WhatsApp precisa ser criada no banco de dados. Execute o script adicionar-coluna-whatsapp.js primeiro.'
           );
           setLoading(false);
           return;

@@ -11,6 +11,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const express = require('express');
 const cors = require('cors');
+const pool = require('./src/database/connection');
 const userRepository = require('./src/database/userRepository');
 const PasswordValidator = require('./src/utils/passwordValidator');
 const emailService = require('./src/services/emailService');
@@ -861,6 +862,37 @@ app.put('/api/user/lembretes', async (req, res) => {
   const { userId, lembretesAtivos, lembretesEmail, lembretesWhatsApp, lembretesDiasAntes, lembretesHorario } = req.body;
   
   try {
+    // Verificar se a coluna WhatsApp existe antes de tentar atualizar
+    let whatsAppColumnExists = false;
+    if (lembretesWhatsApp !== undefined) {
+      try {
+        const checkColumn = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE (table_name = 'Usuario' OR table_name = 'usuario')
+          AND (column_name = 'Usuario_LembretesWhatsApp' OR column_name = 'usuario_lembreteswhatsapp')
+        `);
+        whatsAppColumnExists = checkColumn.rows.length > 0;
+        
+        if (!whatsAppColumnExists && lembretesWhatsApp === true) {
+          // Se está tentando ativar WhatsApp mas a coluna não existe
+          return res.status(400).json({ 
+            error: 'A coluna de WhatsApp não foi criada no banco de dados. Execute o script adicionar-coluna-whatsapp.js primeiro.',
+            whatsAppAvailable: false
+          });
+        }
+      } catch (checkErr) {
+        console.log('⚠️ Erro ao verificar coluna WhatsApp:', checkErr.message);
+        // Se não conseguir verificar e está tentando ativar, retornar erro
+        if (lembretesWhatsApp === true) {
+          return res.status(400).json({ 
+            error: 'Não foi possível verificar a coluna de WhatsApp. Execute o script adicionar-coluna-whatsapp.js primeiro.',
+            whatsAppAvailable: false
+          });
+        }
+      }
+    }
+    
     const result = await userRepository.updateLembretesConfig(userId, {
       lembretesAtivos,
       lembretesEmail,
@@ -869,18 +901,26 @@ app.put('/api/user/lembretes', async (req, res) => {
       lembretesHorario
     });
     if (result) {
-      res.json({ message: 'Configuração de lembretes atualizada com sucesso!' });
+      res.json({ 
+        message: 'Configuração de lembretes atualizada com sucesso!',
+        whatsAppAvailable: whatsAppColumnExists || lembretesWhatsApp === undefined
+      });
     } else {
       res.status(404).json({ error: 'Usuário não encontrado' });
     }
   } catch (err) {
     console.error('Erro ao atualizar configuração de lembretes:', err);
     const errorMessage = err.message || 'Erro ao atualizar configuração';
+    
     // Verificar se o erro é relacionado à coluna WhatsApp não existir
-    if (errorMessage.includes('Usuario_LembretesWhatsApp') || errorMessage.includes('usuario_lembreteswhatsapp') || errorMessage.includes('column') || errorMessage.includes('does not exist')) {
+    if (lembretesWhatsApp !== undefined && 
+        (errorMessage.includes('Usuario_LembretesWhatsApp') || 
+         errorMessage.includes('usuario_lembreteswhatsapp') || 
+         (errorMessage.includes('column') && errorMessage.includes('does not exist')))) {
       res.status(500).json({ 
         error: 'A coluna de WhatsApp não foi criada no banco de dados. Execute o script adicionar-coluna-whatsapp.js primeiro.',
-        details: errorMessage
+        details: errorMessage,
+        whatsAppAvailable: false
       });
     } else {
       res.status(500).json({ error: errorMessage });
