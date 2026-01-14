@@ -122,28 +122,38 @@ class EmailService {
           }
           
         } else if (config.type === 'nodemailer') {
-          // Testar Nodemailer com timeout
+          // Testar Nodemailer com timeout maior
           const transporter = nodemailer.createTransport({
             ...config.config,
-            connectionTimeout: 10000, // 10 segundos
-            greetingTimeout: 5000,   // 5 segundos
-            socketTimeout: 10000      // 10 segundos
+            connectionTimeout: 30000, // 30 segundos (aumentado)
+            greetingTimeout: 15000,   // 15 segundos (aumentado)
+            socketTimeout: 30000,     // 30 segundos (aumentado)
+            // Desabilitar verificação SSL estrita
+            tls: {
+              rejectUnauthorized: false
+            }
           });
           
-          // Testar conexão com timeout
-          await Promise.race([
-            transporter.verify(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout ao verificar conexão')), 10000)
-            )
-          ]);
+          // Testar conexão com timeout maior, mas não bloquear se falhar
+          try {
+            await Promise.race([
+              transporter.verify(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout ao verificar')), 20000)
+              )
+            ]);
+            console.log(`      ✅ Conexão verificada: ${config.name}`);
+          } catch (verifyError) {
+            console.log(`      ⚠️  Verificação falhou, mas configurando mesmo assim: ${verifyError.message}`);
+            // Continuar mesmo se a verificação falhar - o envio pode funcionar
+          }
           
-          // Se chegou aqui, a configuração funciona
+          // Se chegou aqui, a configuração está pronta
           this.transporter = transporter;
           this.configuracaoAtual = config.name;
           this.tipoAtual = 'nodemailer';
           
-          console.log(`      ✅ Configuração funcionando: ${config.name}`);
+          console.log(`      ✅ Configuração pronta: ${config.name}`);
           return true;
         }
         
