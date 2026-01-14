@@ -11,6 +11,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
 const pool = require('./src/database/connection');
 const userRepository = require('./src/database/userRepository');
 const PasswordValidator = require('./src/utils/passwordValidator');
@@ -1362,6 +1363,189 @@ app.post('/api/fale-conosco', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+// Rota de webhook para ser chamada por serviços externos de cron (ex: cron-job.org)
+// Esta rota pode ser chamada periodicamente por um serviço externo
+app.post('/api/lembretes/webhook', async (req, res) => {
+  // Verificar token de segurança (opcional, mas recomendado)
+  const webhookToken = process.env.WEBHOOK_TOKEN || 'finflow-webhook-secret';
+  const providedToken = req.headers['x-webhook-token'] || req.body.token;
+  
+  if (providedToken !== webhookToken) {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+  
+  try {
+    await enviarLembretesAgendados();
+    res.json({ 
+      success: true, 
+      message: 'Lembretes processados com sucesso',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Erro ao processar webhook de lembretes:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro ao processar lembretes',
+      message: error.message
+    });
+  }
+});
+
+// Rota GET para facilitar testes (sem autenticação para facilitar)
+app.get('/api/lembretes/processar', async (req, res) => {
+  try {
+    await enviarLembretesAgendados();
+    res.json({ 
+      success: true, 
+      message: 'Lembretes processados com sucesso',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Erro ao processar lembretes:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro ao processar lembretes',
+      message: error.message
+    });
+  }
+});
+
+// Função para enviar lembretes agendados
+async function enviarLembretesAgendados() {
+  try {
+    console.log('🔔 Verificando lembretes agendados...');
+    const agora = new Date();
+    const horaAtual = agora.getHours();
+    const minutoAtual = agora.getMinutes();
+    const horarioAtual = `${String(horaAtual).padStart(2, '0')}:${String(minutoAtual).padStart(2, '0')}`;
+    
+    console.log(`   ⏰ Horário atual: ${horarioAtual}`);
+    
+    // Buscar todos os usuários com lembretes ativos
+    let usuarios;
+    try {
+      usuarios = await pool.query(`
+        SELECT 
+          "Usuario_Id" as usuario_id,
+          "Usuario_Nome" as usuario_nome,
+          "Usuario_Email" as usuario_email,
+          "Usuario_Telefone" as usuario_telefone,
+          "Usuario_LembretesAtivos" as usuario_lembretesativos,
+          "Usuario_LembretesEmail" as usuario_lembretesemail,
+          "Usuario_LembretesWhatsApp" as usuario_lembreteswhatsapp,
+          "Usuario_LembretesHorario" as usuario_lembreteshorario
+        FROM "Usuario"
+        WHERE "Usuario_Ativo" = TRUE
+          AND ("Usuario_LembretesAtivos" = TRUE OR usuario_lembretesativos = TRUE)
+      `);
+    } catch (err) {
+      // Tentar sem aspas (minúscula)
+      usuarios = await pool.query(`
+        SELECT 
+          usuario_id,
+          usuario_nome,
+          usuario_email,
+          usuario_telefone,
+          usuario_lembretesativos,
+          usuario_lembretesemail,
+          usuario_lembreteswhatsapp,
+          usuario_lembreteshorario
+        FROM usuario
+        WHERE usuario_ativo = TRUE
+          AND usuario_lembretesativos = TRUE
+      `);
+    }
+    
+    console.log(`   👥 Usuários com lembretes ativos: ${usuarios.rows.length}`);
+    
+    let lembretesEnviados = 0;
+    
+    for (const user of usuarios.rows) {
+      // Normalizar campos
+      const lembretesAtivos = user.usuario_lembretesativos || user.Usuario_LembretesAtivos || false;
+      const lembretesEmail = user.usuario_lembretesemail || user.Usuario_LembretesEmail || false;
+      const lembretesWhatsApp = user.usuario_lembreteswhatsapp || user.Usuario_LembretesWhatsApp || false;
+      const lembretesHorario = user.usuario_lembreteshorario || user.Usuario_LembretesHorario || '18:15';
+      const userId = user.usuario_id || user.Usuario_Id;
+      
+      // Verificar se é o horário configurado (com tolerância de 1 minuto)
+      if (lembretesHorario === horarioAtual || 
+          (Math.abs(parseInt(lembretesHorario.split(':')[0]) - horaAtual) === 0 && 
+           Math.abs(parseInt(lembretesHorario.split(':')[1]) - minutoAtual) <= 1)) {
+        
+        console.log(`   ✅ Horário correspondente para usuário ${userId} (${user.usuario_nome || user.Usuario_Nome}): ${lembretesHorario}`);
+        
+        // Buscar vencimentos próximos
+        const vencimentos = await userRepository.getVencimentosProximos(userId);
+        
+        if (vencimentos.length > 0) {
+          console.log(`      📅 ${vencimentos.length} vencimento(s) encontrado(s)`);
+          
+          // Enviar por email se ativado
+          if (lembretesEmail) {
+            try {
+              const emailEnviado = await emailService.sendReminderEmail({
+                nome: user.usuario_nome || user.Usuario_Nome,
+                email: user.usuario_email || user.Usuario_Email
+              }, vencimentos);
+              
+              if (emailEnviado) {
+                console.log(`      ✅ Email enviado com sucesso`);
+                lembretesEnviados++;
+              } else {
+                console.log(`      ⚠️ Falha ao enviar email`);
+              }
+            } catch (err) {
+              console.error(`      ❌ Erro ao enviar email:`, err.message);
+            }
+          }
+          
+          // Enviar por WhatsApp se ativado
+          if (lembretesWhatsApp) {
+            try {
+              const whatsappEnviado = await whatsappService.sendReminderMessage({
+                nome: user.usuario_nome || user.Usuario_Nome,
+                telefone: user.usuario_telefone || user.Usuario_Telefone
+              }, vencimentos);
+              
+              if (whatsappEnviado) {
+                console.log(`      ✅ WhatsApp enviado com sucesso`);
+                lembretesEnviados++;
+              } else {
+                console.log(`      ⚠️ Falha ao enviar WhatsApp`);
+              }
+            } catch (err) {
+              console.error(`      ❌ Erro ao enviar WhatsApp:`, err.message);
+            }
+          }
+        } else {
+          console.log(`      ℹ️ Nenhum vencimento próximo para este usuário`);
+        }
+      }
+    }
+    
+    console.log(`✅ Verificação concluída. ${lembretesEnviados} lembrete(s) enviado(s)`);
+  } catch (error) {
+    console.error('❌ Erro ao processar lembretes agendados:', error);
+  }
+}
+
+// Job agendado: executar a cada minuto para verificar lembretes
+// NOTA: No Railway, este cron pode não funcionar se o servidor ficar inativo
+// Use um serviço externo (cron-job.org, EasyCron) para chamar /api/lembretes/webhook
+// Formato cron: segundo minuto hora dia mês dia-da-semana
+// '* * * * *' = a cada minuto
+if (process.env.ENABLE_INTERNAL_CRON !== 'false') {
+  cron.schedule('* * * * *', () => {
+    enviarLembretesAgendados();
+  });
+  console.log('⏰ Job de lembretes agendado iniciado (verifica a cada minuto)');
+  console.log('⚠️  Para produção no Railway, configure um serviço externo de cron');
+  console.log('   URL do webhook: https://seu-dominio.com/api/lembretes/webhook');
+} else {
+  console.log('⏰ Cron interno desabilitado. Use serviço externo para chamar o webhook.');
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);

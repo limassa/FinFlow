@@ -497,26 +497,40 @@ const userRepository = {
   },
 
   async updateLembretesConfig(userId, { lembretesAtivos, lembretesEmail, lembretesWhatsApp, lembretesDiasAntes, lembretesHorario }) {
-    // Verificar se a coluna WhatsApp existe antes de tentar atualizar
+    // Verificar se as colunas existem antes de tentar atualizar
     let whatsAppColumnExists = false;
+    let horarioColumnExists = false;
     try {
-      // Tentar verificar com maiúsculas primeiro
-      const checkColumn = await pool.query(`
+      // Verificar colunas
+      const checkColumns = await pool.query(`
         SELECT column_name 
         FROM information_schema.columns 
         WHERE (table_name = 'Usuario' OR table_name = 'usuario')
-        AND (column_name = 'Usuario_LembretesWhatsApp' OR column_name = 'usuario_lembreteswhatsapp')
+        AND (
+          column_name = 'Usuario_LembretesWhatsApp' OR column_name = 'usuario_lembreteswhatsapp'
+          OR column_name = 'Usuario_LembretesHorario' OR column_name = 'usuario_lembreteshorario'
+        )
       `);
-      whatsAppColumnExists = checkColumn.rows.length > 0;
+      
+      const columnNames = checkColumns.rows.map(row => row.column_name.toLowerCase());
+      whatsAppColumnExists = columnNames.some(name => name.includes('whatsapp'));
+      horarioColumnExists = columnNames.some(name => name.includes('horario'));
       
       if (whatsAppColumnExists) {
-        console.log('✅ Coluna WhatsApp encontrada:', checkColumn.rows[0].column_name);
+        console.log('✅ Coluna WhatsApp encontrada');
       } else {
         console.log('⚠️ Coluna WhatsApp não encontrada - será ignorada na atualização');
       }
+      
+      if (horarioColumnExists) {
+        console.log('✅ Coluna Horário encontrada');
+      } else {
+        console.log('⚠️ Coluna Horário não encontrada - será ignorada na atualização');
+      }
     } catch (err) {
-      console.log('⚠️ Erro ao verificar coluna WhatsApp, assumindo que não existe:', err.message);
+      console.log('⚠️ Erro ao verificar colunas, assumindo que não existem:', err.message);
       whatsAppColumnExists = false;
+      horarioColumnExists = false;
     }
 
     // Tentar com aspas duplas primeiro (case-sensitive)
@@ -552,7 +566,8 @@ const userRepository = {
       paramIndex++;
     }
     
-    if (lembretesHorario !== undefined) {
+    // Só incluir Horário se a coluna existir
+    if (lembretesHorario !== undefined && horarioColumnExists) {
       if (paramIndex > 1) query += ',';
       query += ` "Usuario_LembretesHorario" = $${paramIndex}`;
       params.push(lembretesHorario);
@@ -599,7 +614,8 @@ const userRepository = {
         paramIndex++;
       }
       
-      if (lembretesHorario !== undefined) {
+      // Só incluir Horário se a coluna existir
+      if (lembretesHorario !== undefined && horarioColumnExists) {
         if (paramIndex > 1) query += ',';
         query += ` usuario_lembreteshorario = $${paramIndex}`;
         params.push(lembretesHorario);

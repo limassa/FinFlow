@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
@@ -19,8 +20,16 @@ import { formatarTelefone, removerFormatacaoTelefone } from '../utils/formatters
 import TimePicker from '../components/TimePicker';
 
 export default function ConfiguracoesScreen() {
+  const navigation = useNavigation();
   const { user, logout, getUserId } = useAuth();
   const userId = getUserId();
+  
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      title: 'Configurações',
+    });
+  }, [navigation]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('perfil');
   const [showPassword, setShowPassword] = useState(false);
@@ -287,10 +296,6 @@ export default function ConfiguracoesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Configurações</Text>
-      </View>
-
       <ScrollView style={styles.content}>
         {/* Tabs de Navegação */}
         <View style={styles.tabsContainer}>
@@ -582,15 +587,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    padding: 16,
-    backgroundColor: colors.primary,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
   },
   loadingContainer: {
     flex: 1,
