@@ -205,13 +205,29 @@ class EmailService {
     for (const config of gmailConfigs) {
       try {
         console.log(`   🧪 Tentando: ${config.name}`);
-        const transporter = nodemailer.createTransport(config.config);
+        const transporter = nodemailer.createTransport({
+          ...config.config,
+          connectionTimeout: 10000, // 10 segundos
+          greetingTimeout: 5000,   // 5 segundos
+          socketTimeout: 10000      // 10 segundos
+        });
         
-        // Testar conexão
-        await transporter.verify();
+        // Testar conexão com timeout
+        await Promise.race([
+          transporter.verify(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout ao verificar conexão Gmail')), 10000)
+          )
+        ]);
         
-        // Enviar email
-        const info = await transporter.sendMail(mailOptions);
+        // Enviar email com timeout
+        const info = await Promise.race([
+          transporter.sendMail(mailOptions),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout ao enviar email')), 30000)
+          )
+        ]);
+        
         console.log(`✅ Email enviado via Gmail! Message ID: ${info.messageId}`);
         console.log(`   🔧 Configuração usada: ${config.name}`);
         
@@ -223,6 +239,9 @@ class EmailService {
         return true;
       } catch (gmailError) {
         console.log(`   ❌ Falha com ${config.name}: ${gmailError.message}`);
+        if (gmailError.message.includes('Invalid login') || gmailError.message.includes('authentication')) {
+          console.log(`   ⚠️  Erro de autenticação - verifique EMAIL_USER e EMAIL_PASS`);
+        }
         continue;
       }
     }
