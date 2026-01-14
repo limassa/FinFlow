@@ -1324,6 +1324,69 @@ app.put('/api/parcela-atual/:tipo/:id', async (req, res) => {
   }
 });
 
+// Rota para testar configuração de email
+app.get('/api/email/teste', async (req, res) => {
+  try {
+    console.log('🧪 Testando configuração de email...');
+    
+    const status = await emailService.getStatus();
+    console.log('📊 Status do emailService:', status);
+    
+    // Tentar configurar se não estiver configurado
+    if (!status.configurado) {
+      console.log('🔄 Tentando configurar transporter...');
+      const configurado = await emailService.configurarTransporter();
+      if (configurado) {
+        const novoStatus = await emailService.getStatus();
+        return res.json({
+          success: true,
+          message: 'Email configurado com sucesso!',
+          status: novoStatus
+        });
+      }
+    }
+    
+    // Testar envio de email de teste
+    if (status.configurado) {
+      console.log('📧 Testando envio de email...');
+      const emailTeste = await emailService.sendContactFormEmail({
+        nome: 'Teste Sistema',
+        email: 'teste@finflow.com',
+        telefone: '(00) 00000-0000',
+        tipo: 'teste',
+        mensagem: 'Este é um email de teste do sistema FinFlow para verificar a configuração.'
+      });
+      
+      return res.json({
+        success: emailTeste,
+        message: emailTeste 
+          ? 'Email de teste enviado com sucesso!' 
+          : 'Falha ao enviar email de teste. Verifique os logs.',
+        status: status,
+        emailEnviado: emailTeste
+      });
+    }
+    
+    res.json({
+      success: false,
+      message: 'Email não configurado',
+      status: status,
+      instrucoes: {
+        sendgrid: 'Configure SENDGRID_API_KEY e SENDGRID_FROM_EMAIL',
+        gmail: 'Configure EMAIL_USER e EMAIL_PASS (senha de app do Gmail)'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao testar email:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 // Rota para "Fale Conosco"
 app.post('/api/fale-conosco', async (req, res) => {
   const { nome, email, telefone, tipo, mensagem } = req.body;

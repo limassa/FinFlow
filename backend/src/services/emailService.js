@@ -122,11 +122,21 @@ class EmailService {
           }
           
         } else if (config.type === 'nodemailer') {
-          // Testar Nodemailer
-          const transporter = nodemailer.createTransport(config.config);
+          // Testar Nodemailer com timeout
+          const transporter = nodemailer.createTransport({
+            ...config.config,
+            connectionTimeout: 10000, // 10 segundos
+            greetingTimeout: 5000,   // 5 segundos
+            socketTimeout: 10000      // 10 segundos
+          });
           
-          // Testar conexão
-          await transporter.verify();
+          // Testar conexão com timeout
+          await Promise.race([
+            transporter.verify(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout ao verificar conexão')), 10000)
+            )
+          ]);
           
           // Se chegou aqui, a configuração funciona
           this.transporter = transporter;
