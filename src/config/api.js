@@ -37,6 +37,9 @@ export const API_ENDPOINTS = {
   // Utilitários
   PASSWORD_REQUIREMENTS: `${API_BASE_URL}/api/password-requirements`,
   VERSAO: `${API_BASE_URL}/api/versao`,
+  
+  // Fale Conosco
+  FALE_CONOSCO: `${API_BASE_URL}/api/fale-conosco`,
 };
 
 export default API_BASE_URL; 

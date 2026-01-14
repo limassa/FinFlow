@@ -498,12 +498,23 @@ class EmailService {
 
   // Método para enviar email do formulário "Fale Conosco"
   async sendContactFormEmail({ nome, email, telefone, tipo, mensagem }) {
+    console.log('📧 Iniciando envio de email Fale Conosco...');
+    console.log(`   Transporter atual: ${this.transporter ? 'Configurado' : 'Não configurado'}`);
+    console.log(`   Tipo atual: ${this.tipoAtual || 'Nenhum'}`);
+    console.log(`   SendGrid disponível: ${!!process.env.SENDGRID_API_KEY}`);
+    console.log(`   EMAIL_USER: ${process.env.EMAIL_USER || 'Não configurado'}`);
+    
     // Se não temos transporter configurado, tentar configurar
     if (!this.transporter) {
+      console.log('🔄 Transporter não configurado, tentando configurar...');
       const configurado = await this.configurarTransporter();
       if (!configurado) {
-        return this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+        console.log('❌ Não foi possível configurar transporter');
+        console.log('   Verifique as variáveis de ambiente: SENDGRID_API_KEY ou EMAIL_USER/EMAIL_PASS');
+        this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+        return false;
       }
+      console.log(`✅ Transporter configurado: ${this.configuracaoAtual}`);
     }
 
     const tipoLabels = {
