@@ -17,6 +17,7 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { colors } from '../theme/theme';
 import { formatarTelefone } from '../utils/formatters';
+import Select from '../components/Select';
 
 export default function FaleConoscoScreen() {
   const navigation = useNavigation();
@@ -174,85 +175,18 @@ export default function FaleConoscoScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Tipo de Contato</Text>
-            <View style={styles.selectContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.selectOption,
-                  formData.tipo === 'sugestao' && styles.selectOptionActive
-                ]}
-                onPress={() => handleChange('tipo', 'sugestao')}
-                disabled={loading}
-              >
-                <Text style={[
-                  styles.selectOptionText,
-                  formData.tipo === 'sugestao' && styles.selectOptionTextActive
-                ]}>
-                  Sugestão
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.selectOption,
-                  formData.tipo === 'duvida' && styles.selectOptionActive
-                ]}
-                onPress={() => handleChange('tipo', 'duvida')}
-                disabled={loading}
-              >
-                <Text style={[
-                  styles.selectOptionText,
-                  formData.tipo === 'duvida' && styles.selectOptionTextActive
-                ]}>
-                  Dúvida
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.selectOption,
-                  formData.tipo === 'problema' && styles.selectOptionActive
-                ]}
-                onPress={() => handleChange('tipo', 'problema')}
-                disabled={loading}
-              >
-                <Text style={[
-                  styles.selectOptionText,
-                  formData.tipo === 'problema' && styles.selectOptionTextActive
-                ]}>
-                  Problema
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.selectContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.selectOption,
-                  formData.tipo === 'elogio' && styles.selectOptionActive
-                ]}
-                onPress={() => handleChange('tipo', 'elogio')}
-                disabled={loading}
-              >
-                <Text style={[
-                  styles.selectOptionText,
-                  formData.tipo === 'elogio' && styles.selectOptionTextActive
-                ]}>
-                  Elogio
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.selectOption,
-                  formData.tipo === 'outro' && styles.selectOptionActive
-                ]}
-                onPress={() => handleChange('tipo', 'outro')}
-                disabled={loading}
-              >
-                <Text style={[
-                  styles.selectOptionText,
-                  formData.tipo === 'outro' && styles.selectOptionTextActive
-                ]}>
-                  Outro
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Select
+              value={formData.tipo}
+              options={[
+                { label: 'Sugestão', value: 'sugestao' },
+                { label: 'Dúvida', value: 'duvida' },
+                { label: 'Reportar Problema', value: 'problema' },
+                { label: 'Elogio', value: 'elogio' },
+                { label: 'Outro', value: 'outro' }
+              ]}
+              onChange={(value) => handleChange('tipo', value)}
+              placeholder="Selecione o tipo de contato"
+            />
           </View>
 
           <View style={styles.inputGroup}>
@@ -392,34 +326,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 120,
     paddingTop: 12,
-  },
-  selectContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-    gap: 8,
-  },
-  selectOption: {
-    flex: 1,
-    minWidth: '45%',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  selectOptionActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  selectOptionText: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  selectOptionTextActive: {
-    color: '#fff',
   },
   submitButton: {
     backgroundColor: colors.primary,
