@@ -372,6 +372,148 @@ class EmailService {
     return true;
   }
   
+  // Método para enviar lembrete de vencimento por email
+  async sendReminderEmail(user, vencimentos) {
+    if (!vencimentos || vencimentos.length === 0) {
+      console.log('⚠️ Nenhum vencimento para enviar por email');
+      return false;
+    }
+
+    // Se não temos transporter configurado, tentar configurar
+    if (!this.transporter) {
+      const configurado = await this.configurarTransporter();
+      if (!configurado) {
+        return this.fallbackReminderEmail(user, vencimentos);
+      }
+    }
+
+    // Montar HTML do email
+    let htmlVencimentos = '';
+    vencimentos.forEach((venc, index) => {
+      const valor = Number(venc.despesa_valor || venc.despesa_Valor || 0).toFixed(2).replace('.', ',');
+      const dataVenc = new Date(venc.despesa_dtvencimento || venc.Despesa_DtVencimento).toLocaleDateString('pt-BR');
+      const status = venc.despesa_pago || venc.Despesa_Pago ? '✅ Pago' : '⏳ Pendente';
+      
+      htmlVencimentos += `
+        <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #f44336;">
+          <h3 style="color: #333; margin: 0 0 10px 0; font-size: 18px;">
+            ${index + 1}. ${venc.despesa_descricao || venc.Despesa_Descricao}
+          </h3>
+          <p style="color: #666; margin: 5px 0;"><strong>💰 Valor:</strong> R$ ${valor}</p>
+          <p style="color: #666; margin: 5px 0;"><strong>📅 Vencimento:</strong> ${dataVenc}</p>
+          <p style="color: #666; margin: 5px 0;"><strong>⚠️ Status:</strong> ${status}</p>
+        </div>
+      `;
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+      to: user.email,
+      subject: `🔔 Lembretes de Vencimento - FinFlow`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🔔 Lembretes de Vencimento</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Controle Financeiro</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Olá, ${user.nome}!</h2>
+            
+            <p style="color: #666; line-height: 1.6;">
+              Você tem <strong>${vencimentos.length} despesa(s)</strong> com vencimento próximo:
+            </p>
+            
+            ${htmlVencimentos}
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || 'https://finflow.lizsoftware.com.br'}" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+                Acessar FinFlow
+              </a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+              Esta é uma mensagem automática. Não responda.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    try {
+      if (this.tipoAtual === 'sendgrid') {
+        // Usar SendGrid
+        const resultado = await this.sendEmailSendGrid(mailOptions);
+        if (resultado) {
+          console.log('✅ Email de lembrete enviado via SendGrid!');
+          console.log(`   📧 Para: ${user.email}`);
+          console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          return true;
+        }
+      } else if (this.tipoAtual === 'nodemailer') {
+        // Usar Nodemailer
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email de lembrete enviado via Nodemailer!');
+        console.log(`   📧 Para: ${user.email}`);
+        console.log(`   📧 Message ID: ${info.messageId}`);
+        console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+        return true;
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao enviar email de lembrete:', error.message);
+      
+      // Tentar reconfigurar o transporter
+      console.log('🔄 Tentando reconfigurar transporter...');
+      const reconfigurado = await this.configurarTransporter();
+      
+      if (reconfigurado) {
+        // Tentar novamente com nova configuração
+        try {
+          if (this.tipoAtual === 'sendgrid') {
+            const resultado = await this.sendEmailSendGrid(mailOptions);
+            if (resultado) {
+              console.log('✅ Email enviado na segunda tentativa via SendGrid!');
+              return true;
+            }
+          } else if (this.tipoAtual === 'nodemailer') {
+            const info = await this.transporter.sendMail(mailOptions);
+            console.log('✅ Email enviado na segunda tentativa via Nodemailer!');
+            return true;
+          }
+        } catch (retryError) {
+          console.error('❌ Falha na segunda tentativa:', retryError.message);
+        }
+      }
+      
+      // Se tudo falhou, usar fallback
+      console.log('📧 Usando fallback de email...');
+      return this.fallbackReminderEmail(user, vencimentos);
+    }
+    
+    // Se chegou aqui, algo deu errado
+    return this.fallbackReminderEmail(user, vencimentos);
+  }
+
+  // Fallback para lembrete de vencimento
+  async fallbackReminderEmail(user, vencimentos) {
+    console.log('📧 === FALLBACK EMAIL DE LEMBRETE ===');
+    console.log(`   Para: ${user.email}`);
+    console.log(`   Nome: ${user.nome}`);
+    console.log(`   Vencimentos: ${vencimentos.length}`);
+    vencimentos.forEach((venc, index) => {
+      const valor = Number(venc.despesa_valor || venc.despesa_Valor || 0).toFixed(2).replace('.', ',');
+      const dataVenc = new Date(venc.despesa_dtvencimento || venc.Despesa_DtVencimento).toLocaleDateString('pt-BR');
+      console.log(`   ${index + 1}. ${venc.despesa_descricao || venc.Despesa_Descricao} - R$ ${valor} - ${dataVenc}`);
+    });
+    console.log('   Status: Email simulado (sistema de email indisponível)');
+    console.log('📧 ====================================');
+    
+    // Retornar false para indicar que não foi enviado
+    return false;
+  }
+
   // Método para verificar status do serviço
   async getStatus() {
     return {
