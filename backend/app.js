@@ -1414,12 +1414,19 @@ app.get('/api/lembretes/processar', async (req, res) => {
 async function enviarLembretesAgendados() {
   try {
     console.log('🔔 Verificando lembretes agendados...');
+    
+    // Obter horário atual no fuso horário do Brasil (America/Sao_Paulo = UTC-3)
     const agora = new Date();
-    const horaAtual = agora.getHours();
-    const minutoAtual = agora.getMinutes();
+    // Converter para horário de Brasília (UTC-3)
+    const horarioBrasilia = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const horaAtual = horarioBrasilia.getHours();
+    const minutoAtual = horarioBrasilia.getMinutes();
     const horarioAtual = `${String(horaAtual).padStart(2, '0')}:${String(minutoAtual).padStart(2, '0')}`;
     
-    console.log(`   ⏰ Horário atual: ${horarioAtual}`);
+    // Log com informações de debug
+    const utcHorario = `${String(agora.getUTCHours()).padStart(2, '0')}:${String(agora.getUTCMinutes()).padStart(2, '0')}`;
+    console.log(`   ⏰ Horário UTC: ${utcHorario}`);
+    console.log(`   ⏰ Horário Brasil (Brasília): ${horarioAtual}`);
     
     // Buscar todos os usuários com lembretes ativos
     let usuarios;
@@ -1469,11 +1476,17 @@ async function enviarLembretesAgendados() {
       const userId = user.usuario_id || user.Usuario_Id;
       
       // Verificar se é o horário configurado (com tolerância de 1 minuto)
+      // Comparar horário configurado (horário de Brasília) com horário atual (também de Brasília)
+      const [horaConfig, minutoConfig] = lembretesHorario.split(':').map(Number);
+      const diferencaHoras = Math.abs(horaConfig - horaAtual);
+      const diferencaMinutos = Math.abs(minutoConfig - minutoAtual);
+      
+      // Corresponder se for exatamente o mesmo horário ou diferença de até 1 minuto
       if (lembretesHorario === horarioAtual || 
-          (Math.abs(parseInt(lembretesHorario.split(':')[0]) - horaAtual) === 0 && 
-           Math.abs(parseInt(lembretesHorario.split(':')[1]) - minutoAtual) <= 1)) {
+          (diferencaHoras === 0 && diferencaMinutos <= 1)) {
         
-        console.log(`   ✅ Horário correspondente para usuário ${userId} (${user.usuario_nome || user.Usuario_Nome}): ${lembretesHorario}`);
+        console.log(`   ✅ Horário correspondente para usuário ${userId} (${user.usuario_nome || user.Usuario_Nome})`);
+        console.log(`      ⏰ Horário configurado: ${lembretesHorario} | Horário atual: ${horarioAtual}`);
         
         // Buscar vencimentos próximos
         const vencimentos = await userRepository.getVencimentosProximos(userId);
