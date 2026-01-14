@@ -131,7 +131,7 @@ function FaleConosco() {
               className="form-input"
               type="text"
               name="telefone"
-              placeholder="(99) 99999-9999 teste"
+              placeholder="(99) 99999-9999"
             />
           </div>
           

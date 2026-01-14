@@ -1337,8 +1337,11 @@ app.post('/api/fale-conosco', async (req, res) => {
     }
     
     // Enviar email para o suporte
+    let emailEnviado = false;
+    let emailError = null;
+    
     try {
-      const emailEnviado = await emailService.sendContactFormEmail({
+      emailEnviado = await emailService.sendContactFormEmail({
         nome,
         email,
         telefone: telefone || 'Não informado',
@@ -1347,29 +1350,28 @@ app.post('/api/fale-conosco', async (req, res) => {
       });
       
       if (emailEnviado) {
-        console.log('✅ Mensagem de "Fale Conosco" processada com sucesso!');
-        res.json({ 
-          message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
-          status: 'success'
-        });
+        console.log('✅ Email de "Fale Conosco" enviado com sucesso!');
       } else {
         console.log('⚠️ Email não foi enviado, mas mensagem foi registrada nos logs');
-        // Mesmo que o email não tenha sido enviado, retornamos sucesso
-        // pois a mensagem foi registrada nos logs do servidor
-        res.json({ 
-          message: 'Mensagem recebida! Entraremos em contato em breve.',
-          status: 'success',
-          warning: 'Email pode não ter sido enviado, mas a mensagem foi registrada'
-        });
+        emailError = 'Email não foi enviado, mas mensagem foi registrada nos logs';
       }
-    } catch (emailError) {
-      console.error('❌ Erro ao processar email:', emailError);
-      // Mesmo com erro no email, retornamos sucesso pois a mensagem foi recebida
-      // e pode ser consultada nos logs
+    } catch (err) {
+      console.error('❌ Erro ao processar email:', err);
+      emailError = err.message || 'Erro ao enviar email';
+    }
+    
+    // Sempre retornar sucesso, mas indicar se houve problema com email
+    if (emailEnviado) {
       res.json({ 
-        message: 'Mensagem recebida! Entraremos em contato em breve.',
-        status: 'success',
-        warning: 'Email pode não ter sido enviado, mas a mensagem foi registrada nos logs'
+        message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
+        status: 'success'
+      });
+    } else {
+      // Retornar erro para que o frontend saiba que o email não foi enviado
+      res.status(500).json({ 
+        error: 'Não foi possível enviar o email. Por favor, tente novamente ou entre em contato diretamente.',
+        details: emailError,
+        status: 'error'
       });
     }
     
