@@ -134,26 +134,16 @@ class EmailService {
             }
           });
           
-          // Testar conexão com timeout maior, mas não bloquear se falhar
-          try {
-            await Promise.race([
-              transporter.verify(),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout ao verificar')), 20000)
-              )
-            ]);
-            console.log(`      ✅ Conexão verificada: ${config.name}`);
-          } catch (verifyError) {
-            console.log(`      ⚠️  Verificação falhou, mas configurando mesmo assim: ${verifyError.message}`);
-            // Continuar mesmo se a verificação falhar - o envio pode funcionar
-          }
+          // Pular verificação - no Railway pode dar timeout mas o envio funciona
+          // A verificação pode estar sendo bloqueada pelo firewall/rede do Railway
+          console.log(`      ⏭️  Pulando verificação (pode dar timeout no Railway)`);
+          console.log(`      ✅ Configuração pronta: ${config.name}`);
           
-          // Se chegou aqui, a configuração está pronta
+          // Configurar transporter sem verificar
           this.transporter = transporter;
           this.configuracaoAtual = config.name;
           this.tipoAtual = 'nodemailer';
           
-          console.log(`      ✅ Configuração pronta: ${config.name}`);
           return true;
         }
         
