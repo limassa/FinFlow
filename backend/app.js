@@ -1417,10 +1417,18 @@ async function enviarLembretesAgendados() {
     
     // Obter horário atual no fuso horário do Brasil (America/Sao_Paulo = UTC-3)
     const agora = new Date();
-    // Converter para horário de Brasília (UTC-3)
-    const horarioBrasilia = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const horaAtual = horarioBrasilia.getHours();
-    const minutoAtual = horarioBrasilia.getMinutes();
+    
+    // Converter para horário de Brasília usando Intl.DateTimeFormat (mais confiável)
+    const formatter = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const partes = formatter.formatToParts(agora);
+    const horaAtual = parseInt(partes.find(p => p.type === 'hour').value);
+    const minutoAtual = parseInt(partes.find(p => p.type === 'minute').value);
     const horarioAtual = `${String(horaAtual).padStart(2, '0')}:${String(minutoAtual).padStart(2, '0')}`;
     
     // Log com informações de debug
