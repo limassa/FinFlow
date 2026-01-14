@@ -107,12 +107,19 @@ class EmailService {
             continue;
           }
           
-          // SendGrid não precisa de teste de conexão, vamos tentar enviar um email de teste
-          console.log(`      ✅ SendGrid configurado e disponível`);
-          this.transporter = 'sendgrid';
-          this.configuracaoAtual = config.name;
-          this.tipoAtual = 'sendgrid';
-          return true;
+          // Configurar SendGrid novamente para garantir
+          try {
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            console.log(`      ✅ SendGrid configurado e disponível`);
+            console.log(`      📧 API Key: ${process.env.SENDGRID_API_KEY.substring(0, 10)}...`);
+            this.transporter = 'sendgrid';
+            this.configuracaoAtual = config.name;
+            this.tipoAtual = 'sendgrid';
+            return true;
+          } catch (sgError) {
+            console.log(`      ❌ Erro ao configurar SendGrid: ${sgError.message}`);
+            continue;
+          }
           
         } else if (config.type === 'nodemailer') {
           // Testar Nodemailer
