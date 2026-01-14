@@ -171,9 +171,54 @@ class EmailService {
       console.error('❌ Erro SendGrid:', error.message);
       if (error.response) {
         console.error('   Detalhes:', error.response.body);
+        // Se for erro de créditos excedidos, marcar SendGrid como indisponível
+        if (error.response.body && 
+            (error.response.body.errors || []).some(e => 
+              e.message && e.message.includes('Maximum credits exceeded')
+            )) {
+          console.log('   ⚠️ SendGrid sem créditos, tentando Gmail...');
+          // Tentar usar Gmail como fallback
+          return await this.tentarEnviarComGmail(mailOptions);
+        }
       }
       return false;
     }
+  }
+
+  // Método auxiliar para tentar enviar com Gmail quando SendGrid falha
+  async tentarEnviarComGmail(mailOptions) {
+    console.log('🔄 Tentando enviar via Gmail (Nodemailer)...');
+    
+    // Tentar configurar Gmail
+    const gmailConfigs = this.configuracoes.filter(c => c.type === 'nodemailer');
+    
+    for (const config of gmailConfigs) {
+      try {
+        console.log(`   🧪 Tentando: ${config.name}`);
+        const transporter = nodemailer.createTransport(config.config);
+        
+        // Testar conexão
+        await transporter.verify();
+        
+        // Enviar email
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Email enviado via Gmail! Message ID: ${info.messageId}`);
+        console.log(`   🔧 Configuração usada: ${config.name}`);
+        
+        // Atualizar transporter atual para Gmail
+        this.transporter = transporter;
+        this.configuracaoAtual = config.name;
+        this.tipoAtual = 'nodemailer';
+        
+        return true;
+      } catch (gmailError) {
+        console.log(`   ❌ Falha com ${config.name}: ${gmailError.message}`);
+        continue;
+      }
+    }
+    
+    console.log('❌ Nenhuma configuração Gmail funcionou');
+    return false;
   }
   
   // Método para enviar email com fallback
