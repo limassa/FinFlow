@@ -576,6 +576,9 @@ class EmailService {
           console.log(`   📧 De: ${email} (${nome})`);
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
+        } else {
+          console.log('❌ Falha ao enviar via SendGrid');
+          return false;
         }
       } else if (this.tipoAtual === 'nodemailer') {
         // Usar Nodemailer
@@ -586,6 +589,9 @@ class EmailService {
         console.log(`   📧 Message ID: ${info.messageId}`);
         console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
         return true;
+      } else {
+        console.log('❌ Nenhum transporter configurado');
+        return false;
       }
       
     } catch (error) {
@@ -614,13 +620,16 @@ class EmailService {
         }
       }
       
-      // Se tudo falhou, usar fallback
+      // Se tudo falhou, usar fallback mas retornar false
       console.log('📧 Usando fallback de email...');
-      return this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+      this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+      return false; // Retornar false para indicar que não foi enviado
     }
     
     // Se chegou aqui, algo deu errado
-    return this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+    console.log('❌ Nenhum método de envio funcionou');
+    this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+    return false; // Retornar false para indicar que não foi enviado
   }
 
   // Fallback para formulário de contato
