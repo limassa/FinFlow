@@ -15,14 +15,17 @@ const getApiUrl = () => {
     return 'https://finflow-production-e4b3.up.railway.app';
   }
 
-  // Para desenvolvimento, detecta o ambiente
+  // TEMPORÁRIO: Para testar no emulador apontando para produção
+  // Descomente a linha abaixo para testar com produção no emulador
+  return 'https://finflow-production-e4b3.up.railway.app';
+  
+  // Para desenvolvimento local, detecta o ambiente
   // Para emulador Android, use 10.0.2.2
   // Para emulador iOS, use localhost
   // Para dispositivo físico, você precisa configurar manualmente
   
-  // Opção 1: Use o IP da sua máquina na rede local (CONFIGURADO)
-  // Para dispositivo físico, use o IP da sua máquina
-  return 'http://192.168.100.11:3001';
+  // Opção 1: Use o IP da sua máquina na rede local
+  // return 'http://192.168.100.11:3001';
   
   // Opção 2: Para emulador Android, use 10.0.2.2
   // return 'http://10.0.2.2:3001';
@@ -62,6 +65,9 @@ export const API_ENDPOINTS = {
   // Versão
   VERSAO: `${API_BASE_URL}/api/versao`,
   VERSAO_MOBILE: `${API_BASE_URL}/api/versao/mobile`,
+  
+  // Fale Conosco
+  FALE_CONOSCO: `${API_BASE_URL}/api/fale-conosco`,
 };
 
 export default API_BASE_URL;

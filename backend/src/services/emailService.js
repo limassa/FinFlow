@@ -496,6 +496,149 @@ class EmailService {
     return this.fallbackReminderEmail(user, vencimentos);
   }
 
+  // Método para enviar email do formulário "Fale Conosco"
+  async sendContactFormEmail({ nome, email, telefone, tipo, mensagem }) {
+    // Se não temos transporter configurado, tentar configurar
+    if (!this.transporter) {
+      const configurado = await this.configurarTransporter();
+      if (!configurado) {
+        return this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+      }
+    }
+
+    const tipoLabels = {
+      sugestao: 'Sugestão',
+      duvida: 'Dúvida',
+      problema: 'Reportar Problema',
+      elogio: 'Elogio',
+      outro: 'Outro'
+    };
+
+    const tipoTexto = tipoLabels[tipo] || tipo || 'Não especificado';
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+      to: 'contatoLizSoftware@gmail.com', // Email de destino fixo
+      subject: `📧 Fale Conosco - FinFlow: ${tipoTexto}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">📧 Nova Mensagem - Fale Conosco</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Sistema de Controle Financeiro</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #333; margin-top: 0; border-bottom: 2px solid #667eea; padding-bottom: 10px;">
+                Informações do Contato
+              </h2>
+              
+              <p style="color: #666; margin: 10px 0;">
+                <strong style="color: #333;">Nome:</strong> ${nome}
+              </p>
+              
+              <p style="color: #666; margin: 10px 0;">
+                <strong style="color: #333;">Email:</strong> 
+                <a href="mailto:${email}" style="color: #667eea; text-decoration: none;">${email}</a>
+              </p>
+              
+              <p style="color: #666; margin: 10px 0;">
+                <strong style="color: #333;">Telefone:</strong> ${telefone || 'Não informado'}
+              </p>
+              
+              <p style="color: #666; margin: 10px 0;">
+                <strong style="color: #333;">Tipo:</strong> ${tipoTexto}
+              </p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
+              <h3 style="color: #333; margin-top: 0;">Mensagem</h3>
+              <p style="color: #666; line-height: 1.8; white-space: pre-wrap;">${mensagem}</p>
+            </div>
+            
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
+              <p style="color: #666; font-size: 14px; margin: 0;">
+                <strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    try {
+      if (this.tipoAtual === 'sendgrid') {
+        // Usar SendGrid
+        const resultado = await this.sendEmailSendGrid(mailOptions);
+        if (resultado) {
+          console.log('✅ Email de "Fale Conosco" enviado via SendGrid!');
+          console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+          console.log(`   📧 De: ${email} (${nome})`);
+          console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          return true;
+        }
+      } else if (this.tipoAtual === 'nodemailer') {
+        // Usar Nodemailer
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email de "Fale Conosco" enviado via Nodemailer!');
+        console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+        console.log(`   📧 De: ${email} (${nome})`);
+        console.log(`   📧 Message ID: ${info.messageId}`);
+        console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+        return true;
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao enviar email de "Fale Conosco":', error.message);
+      
+      // Tentar reconfigurar o transporter
+      console.log('🔄 Tentando reconfigurar transporter...');
+      const reconfigurado = await this.configurarTransporter();
+      
+      if (reconfigurado) {
+        // Tentar novamente com nova configuração
+        try {
+          if (this.tipoAtual === 'sendgrid') {
+            const resultado = await this.sendEmailSendGrid(mailOptions);
+            if (resultado) {
+              console.log('✅ Email enviado na segunda tentativa via SendGrid!');
+              return true;
+            }
+          } else if (this.tipoAtual === 'nodemailer') {
+            const info = await this.transporter.sendMail(mailOptions);
+            console.log('✅ Email enviado na segunda tentativa via Nodemailer!');
+            return true;
+          }
+        } catch (retryError) {
+          console.error('❌ Falha na segunda tentativa:', retryError.message);
+        }
+      }
+      
+      // Se tudo falhou, usar fallback
+      console.log('📧 Usando fallback de email...');
+      return this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+    }
+    
+    // Se chegou aqui, algo deu errado
+    return this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
+  }
+
+  // Fallback para formulário de contato
+  async fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem }) {
+    console.log('📧 === FALLBACK EMAIL FALE CONOSCO ===');
+    console.log(`   Para: contatoLizSoftware@gmail.com`);
+    console.log(`   De: ${email} (${nome})`);
+    console.log(`   Telefone: ${telefone || 'Não informado'}`);
+    console.log(`   Tipo: ${tipo || 'Não especificado'}`);
+    console.log(`   Mensagem: ${mensagem}`);
+    console.log(`   Data: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`);
+    console.log('   Status: Email simulado (sistema de email indisponível)');
+    console.log('📧 ====================================');
+    
+    // Retornar false para indicar que não foi enviado
+    return false;
+  }
+
   // Fallback para lembrete de vencimento
   async fallbackReminderEmail(user, vencimentos) {
     console.log('📧 === FALLBACK EMAIL DE LEMBRETE ===');
