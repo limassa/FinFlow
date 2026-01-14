@@ -207,24 +207,35 @@ class EmailService {
         console.log(`   🧪 Tentando: ${config.name}`);
         const transporter = nodemailer.createTransport({
           ...config.config,
-          connectionTimeout: 10000, // 10 segundos
-          greetingTimeout: 5000,   // 5 segundos
-          socketTimeout: 10000      // 10 segundos
+          connectionTimeout: 30000, // 30 segundos (aumentado)
+          greetingTimeout: 15000,   // 15 segundos (aumentado)
+          socketTimeout: 30000,     // 30 segundos (aumentado)
+          // Desabilitar verificação SSL estrita para evitar problemas
+          tls: {
+            rejectUnauthorized: false
+          }
         });
         
-        // Testar conexão com timeout
-        await Promise.race([
-          transporter.verify(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout ao verificar conexão Gmail')), 10000)
-          )
-        ]);
+        // Tentar verificar conexão com timeout maior, mas se falhar, tentar enviar mesmo assim
+        try {
+          await Promise.race([
+            transporter.verify(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout ao verificar')), 20000)
+            )
+          ]);
+          console.log(`   ✅ Conexão verificada com sucesso`);
+        } catch (verifyError) {
+          console.log(`   ⚠️  Verificação de conexão falhou, mas tentando enviar mesmo assim: ${verifyError.message}`);
+          // Continuar mesmo se a verificação falhar - às vezes o envio funciona mesmo assim
+        }
         
-        // Enviar email com timeout
+        // Enviar email com timeout maior
+        console.log(`   📧 Tentando enviar email...`);
         const info = await Promise.race([
           transporter.sendMail(mailOptions),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout ao enviar email')), 30000)
+            setTimeout(() => reject(new Error('Timeout ao enviar email (60s)')), 60000)
           )
         ]);
         
@@ -239,14 +250,23 @@ class EmailService {
         return true;
       } catch (gmailError) {
         console.log(`   ❌ Falha com ${config.name}: ${gmailError.message}`);
-        if (gmailError.message.includes('Invalid login') || gmailError.message.includes('authentication')) {
+        if (gmailError.message.includes('Invalid login') || 
+            gmailError.message.includes('authentication') ||
+            gmailError.message.includes('535')) {
           console.log(`   ⚠️  Erro de autenticação - verifique EMAIL_USER e EMAIL_PASS`);
+          console.log(`   💡 Dica: Use uma senha de app do Gmail, não a senha normal`);
+        } else if (gmailError.message.includes('Timeout')) {
+          console.log(`   ⚠️  Timeout - pode ser problema de rede/firewall no Railway`);
         }
         continue;
       }
     }
     
     console.log('❌ Nenhuma configuração Gmail funcionou');
+    console.log('💡 Verifique:');
+    console.log('   1. EMAIL_USER e EMAIL_PASS estão corretos no Railway');
+    console.log('   2. EMAIL_PASS é uma senha de app do Gmail (não a senha normal)');
+    console.log('   3. Verificação em duas etapas está ativada no Gmail');
     return false;
   }
   
