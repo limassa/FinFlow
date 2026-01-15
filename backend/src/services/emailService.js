@@ -213,8 +213,24 @@ class EmailService {
         this.transporter = new Resend(process.env.RESEND_API_KEY);
       }
       
+      // Determinar email "from" - usar domínio verificado ou email do Resend
+      let fromEmail = process.env.RESEND_FROM_EMAIL || 'contatoLizSoftware@gmail.com';
+      
+      // Se o email for gmail.com, usar email do Resend (funciona sem verificação)
+      if (fromEmail.includes('@gmail.com') || fromEmail.includes('@gmail')) {
+        console.log('   ⚠️  Gmail.com não pode ser verificado no Resend');
+        // Usar email do Resend que funciona sem verificação
+        if (process.env.RESEND_VERIFIED_DOMAIN) {
+          fromEmail = `noreply@${process.env.RESEND_VERIFIED_DOMAIN}`;
+          console.log(`   📧 Usando domínio verificado: ${fromEmail}`);
+        } else {
+          fromEmail = 'onboarding@resend.dev';
+          console.log(`   📧 Usando email do Resend (funciona sem verificação): ${fromEmail}`);
+        }
+      }
+      
       const { data, error } = await this.transporter.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'contatoLizSoftware@gmail.com',
+        from: fromEmail,
         to: mailOptions.to,
         subject: mailOptions.subject,
         html: mailOptions.html
@@ -222,6 +238,10 @@ class EmailService {
       
       if (error) {
         console.error('❌ Erro Resend:', error);
+        if (error.message && error.message.includes('not verified')) {
+          console.error('   💡 Solução: Verifique o domínio no Resend ou configure RESEND_VERIFIED_DOMAIN');
+          console.error('   📖 Veja: backend/CONFIGURAR_RESEND.md');
+        }
         return false;
       }
       
