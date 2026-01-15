@@ -242,6 +242,13 @@ class EmailService {
           console.error('   💡 Solução: Verifique o domínio no Resend ou configure RESEND_VERIFIED_DOMAIN');
           console.error('   📖 Veja: backend/CONFIGURAR_RESEND.md');
         }
+        // Se for erro de "only send to your own email", fazer fallback
+        if (error.message && (error.message.includes('only send testing emails') || error.message.includes('verify a domain'))) {
+          console.error('   ⚠️  Resend só permite enviar para o email cadastrado na conta');
+          console.error('   💡 Para enviar para qualquer email, verifique um domínio em: https://resend.com/domains');
+          console.error('   🔄 Fazendo fallback para outro serviço...');
+          return 'fallback'; // Retornar string especial para indicar fallback
+        }
         return false;
       }
       
@@ -761,7 +768,34 @@ class EmailService {
       if (this.tipoAtual === 'resend') {
         // Usar Resend
         const resultado = await this.sendEmailResend(mailOptions);
-        if (resultado) {
+        if (resultado === 'fallback') {
+          // Resend falhou por limitação, tentar SendGrid ou Gmail
+          console.log('🔄 Resend não pode enviar, tentando SendGrid...');
+          if (process.env.SENDGRID_API_KEY) {
+            const resultadoSendGrid = await this.sendEmailSendGrid(mailOptions);
+            if (resultadoSendGrid) {
+              console.log('✅ Email de "Fale Conosco" enviado via SendGrid (fallback)!');
+              console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+              console.log(`   📧 De: ${email} (${nome})`);
+              return true;
+            }
+          }
+          // Se SendGrid não funcionou, tentar Gmail
+          console.log('🔄 SendGrid não disponível, tentando Gmail...');
+          if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            // Reconfigurar para Gmail
+            await this.configurarTransporter();
+            if (this.tipoAtual === 'nodemailer') {
+              const info = await this.transporter.sendMail(mailOptions);
+              console.log('✅ Email de "Fale Conosco" enviado via Gmail (fallback)!');
+              console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+              console.log(`   📧 De: ${email} (${nome})`);
+              return true;
+            }
+          }
+          console.log('❌ Nenhum serviço de fallback disponível');
+          return false;
+        } else if (resultado) {
           console.log('✅ Email de "Fale Conosco" enviado via Resend!');
           console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
           console.log(`   📧 De: ${email} (${nome})`);

@@ -36,13 +36,39 @@ RESEND_FROM_EMAIL=onboarding@resend.dev
 **Importante:**
 - ✅ **NÃO use aspas** nas variáveis
 - ✅ Use a chave que você copiou do Resend
-- ✅ `RESEND_FROM_EMAIL` pode ser `onboarding@resend.dev` (funciona sem verificação)
+- ⚠️ **IMPORTANTE**: No plano gratuito, o Resend só permite enviar para o email cadastrado na sua conta
+- ✅ Para enviar para qualquer email, você precisa **verificar um domínio** (veja passo 4)
 
-### 4. Aguardar Deploy (2-5 minutos)
+### 4. Verificar Domínio no Resend (Opcional, mas Recomendado)
+
+⚠️ **Por que verificar?**
+- No plano gratuito, o Resend só permite enviar para o email cadastrado na sua conta
+- Para enviar para qualquer email (como `contatoLizSoftware@gmail.com`), você precisa verificar um domínio
+
+**Como verificar:**
+
+1. No Resend, vá em **Domains** (menu lateral)
+2. Clique em **"Add Domain"**
+3. Digite seu domínio (ex: `lizsoftware.com.br`)
+4. Clique em **"Add"**
+5. O Resend mostrará registros DNS para adicionar
+6. Adicione esses registros no seu provedor de DNS (onde você comprou o domínio)
+7. Aguarde a verificação (pode levar alguns minutos)
+8. Após verificado, configure no Railway:
+   ```
+   RESEND_VERIFIED_DOMAIN=lizsoftware.com.br
+   RESEND_FROM_EMAIL=noreply@lizsoftware.com.br
+   ```
+
+**Se não tiver domínio próprio:**
+- O sistema fará fallback automático para SendGrid ou Gmail
+- Mas é recomendado verificar um domínio para melhor entrega
+
+### 5. Aguardar Deploy (2-5 minutos)
 
 Após adicionar as variáveis, o Railway fará deploy automaticamente. Aguarde alguns minutos.
 
-### 5. Testar (1 minuto)
+### 6. Testar (1 minuto)
 
 Após o deploy, teste acessando:
 
@@ -58,8 +84,9 @@ Ou envie uma mensagem pelo "Fale Conosco" no app/web.
 2. ✅ Criar API Key e copiar
 3. ✅ Adicionar `RESEND_API_KEY` no Railway (sem aspas)
 4. ✅ Adicionar `RESEND_FROM_EMAIL=onboarding@resend.dev` no Railway
-5. ✅ Aguardar deploy
-6. ✅ Testar
+5. ⚠️ **Verificar domínio no Resend** (para enviar para qualquer email)
+6. ✅ Aguardar deploy
+7. ✅ Testar
 
 ## 📝 Variáveis no Railway
 
