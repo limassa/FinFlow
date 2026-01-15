@@ -66,10 +66,13 @@ export default function FaleConoscoScreen() {
     try {
       const response = await axios.post(API_ENDPOINTS.FALE_CONOSCO, formData);
 
+      console.log('✅ Resposta da API:', response.data);
+
+      // Verificar se foi sucesso (mesmo tratamento do web)
       if (response.data.status === 'success' || response.data.message) {
         Alert.alert(
           'Sucesso!',
-          'Mensagem enviada com sucesso! Entraremos em contato em breve.',
+          response.data.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
           [
             {
               text: 'OK',
@@ -89,11 +92,34 @@ export default function FaleConoscoScreen() {
           ]
         );
       } else {
-        Alert.alert('Erro', 'Erro ao enviar mensagem. Tente novamente.');
+        // Se não tem status success mas tem mensagem, considerar sucesso
+        const errorMsg = response.data.error || 'Erro ao enviar mensagem. Tente novamente.';
+        Alert.alert('Erro', errorMsg);
       }
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao enviar mensagem. Tente novamente.';
+      console.error('❌ Erro ao enviar mensagem:', error);
+      console.error('❌ Detalhes do erro:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Tratamento de erro mais detalhado
+      let errorMessage = 'Erro ao enviar mensagem. Tente novamente.';
+      
+      if (error.response) {
+        // Erro do servidor
+        errorMessage = error.response.data?.error || 
+                      error.response.data?.message || 
+                      `Erro ${error.response.status}: ${error.response.statusText}`;
+      } else if (error.request) {
+        // Erro de rede
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else {
+        // Outro erro
+        errorMessage = error.message || 'Erro desconhecido ao enviar mensagem.';
+      }
+      
       Alert.alert('Erro', errorMessage);
     } finally {
       setLoading(false);
