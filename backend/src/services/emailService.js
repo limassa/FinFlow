@@ -2,9 +2,15 @@ const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 let Resend = null;
 try {
-  Resend = require('resend');
+  const resendModule = require('resend');
+  // Resend é exportado como { Resend }
+  Resend = resendModule.Resend;
+  if (!Resend) {
+    console.log('⚠️ Resend.Resend não encontrado no módulo');
+  }
 } catch (e) {
   // Resend não instalado ainda
+  console.log('⚠️ Resend não disponível:', e.message);
 }
 
 class EmailService {
