@@ -39,6 +39,7 @@ const API_BASE_URL = getApiUrl();
 // Log para debug
 console.log('🔗 API_BASE_URL configurada:', API_BASE_URL);
 console.log('🔗 Ambiente:', __DEV__ ? 'development' : 'production');
+console.log('🔗 EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL || 'não configurado');
 console.log('📱 Para dispositivo físico, configure o IP da sua máquina!');
 
 export const API_ENDPOINTS = {

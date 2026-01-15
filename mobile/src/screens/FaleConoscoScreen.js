@@ -65,12 +65,26 @@ export default function FaleConoscoScreen() {
 
     try {
       console.log('📤 Enviando requisição para:', API_ENDPOINTS.FALE_CONOSCO);
+      console.log('📤 API_BASE_URL:', API_ENDPOINTS.FALE_CONOSCO.split('/api')[0]);
       console.log('📤 Dados:', { nome: formData.nome, email: formData.email, tipo: formData.tipo });
+      
+      // Testar conexão primeiro
+      try {
+        const testResponse = await axios.get(`${API_ENDPOINTS.FALE_CONOSCO.split('/api')[0]}/api/test`, {
+          timeout: 10000,
+        });
+        console.log('✅ Conexão com API OK:', testResponse.data);
+      } catch (testError) {
+        console.warn('⚠️ Teste de conexão falhou, mas continuando...', testError.message);
+      }
       
       const response = await axios.post(API_ENDPOINTS.FALE_CONOSCO, formData, {
         timeout: 30000, // 30 segundos
         headers: {
           'Content-Type': 'application/json',
+        },
+        validateStatus: function (status) {
+          return status >= 200 && status < 500; // Aceitar qualquer status < 500
         },
       });
 
