@@ -115,7 +115,26 @@ class EmailService {
       try {
         console.log(`   🧪 Testando: ${config.name} (Prioridade: ${config.priority})`);
         
-        if (config.type === 'sendgrid') {
+        if (config.type === 'resend') {
+          // Testar Resend
+          if (!process.env.RESEND_API_KEY) {
+            console.log(`      ⚠️  Resend não configurado (RESEND_API_KEY ausente)`);
+            continue;
+          }
+          
+          if (!Resend) {
+            console.log(`      ⚠️  Resend não instalado (npm install resend)`);
+            continue;
+          }
+          
+          // Resend não precisa de teste de conexão
+          console.log(`      ✅ Resend configurado e disponível`);
+          this.transporter = new Resend(process.env.RESEND_API_KEY);
+          this.configuracaoAtual = config.name;
+          this.tipoAtual = 'resend';
+          return true;
+          
+        } else if (config.type === 'sendgrid') {
           // Testar SendGrid
           if (!process.env.SENDGRID_API_KEY) {
             console.log(`      ⚠️  SendGrid não configurado (SENDGRID_API_KEY ausente)`);
@@ -663,7 +682,7 @@ class EmailService {
     const tipoTexto = tipoLabels[tipo] || tipo || 'Não especificado';
 
     const mailOptions = {
-      from: process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+      from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
       to: 'contatoLizSoftware@gmail.com', // Email de destino fixo
       subject: `📧 Fale Conosco - FinFlow: ${tipoTexto}`,
       html: `
