@@ -713,7 +713,20 @@ class EmailService {
     };
 
     try {
-      if (this.tipoAtual === 'sendgrid') {
+      if (this.tipoAtual === 'resend') {
+        // Usar Resend
+        const resultado = await this.sendEmailResend(mailOptions);
+        if (resultado) {
+          console.log('✅ Email de "Fale Conosco" enviado via Resend!');
+          console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+          console.log(`   📧 De: ${email} (${nome})`);
+          console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          return true;
+        } else {
+          console.log('❌ Falha ao enviar via Resend');
+          return false;
+        }
+      } else if (this.tipoAtual === 'sendgrid') {
         // Usar SendGrid
         const resultado = await this.sendEmailSendGrid(mailOptions);
         if (resultado) {
