@@ -1,5 +1,11 @@
 const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
+let Resend = null;
+try {
+  Resend = require('resend');
+} catch (e) {
+  // Resend não instalado ainda
+}
 
 class EmailService {
   constructor() {
@@ -11,11 +17,20 @@ class EmailService {
     
     // Configurações de fallback para diferentes cenários
     this.configuracoes = [
-      // Configuração 1: SendGrid (prioridade máxima)
+      // Configuração 1: Resend (prioridade máxima - funciona no Railway)
+      {
+        name: 'Resend API',
+        type: 'resend',
+        priority: 1,
+        config: {
+          apiKey: process.env.RESEND_API_KEY
+        }
+      },
+      // Configuração 2: SendGrid (prioridade alta)
       {
         name: 'SendGrid API',
         type: 'sendgrid',
-        priority: 1,
+        priority: 2,
         config: {
           apiKey: process.env.SENDGRID_API_KEY
         }
@@ -163,6 +178,37 @@ class EmailService {
     return false;
   }
   
+  // Método para enviar email com Resend
+  async sendEmailResend(mailOptions) {
+    try {
+      if (!this.transporter || this.tipoAtual !== 'resend') {
+        if (!process.env.RESEND_API_KEY) {
+          return false;
+        }
+        this.transporter = new Resend(process.env.RESEND_API_KEY);
+      }
+      
+      const { data, error } = await this.transporter.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'contatoLizSoftware@gmail.com',
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html
+      });
+      
+      if (error) {
+        console.error('❌ Erro Resend:', error);
+        return false;
+      }
+      
+      console.log(`✅ Email enviado via Resend! ID: ${data?.id}`);
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Erro Resend:', error.message);
+      return false;
+    }
+  }
+
   // Método para enviar email com SendGrid
   async sendEmailSendGrid(mailOptions) {
     try {
