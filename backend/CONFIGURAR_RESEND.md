@@ -30,13 +30,28 @@ RESEND_FROM_EMAIL=contatoLizSoftware@gmail.com
 
 **Importante:** 
 - Não use aspas nas variáveis
-- A `RESEND_FROM_EMAIL` deve ser um email verificado no Resend
+- ⚠️ **Gmail.com não pode ser verificado no Resend** (não é seu domínio)
 
-### 4. Verificar Email no Resend
+### 4. Opções para Email "From"
+
+**Opção A: Usar domínio próprio (Recomendado)**
 
 1. No Resend, vá em **Domains**
-2. Se não tiver domínio próprio, use o email do Gmail
-3. O Resend pode enviar de qualquer email, mas recomenda-se verificar
+2. Adicione seu domínio (ex: `lizsoftware.com.br`)
+3. Siga as instruções para verificar (adicionar registros DNS)
+4. Configure no Railway:
+   ```
+   RESEND_VERIFIED_DOMAIN=lizsoftware.com.br
+   RESEND_FROM_EMAIL=noreply@lizsoftware.com.br
+   ```
+
+**Opção B: Usar email do Resend (Temporário)**
+
+O sistema automaticamente usa `onboarding@resend.dev` se o domínio não estiver verificado. Funciona, mas o email vem de um endereço do Resend.
+
+**Opção C: Verificar domínio Gmail (Não é possível)**
+
+Gmail.com não pode ser verificado porque não é seu domínio. Use uma das opções acima.
 
 ### 5. Testar
 
