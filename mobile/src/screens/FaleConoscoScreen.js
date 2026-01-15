@@ -64,7 +64,15 @@ export default function FaleConoscoScreen() {
     setLoading(true);
 
     try {
-      const response = await axios.post(API_ENDPOINTS.FALE_CONOSCO, formData);
+      console.log('📤 Enviando requisição para:', API_ENDPOINTS.FALE_CONOSCO);
+      console.log('📤 Dados:', { nome: formData.nome, email: formData.email, tipo: formData.tipo });
+      
+      const response = await axios.post(API_ENDPOINTS.FALE_CONOSCO, formData, {
+        timeout: 30000, // 30 segundos
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       console.log('✅ Resposta da API:', response.data);
 
