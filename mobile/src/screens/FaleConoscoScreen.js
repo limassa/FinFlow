@@ -69,7 +69,7 @@ export default function FaleConoscoScreen() {
       console.log('✅ Resposta da API:', response.data);
 
       // Verificar se foi sucesso (mesmo tratamento do web)
-      if (response.data.status === 'success' || response.data.message) {
+      if (response.data.status === 'success' || (response.data.message && !response.data.error)) {
         Alert.alert(
           'Sucesso!',
           response.data.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
@@ -93,7 +93,7 @@ export default function FaleConoscoScreen() {
         );
       } else {
         // Se não tem status success mas tem mensagem, considerar sucesso
-        const errorMsg = response.data.error || 'Erro ao enviar mensagem. Tente novamente.';
+        const errorMsg = response.data.error || response.data.message || 'Erro ao enviar mensagem. Tente novamente.';
         Alert.alert('Erro', errorMsg);
       }
     } catch (error) {
