@@ -1,0 +1,149 @@
+import React, { useState } from 'react';
+import { View, TouchableOpacity, Text, StyleSheet, Platform, Modal } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/theme';
+import { formatarData } from '../utils/formatters';
+
+export default function DatePicker({ value, onChange, placeholder = 'Selecione a data', mode = 'date' }) {
+  const [show, setShow] = useState(false);
+
+  const handleChange = (event, selectedDate) => {
+    // No Android, o picker fecha automaticamente
+    if (Platform.OS === 'android') {
+      setShow(false);
+    }
+    
+    // Se o usuário cancelou (Android)
+    if (event.type === 'dismissed') {
+      return;
+    }
+    
+    // Se uma data foi selecionada
+    if (selectedDate && onChange) {
+      onChange(selectedDate);
+    }
+  };
+
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    return formatarData(date); // DD/MM/YYYY
+  };
+
+  return (
+    <View>
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() => setShow(true)}
+      >
+        <Text style={[styles.text, !value && styles.placeholder]}>
+          {value ? formatDateForInput(value) : placeholder}
+        </Text>
+        <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+      </TouchableOpacity>
+
+      {Platform.OS === 'ios' && show && (
+        <Modal
+          visible={show}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShow(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.iosPickerContainer}>
+              <View style={styles.iosPickerHeader}>
+                <TouchableOpacity onPress={() => setShow(false)}>
+                  <Text style={styles.iosPickerButton}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => {
+                  if (onChange && value) {
+                    onChange(value);
+                  }
+                  setShow(false);
+                }}>
+                  <Text style={[styles.iosPickerButton, styles.iosPickerButtonConfirm]}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={value || new Date()}
+                mode={mode}
+                display="spinner"
+                onChange={(event, selectedDate) => {
+                  if (selectedDate && onChange) {
+                    onChange(selectedDate);
+                  }
+                }}
+                locale="pt-BR"
+                style={styles.iosPicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+      
+      {Platform.OS === 'android' && show && (
+        <DateTimePicker
+          value={value || new Date()}
+          mode={mode}
+          display="default"
+          onChange={handleChange}
+          locale="pt-BR"
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  input: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 48,
+  },
+  text: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  placeholder: {
+    color: colors.placeholder,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  iosPickerContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  iosPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  iosPickerButton: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  iosPickerButtonConfirm: {
+    color: colors.primary,
+  },
+  iosPicker: {
+    height: 200,
+  },
+});
+
