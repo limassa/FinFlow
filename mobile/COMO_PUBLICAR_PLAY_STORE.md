@@ -49,52 +49,41 @@ Gratuito
 - Declare políticas de privacidade
 - Clique em **"Criar app"**
 
-### **Passo 3: Configurar Categoria do App**
+### **Passo 3: Configurar Store Listing**
 
-1. Vá em **"Política do app"** → **"Categorias de app e conteúdo"**
-2. Selecione:
-   - **Categoria principal:** Finanças
-   - **Categoria secundária:** (opcional) Produtividade
-3. Marque o conteúdo do app:
-   - ✅ Todos os públicos
-   - ✅ Sem classificação específica necessária
-4. Salve
+1. Vá em **"Visão Geral da Publicação"** no menu lateral
+2. Você verá várias seções. Procure por **"Store listing"** ou **"Detalhes da loja"**
+3. Se não aparecer diretamente, procure por opções relacionadas a:
+   - Store listing
+   - Detalhes do app
+   - Informações da loja
+   - Conteúdo do app
 
-### **Passo 4: Preencher Classificação de Conteúdo**
+**Nota:** A estrutura do Google Play Console pode variar. Se não encontrar "Store listing", procure essas opções na seção **"Visão Geral da Publicação"**.
 
-1. Vá em **"Política do app"** → **"Classificação de conteúdo"**
-2. Responda o questionário:
-   - ✅ Não coleta informações pessoais de crianças
-   - ✅ Não é direcionado a crianças
-   - ✅ É adequado para todas as idades
-3. Salve
+### **Passo 4: Preencher Informações Básicas**
 
-### **Passo 5: Configurar Privacidade e Segurança**
+Na seção que você encontrar (Store listing ou similar), preencha:
 
-1. Vá em **"Política do app"** → **"Dados pessoais e privacidade"**
-2. Preencha:
-   - **Coleta de dados:** Não coletamos dados pessoais
-   - **Política de privacidade:** (URL da sua política)
-   - **Localização de dados:** Brasil
-3. Salve
+**Categoria do App:**
+- **Categoria principal:** Finanças
+- **Categoria secundária:** (opcional) Produtividade
 
-### **Passo 6: Criar Store Listing (Detalhes da Loja)**
+**Classificação de Conteúdo:**
+- Responda o questionário:
+  - ✅ Não coleta informações pessoais de crianças
+  - ✅ Não é direcionado a crianças
+  - ✅ É adequado para todas as idades
 
-**Menu do Google Play Console:**
+**Privacidade:**
+- **Política de privacidade:** (URL da sua política)
+- **Coleta de dados:** Não coletamos dados pessoais (ou declare o que coleta)
 
-Após criar o app, você verá no menu lateral as seguintes opções:
+### **Passo 5: Preencher Store Listing (Detalhes da Loja)**
 
-- **📊 Painel** - Visão geral do app
-- **📈 Estatísticas** - Métricas e análises
-- **📱 Visão Geral da Publicação** - Informações principais
-- **🧪 Testar e Lançar** - Versões e testes
-- **📈 Monitorar e Aprimorar** - Feedback e avaliações
-- **👥 Aumentar Número de Usuários** - Marketing e crescimento
-- **💰 Monetizar com o Google Play** - Receita e assinaturas
-
-**Para configurar o app, siga estes passos:**
-
-1. Vá em **"Visão Geral da Publicação"** → **"Store listing"**
+1. Vá em **"Visão Geral da Publicação"** no menu lateral
+2. Procure pela seção **"Store listing"** ou **"Detalhes da loja"**
+3. Se não aparecer como opção separada, procure dentro de **"Visão Geral da Publicação"** por campos relacionados
 
 #### 6.1 Informações Básicas
 
@@ -236,7 +225,8 @@ Controle suas finanças de forma simples e eficiente. Gerencie receitas, despesa
 
 ### **Passo 8: Configurar Preços e Distribuição**
 
-1. Vá em **"Preços e distribuição"**
+1. Vá em **"Visão Geral da Publicação"** ou procure por **"Preços e distribuição"** no menu
+2. Se não encontrar como opção separada, procure dentro de **"Visão Geral da Publicação"**
 
 #### 8.1 Disponibilidade
 
@@ -266,7 +256,9 @@ Controle suas finanças de forma simples e eficiente. Gerencie receitas, despesa
 
 ### **Passo 9: Configurar Testes (Opcional mas Recomendado)**
 
-1. Vá em **"Testar e Lançar"** → **"Testes"** → **"Testes internos"** ou **"Testes fechados"**
+1. Vá em **"Testar e Lançar"** no menu lateral
+2. Procure por **"Testes"**, **"Versão beta"**, **"Versão alpha"** ou **"Testes internos"**
+3. Se não encontrar, pode configurar depois - o importante é publicar primeiro
 
 #### 9.1 Criar Grupo de Testadores
 
