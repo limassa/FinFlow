@@ -1492,8 +1492,22 @@ app.get('/api/lembretes/processar', async (req, res) => {
   }
 });
 
+// Variável para controlar execução simultânea (lock)
+let processandoLembretes = false;
+// Cache de últimos envios por usuário e horário (para evitar duplicação)
+const ultimosEnvios = new Map();
+
 // Função para enviar lembretes agendados
 async function enviarLembretesAgendados() {
+  // Verificar se já está processando (evitar execução simultânea)
+  if (processandoLembretes) {
+    console.log('⚠️ Processamento de lembretes já em andamento, ignorando chamada duplicada');
+    return;
+  }
+  
+  // Ativar lock
+  processandoLembretes = true;
+  
   try {
     console.log('🔔 Verificando lembretes agendados...');
     
@@ -1575,6 +1589,17 @@ async function enviarLembretesAgendados() {
       if (lembretesHorario === horarioAtual || 
           (diferencaHoras === 0 && diferencaMinutos <= 1)) {
         
+        // Criar chave única para este usuário e horário
+        const chaveEnvio = `${userId}_${horarioAtual}`;
+        const ultimoEnvio = ultimosEnvios.get(chaveEnvio);
+        const agoraTimestamp = agora.getTime();
+        
+        // Verificar se já foi enviado nos últimos 5 minutos (evitar duplicação)
+        if (ultimoEnvio && (agoraTimestamp - ultimoEnvio) < 5 * 60 * 1000) {
+          console.log(`   ⏭️  Lembrete já enviado recentemente para usuário ${userId} no horário ${horarioAtual}, ignorando...`);
+          continue;
+        }
+        
         console.log(`   ✅ Horário correspondente para usuário ${userId} (${user.usuario_nome || user.Usuario_Nome})`);
         console.log(`      ⏰ Horário configurado: ${lembretesHorario} | Horário atual: ${horarioAtual}`);
         
@@ -1583,6 +1608,17 @@ async function enviarLembretesAgendados() {
         
         if (vencimentos.length > 0) {
           console.log(`      📅 ${vencimentos.length} vencimento(s) encontrado(s)`);
+          
+          // Marcar como enviado ANTES de enviar (para evitar duplicação se houver erro)
+          ultimosEnvios.set(chaveEnvio, agoraTimestamp);
+          
+          // Limpar cache antigo (manter apenas últimos 24 horas)
+          const umDiaAtras = agoraTimestamp - (24 * 60 * 60 * 1000);
+          for (const [chave, timestamp] of ultimosEnvios.entries()) {
+            if (timestamp < umDiaAtras) {
+              ultimosEnvios.delete(chave);
+            }
+          }
           
           // Enviar por email se ativado
           if (lembretesEmail) {
@@ -1630,6 +1666,9 @@ async function enviarLembretesAgendados() {
     console.log(`✅ Verificação concluída. ${lembretesEnviados} lembrete(s) enviado(s)`);
   } catch (error) {
     console.error('❌ Erro ao processar lembretes agendados:', error);
+  } finally {
+    // Sempre liberar o lock, mesmo em caso de erro
+    processandoLembretes = false;
   }
 }
 
