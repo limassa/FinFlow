@@ -1587,15 +1587,20 @@ async function enviarLembretesAgendados() {
       // Isso evita envios em minutos consecutivos
       if (horaConfig === horaAtual && minutoConfig === minutoAtual) {
         
-        // Criar chave única para este usuário e horário
-        const chaveEnvio = `${userId}_${horarioAtual}`;
+        // Criar chave única para este usuário e horário CONFIGURADO (não o horário atual)
+        // Isso garante que mesmo que o job rode em minutos diferentes, só envia 1x por horário configurado
+        const chaveEnvio = `${userId}_${lembretesHorario}`;
         const ultimoEnvio = ultimosEnvios.get(chaveEnvio);
         const agoraTimestamp = agora.getTime();
         
-        // Verificar se já foi enviado nos últimos 5 minutos (evitar duplicação)
-        if (ultimoEnvio && (agoraTimestamp - ultimoEnvio) < 5 * 60 * 1000) {
-          console.log(`   ⏭️  Lembrete já enviado recentemente para usuário ${userId} no horário ${horarioAtual}, ignorando...`);
-          continue;
+        // Verificar se já foi enviado hoje para este horário configurado (evitar duplicação)
+        // Usamos 1 hora como janela para garantir que só envia 1x por dia por horário
+        if (ultimoEnvio) {
+          const umDiaAtras = agoraTimestamp - (24 * 60 * 60 * 1000);
+          if (ultimoEnvio > umDiaAtras) {
+            console.log(`   ⏭️  Lembrete já enviado hoje para usuário ${userId} no horário configurado ${lembretesHorario}, ignorando...`);
+            continue;
+          }
         }
         
         console.log(`   ✅ Horário correspondente para usuário ${userId} (${user.usuario_nome || user.Usuario_Nome})`);
