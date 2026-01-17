@@ -25,7 +25,11 @@
         "backgroundColor": "#667eea"
       },
       "package": "com.lizsoftwares.finflow"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fb24288c-dd63-4a4b-89f0-2c0b1c412154"
+      }
     }
   }
 }
-
