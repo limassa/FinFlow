@@ -1579,15 +1579,13 @@ async function enviarLembretesAgendados() {
       const lembretesHorario = user.usuario_lembreteshorario || user.Usuario_LembretesHorario || '18:15';
       const userId = user.usuario_id || user.Usuario_Id;
       
-      // Verificar se é o horário configurado (com tolerância de 1 minuto)
+      // Verificar se é exatamente o horário configurado (sem tolerância)
       // Comparar horário configurado (horário de Brasília) com horário atual (também de Brasília)
       const [horaConfig, minutoConfig] = lembretesHorario.split(':').map(Number);
-      const diferencaHoras = Math.abs(horaConfig - horaAtual);
-      const diferencaMinutos = Math.abs(minutoConfig - minutoAtual);
       
-      // Corresponder se for exatamente o mesmo horário ou diferença de até 1 minuto
-      if (lembretesHorario === horarioAtual || 
-          (diferencaHoras === 0 && diferencaMinutos <= 1)) {
+      // Corresponder APENAS se for exatamente o mesmo horário (sem tolerância)
+      // Isso evita envios em minutos consecutivos
+      if (horaConfig === horaAtual && minutoConfig === minutoAtual) {
         
         // Criar chave única para este usuário e horário
         const chaveEnvio = `${userId}_${horarioAtual}`;
