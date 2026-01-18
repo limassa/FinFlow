@@ -19,6 +19,7 @@ import ResetPassword from './pages/ResetPassword';
 import DetalhesGrafico from './pages/DetalhesGrafico';
 import CalculadoraJuros from './pages/CalculadoraJuros';
 import CalculadoraRetiradas from './pages/CalculadoraRetiradas';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import reportWebVitals from './reportWebVitals';
 
@@ -35,6 +36,7 @@ root.render(
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/fale-conosco" element={<FaleConosco />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/calculadora-juros" element={<CalculadoraJuros />} />
         <Route path="/calculadora-retiradas" element={<CalculadoraRetiradas />} />
         <Route path="/app" element={<App />}/>

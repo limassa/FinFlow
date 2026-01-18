@@ -12,6 +12,7 @@ import Configuracoes from './pages/Configuracoes';
 import FaleConosco from './pages/FaleConosco';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import { getUsuarioLogado } from './functions/auth';
 
 // Componente para proteger rotas
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/fale-conosco" element={<FaleConosco />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         
