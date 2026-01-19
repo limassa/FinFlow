@@ -225,6 +225,24 @@ export default function ReceitaScreen() {
 
   const opcoesMeses = gerarOpcoesMeses();
 
+  // Função para abrir formulário de nova receita
+  const handleAddPress = React.useCallback(() => {
+    console.log('Botão adicionar clicado');
+    // Resetar formulário e abrir modal
+    setDescricao('');
+    setValor('');
+    setValorDisplay('');
+    setData(null);
+    setTipo('');
+    setContaId('');
+    setRecebido(false);
+    setRecorrente(false);
+    setFrequencia('mensal');
+    setProximasParcelas('12');
+    setEditId(null);
+    setShowForm(true);
+  }, []);
+
   // Configurar header com botão de adicionar
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -232,28 +250,15 @@ export default function ReceitaScreen() {
       title: 'Receitas',
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => {
-            // Resetar formulário e abrir modal
-            setDescricao('');
-            setValor('');
-            setValorDisplay('');
-            setData(null);
-            setTipo('');
-            setContaId('');
-            setRecebido(false);
-            setRecorrente(false);
-            setFrequencia('mensal');
-            setProximasParcelas('12');
-            setEditId(null);
-            setShowForm(true);
-          }}
-          style={{ marginRight: 15 }}
+          onPress={handleAddPress}
+          style={{ marginRight: 15, padding: 5 }}
+          activeOpacity={0.7}
         >
           <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
+  }, [navigation, handleAddPress]);
 
   return (
     <View style={styles.container}>
