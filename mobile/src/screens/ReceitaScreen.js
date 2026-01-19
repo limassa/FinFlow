@@ -225,6 +225,36 @@ export default function ReceitaScreen() {
 
   const opcoesMeses = gerarOpcoesMeses();
 
+  // Configurar header com botão de adicionar
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      title: 'Receitas',
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            // Resetar formulário e abrir modal
+            setDescricao('');
+            setValor('');
+            setValorDisplay('');
+            setData(null);
+            setTipo('');
+            setContaId('');
+            setRecebido(false);
+            setRecorrente(false);
+            setFrequencia('mensal');
+            setProximasParcelas('12');
+            setEditId(null);
+            setShowForm(true);
+          }}
+          style={{ marginRight: 15 }}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
       <View style={styles.statsContainer}>
