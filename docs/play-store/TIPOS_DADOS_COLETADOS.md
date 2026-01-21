@@ -147,32 +147,108 @@ Guia completo para preencher a seção "Tipos de dados" no Play Console.
 
 ---
 
-## 📋 Detalhes para Cada Tipo
+## 📋 Detalhes para Cada Tipo de Dado
 
-### **Nome:**
-- **Coletado de:** Dados fornecidos pelo usuário
-- **Finalidade:** Identificação e personalização
-- **Compartilhado:** NÃO
+### **1. Nome**
 
-### **Endereço de e-mail:**
-- **Coletado de:** Dados fornecidos pelo usuário
-- **Finalidade:** Autenticação e comunicação
-- **Compartilhado:** NÃO
+#### **Os dados são coletados, compartilhados ou ambos?**
+- ✅ **Coletados**
+- ❌ **Compartilhados**
 
-### **IDs de usuários:**
-- **Coletado de:** Sistema interno
-- **Finalidade:** Identificação única
-- **Compartilhado:** NÃO
+#### **Os dados são processados de maneira efêmera?**
+- ❌ **Não, os dados coletados não são processados de maneira efêmera**
+- **Justificativa:** Nome é armazenado no banco de dados para identificação do usuário
 
-### **Número de telefone:**
-- **Coletado de:** Dados fornecidos pelo usuário (opcional)
-- **Finalidade:** Notificações WhatsApp
-- **Compartilhado:** NÃO
+#### **Os dados são obrigatórios, ou os usuários podem escolher?**
+- ✅ **A coleta de dados é obrigatória: os usuários não podem desativá-la**
+- **Justificativa:** Nome é necessário para criar a conta e personalizar o app
 
-### **Informações financeiras:**
-- **Coletado de:** Dados inseridos pelo usuário
-- **Finalidade:** Funcionalidade do app (gerenciar finanças)
-- **Compartilhado:** NÃO
+#### **Por que os dados do usuário são coletados?**
+- ✅ **Funcionalidade do app** - Usado para identificação e personalização
+- ✅ **Gerenciamento de contas** - Usado para criar e gerenciar a conta do usuário
+- ✅ **Personalização** - Usado para personalizar a experiência do usuário
+
+---
+
+### **2. Endereço de e-mail**
+
+#### **Os dados são coletados, compartilhados ou ambos?**
+- ✅ **Coletados**
+- ❌ **Compartilhados**
+
+#### **Os dados são processados de maneira efêmera?**
+- ❌ **Não, os dados coletados não são processados de maneira efêmera**
+- **Justificativa:** Email é armazenado no banco de dados para autenticação
+
+#### **Os dados são obrigatórios, ou os usuários podem escolher?**
+- ✅ **A coleta de dados é obrigatória: os usuários não podem desativá-la**
+- **Justificativa:** Email é necessário para criar conta e fazer login
+
+#### **Por que os dados do usuário são coletados?**
+- ✅ **Funcionalidade do app** - Usado para autenticação e login
+- ✅ **Gerenciamento de contas** - Usado para criar e gerenciar a conta
+- ✅ **Mensagens do desenvolvedor** - Usado para enviar notificações por email (se configurado)
+
+---
+
+### **3. IDs de usuários**
+
+#### **Os dados são coletados, compartilhados ou ambos?**
+- ✅ **Coletados**
+- ❌ **Compartilhados**
+
+#### **Os dados são processados de maneira efêmera?**
+- ❌ **Não, os dados coletados não são processados de maneira efêmera**
+- **Justificativa:** ID do usuário é armazenado no banco de dados para identificação única
+
+#### **Os dados são obrigatórios, ou os usuários podem escolher?**
+- ✅ **A coleta de dados é obrigatória: os usuários não podem desativá-la**
+- **Justificativa:** ID é gerado automaticamente pelo sistema para identificar o usuário
+
+#### **Por que os dados do usuário são coletados?**
+- ✅ **Funcionalidade do app** - Usado para identificar o usuário e associar dados
+- ✅ **Gerenciamento de contas** - Usado para gerenciar a conta do usuário
+- ✅ **Segurança, conformidade e prevenção de fraudes** - Usado para segurança e autenticação
+
+---
+
+### **4. Número de telefone**
+
+#### **Os dados são coletados, compartilhados ou ambos?**
+- ✅ **Coletados**
+- ❌ **Compartilhados**
+
+#### **Os dados são processados de maneira efêmera?**
+- ❌ **Não, os dados coletados não são processados de maneira efêmera**
+- **Justificativa:** Telefone é armazenado no banco de dados para notificações
+
+#### **Os dados são obrigatórios, ou os usuários podem escolher?**
+- ✅ **Os usuários podem escolher se os dados são coletados**
+- **Justificativa:** Telefone é opcional, usado apenas para notificações WhatsApp
+
+#### **Por que os dados do usuário são coletados?**
+- ✅ **Funcionalidade do app** - Usado para enviar notificações WhatsApp (se configurado)
+- ✅ **Mensagens do desenvolvedor** - Usado para enviar lembretes por WhatsApp
+
+---
+
+### **5. Informações financeiras**
+
+#### **Os dados são coletados, compartilhados ou ambos?**
+- ✅ **Coletados**
+- ❌ **Compartilhados**
+
+#### **Os dados são processados de maneira efêmera?**
+- ❌ **Não, os dados coletados não são processados de maneira efêmera**
+- **Justificativa:** Dados financeiros são armazenados no banco de dados para funcionalidade do app
+
+#### **Os dados são obrigatórios, ou os usuários podem escolher?**
+- ✅ **A coleta de dados é obrigatória: os usuários não podem desativá-la**
+- **Justificativa:** Dados financeiros são essenciais para a funcionalidade principal do app
+
+#### **Por que os dados do usuário são coletados?**
+- ✅ **Funcionalidade do app** - Usado para gerenciar receitas, despesas e contas bancárias
+- ✅ **Personalização** - Usado para gerar relatórios e gráficos personalizados
 
 ---
 
@@ -186,6 +262,8 @@ Guia completo para preencher a seção "Tipos de dados" no Play Console.
 
 ## 🎯 Passo a Passo no Play Console
 
+### **Passo 1: Selecionar Tipos de Dados**
+
 1. **Informações Pessoais:**
    - Marque: Nome, Endereço de e-mail, IDs de usuários, Número de telefone
 
@@ -195,7 +273,56 @@ Guia completo para preencher a seção "Tipos de dados" no Play Console.
 3. **Todos os outros:**
    - Deixe desmarcados
 
-4. **Clique em "Próxima"**
+### **Passo 2: Preencher Detalhes de Cada Tipo**
+
+Para cada tipo de dado selecionado, preencha:
+
+#### **Nome:**
+- Coletados: ✅ SIM
+- Compartilhados: ❌ NÃO
+- Processamento efêmero: ❌ NÃO
+- Obrigatório: ✅ SIM
+- Finalidade: ✅ Funcionalidade do app, ✅ Gerenciamento de contas, ✅ Personalização
+
+#### **Endereço de e-mail:**
+- Coletados: ✅ SIM
+- Compartilhados: ❌ NÃO
+- Processamento efêmero: ❌ NÃO
+- Obrigatório: ✅ SIM
+- Finalidade: ✅ Funcionalidade do app, ✅ Gerenciamento de contas, ✅ Mensagens do desenvolvedor
+
+#### **IDs de usuários:**
+- Coletados: ✅ SIM
+- Compartilhados: ❌ NÃO
+- Processamento efêmero: ❌ NÃO
+- Obrigatório: ✅ SIM
+- Finalidade: ✅ Funcionalidade do app, ✅ Gerenciamento de contas, ✅ Segurança
+
+#### **Número de telefone:**
+- Coletados: ✅ SIM
+- Compartilhados: ❌ NÃO
+- Processamento efêmero: ❌ NÃO
+- Obrigatório: ❌ NÃO (usuários podem escolher)
+- Finalidade: ✅ Funcionalidade do app, ✅ Mensagens do desenvolvedor
+
+#### **Informações financeiras:**
+- Coletados: ✅ SIM
+- Compartilhados: ❌ NÃO
+- Processamento efêmero: ❌ NÃO
+- Obrigatório: ✅ SIM
+- Finalidade: ✅ Funcionalidade do app, ✅ Personalização
+
+---
+
+## 📋 Resumo Rápido por Tipo
+
+| Tipo | Coletado | Compartilhado | Efêmero | Obrigatório | Finalidade |
+|------|----------|---------------|---------|-------------|------------|
+| **Nome** | ✅ | ❌ | ❌ | ✅ | Funcionalidade, Contas, Personalização |
+| **E-mail** | ✅ | ❌ | ❌ | ✅ | Funcionalidade, Contas, Mensagens |
+| **IDs** | ✅ | ❌ | ❌ | ✅ | Funcionalidade, Contas, Segurança |
+| **Telefone** | ✅ | ❌ | ❌ | ❌ | Funcionalidade, Mensagens |
+| **Financeiro** | ✅ | ❌ | ❌ | ✅ | Funcionalidade, Personalização |
 
 ---
 
