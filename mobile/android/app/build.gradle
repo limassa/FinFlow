@@ -113,8 +113,8 @@ android {
     defaultConfig {
         applicationId 'com.lizsoftwares.finflow'
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        targetSdkVersion 35  // Forced to 35 for Play Store requirement
+        versionCode 14  // Incremented to avoid Play Store version conflict
         versionName "1.0.0"
     }
     signingConfigs {
