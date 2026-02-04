@@ -763,17 +763,21 @@ app.post('/api/forgot-password', async (req, res) => {
       return res.status(404).json({ error: 'Email não encontrado' });
     }
     
+    const userId = user.usuario_id || user.Usuario_Id || user.USUARIO_ID;
+    const userNome = user.usuario_nome || user.Usuario_Nome;
+    const userEmail = user.usuario_email || user.Usuario_Email;
+    
     // Gerar token de redefinição (expira em 1 hora)
     const resetToken = require('crypto').randomBytes(32).toString('hex');
     const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
     
-    // Salvar token no banco (você precisará adicionar campos na tabela usuario)
-    await userRepository.saveResetToken(user.usuario_id, resetToken, resetExpiry);
+    // Salvar token no banco
+    await userRepository.saveResetToken(userId, resetToken, resetExpiry);
     
     // Enviar email de redefinição
     const emailSent = await emailService.sendPasswordResetEmail({
-      nome: user.usuario_nome,
-      email: user.usuario_email
+      nome: userNome,
+      email: userEmail
     }, resetToken);
     
     if (emailSent) {

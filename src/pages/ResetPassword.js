@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import AuthBanner from '../components/AuthBanner';
 import PasswordStrength from '../components/PasswordStrength';
 import { FaLock, FaArrowLeft, FaCheck } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../config/api';
 
 function ResetPassword() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ function ResetPassword() {
     setMessage('');
 
     try {
-      const response = await fetch('${API_ENDPOINTS.RESET_PASSWORD}', {
+      const response = await fetch(API_ENDPOINTS.RESET_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
