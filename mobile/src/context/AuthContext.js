@@ -64,13 +64,7 @@ export function AuthProvider({ children }) {
       });
       
       if (response.data.usuario_id) {
-        const userData = {
-          id: response.data.usuario_id,
-          usuario_nome: response.data.usuario_nome,
-          usuario_email: response.data.usuario_email
-        };
-        await SecureStore.setItemAsync('user', JSON.stringify(userData));
-        setUser(userData);
+        // Não faz login automático: usuário deve ir para a tela de login
         return { success: true };
       }
       return { success: false, error: 'Erro ao cadastrar' };

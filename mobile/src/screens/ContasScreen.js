@@ -16,6 +16,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
+import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import Select from '../components/Select';
 
@@ -76,16 +77,17 @@ export default function ContasScreen() {
     }
 
     try {
+      const saldoNum = parseCurrencyToNumber(saldo) || 0;
       const contaData = {
         nome,
         tipo,
-        saldo: saldo || 0,
+        saldo: saldoNum,
         incrementarSaldoTotal: true,
         usuario_id: userId
       };
 
       if (editId) {
-        await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { nome, tipo, saldo: saldo || 0 });
+        await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { nome, tipo, saldo: saldoNum });
         Alert.alert('Sucesso', 'Conta atualizada com sucesso');
       } else {
         await axios.post(API_ENDPOINTS.CONTAS, contaData);
@@ -103,8 +105,8 @@ export default function ContasScreen() {
     const contaId = conta.conta_id || conta.Conta_Id || conta.id;
     setNome(conta.conta_nome || conta.Conta_Nome || conta.nome || '');
     setTipo(conta.conta_tipo || conta.Conta_Tipo || conta.tipo || '');
-    const saldo = conta.conta_saldo || conta.Conta_Saldo || conta.saldo || 0;
-    setSaldo(saldo ? saldo.toString() : '');
+    const saldoNum = parseFloat(conta.conta_saldo || conta.Conta_Saldo || conta.saldo || 0);
+    setSaldo(formatCurrency(Math.round(saldoNum * 100).toString()));
     setEditId(contaId);
     setShowForm(true);
   };
@@ -267,9 +269,12 @@ export default function ContasScreen() {
               <TextInput
                 style={styles.input}
                 value={saldo}
-                onChangeText={setSaldo}
+                onChangeText={(text) => {
+                  const numbers = text.replace(/\D/g, '');
+                  setSaldo(formatCurrency(numbers));
+                }}
                 placeholder="0,00"
-                keyboardType="decimal-pad"
+                keyboardType="number-pad"
               />
 
               <View style={styles.formActions}>

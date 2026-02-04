@@ -34,6 +34,7 @@ export default function ReceitaScreen() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [mesFiltro, setMesFiltro] = useState('');
+  const [filtroRecebido, setFiltroRecebido] = useState('todos');
   
   // Form fields
   const [descricao, setDescricao] = useState('');
@@ -46,6 +47,9 @@ export default function ReceitaScreen() {
   const [recorrente, setRecorrente] = useState(false);
   const [frequencia, setFrequencia] = useState('mensal');
   const [proximasParcelas, setProximasParcelas] = useState('12');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -112,6 +116,9 @@ export default function ReceitaScreen() {
       return;
     }
 
+    if (submitting) return;
+    setSubmitting(true);
+
     try {
       // Converter valor formatado para número (já validado acima)
       const valorNumerico = parseCurrencyToNumber(valorDisplay || formatCurrency(valor));
@@ -143,6 +150,8 @@ export default function ReceitaScreen() {
       fetchReceitas();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar receita');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -182,10 +191,121 @@ export default function ReceitaScreen() {
           onPress: async () => {
             try {
               await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
+              setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
               fetchReceitas();
               Alert.alert('Sucesso', 'Receita excluída com sucesso');
             } catch (err) {
               Alert.alert('Erro', 'Erro ao excluir receita');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === receitasFiltradas.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(receitasFiltradas.map(r => r.receita_id)));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    const qtd = selectedIds.size;
+    if (qtd === 0) return;
+    Alert.alert(
+      'Confirmar',
+      `Deseja realmente excluir ${qtd} receita(s) selecionada(s)?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingInProgress(true);
+            try {
+              for (const id of selectedIds) {
+                await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
+              }
+              setSelectedIds(new Set());
+              fetchReceitas();
+              Alert.alert('Sucesso', `${qtd} receita(s) excluída(s) com sucesso`);
+            } catch (err) {
+              Alert.alert('Erro', 'Erro ao excluir receitas');
+            } finally {
+              setDeletingInProgress(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const receitasFiltradas = React.useMemo(() => {
+    if (filtroRecebido === 'todos') return receitas;
+    if (filtroRecebido === 'recebido') return receitas.filter(r => r.receita_recebido);
+    return receitas.filter(r => !r.receita_recebido);
+  }, [receitas, filtroRecebido]);
+
+  const receitasPorTipo = React.useMemo(() => {
+    const grupos = {};
+    receitasFiltradas.forEach(r => {
+      const tipoKey = r.receita_tipo || 'Sem tipo';
+      if (!grupos[tipoKey]) grupos[tipoKey] = [];
+      grupos[tipoKey].push(r);
+    });
+    const ordem = [...tiposReceita];
+    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
+    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
+    return ordemFinal.map(tipo => {
+      const itens = grupos[tipo];
+      const ordenados = [...itens].sort((a, b) => {
+        const dataA = (a.receita_data || '').split('T')[0];
+        const dataB = (b.receita_data || '').split('T')[0];
+        return dataA.localeCompare(dataB);
+      });
+      return { tipo, itens: ordenados };
+    });
+  }, [receitasFiltradas]);
+
+  const handleDeleteGroup = (tipoGrupo, itens) => {
+    const qtd = itens.length;
+    if (qtd === 0) return;
+    Alert.alert(
+      'Confirmar',
+      `Excluir todas as ${qtd} receita(s) do tipo "${tipoGrupo}"? Esta ação pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingInProgress(true);
+            try {
+              for (const r of itens) {
+                await axios.delete(`${API_ENDPOINTS.RECEITAS}/${r.receita_id}`);
+              }
+              setSelectedIds(prev => {
+                const next = new Set(prev);
+                itens.forEach(r => next.delete(r.receita_id));
+                return next;
+              });
+              fetchReceitas();
+              Alert.alert('Sucesso', `${qtd} receita(s) excluída(s) com sucesso`);
+            } catch (err) {
+              Alert.alert('Erro', 'Erro ao excluir receitas');
+            } finally {
+              setDeletingInProgress(false);
             }
           }
         }
@@ -219,8 +339,11 @@ export default function ReceitaScreen() {
     setShowForm(false);
   };
 
-  const totalReceitas = receitas
+  const totalReceitas = receitasFiltradas
     .filter(r => r.receita_recebido)
+    .reduce((sum, r) => sum + parseFloat(r.receita_valor || 0), 0);
+
+  const previsaoReceitas = receitasFiltradas
     .reduce((sum, r) => sum + parseFloat(r.receita_valor || 0), 0);
 
   const opcoesMeses = gerarOpcoesMeses();
@@ -267,9 +390,13 @@ export default function ReceitaScreen() {
           <Text style={styles.statLabel}>Total</Text>
           <Text style={styles.statValue}>{formatarValor(totalReceitas)}</Text>
         </View>
+        <View style={[styles.statCard, styles.statCardPrevisao]}>
+          <Text style={styles.statLabel}>Previsão</Text>
+          <Text style={styles.statValuePrevisao}>{formatarValor(previsaoReceitas)}</Text>
+        </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Quantidade</Text>
-          <Text style={styles.statValue}>{receitas.length}</Text>
+          <Text style={styles.statValue}>{receitasFiltradas.length}</Text>
         </View>
       </View>
 
@@ -284,6 +411,17 @@ export default function ReceitaScreen() {
           onChange={setMesFiltro}
           placeholder="Selecione o mês"
         />
+        <Text style={styles.filterLabel}>Status:</Text>
+        <Select
+          value={filtroRecebido}
+          options={[
+            { label: 'Todos', value: 'todos' },
+            { label: 'Recebido', value: 'recebido' },
+            { label: 'Não recebido', value: 'nao_recebido' }
+          ]}
+          onChange={setFiltroRecebido}
+          placeholder="Status"
+        />
       </View>
 
       {loading ? (
@@ -292,55 +430,109 @@ export default function ReceitaScreen() {
         </View>
       ) : (
         <ScrollView style={styles.listContainer}>
-          {receitas.length === 0 ? (
+          {receitasFiltradas.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Nenhuma receita encontrada</Text>
+              <Text style={styles.emptyText}>
+                Nenhuma receita encontrada{filtroRecebido !== 'todos' ? ' com esse filtro' : ''}
+              </Text>
             </View>
           ) : (
-            receitas.map(receita => {
-              const conta = contas.find(c => c.conta_id === receita.conta_id);
-              return (
-                <View key={receita.receita_id} style={styles.receitaCard}>
-                  <View style={styles.receitaHeader}>
-                    <View style={styles.receitaInfo}>
-                      <Text style={styles.receitaDescricao}>{receita.receita_descricao}</Text>
-                      <Text style={styles.receitaValor}>{formatarValor(receita.receita_valor)}</Text>
-                    </View>
-                    <Switch
-                      value={receita.receita_recebido || false}
-                      onValueChange={() => handleToggleRecebido(receita)}
+            <>
+              {receitasFiltradas.length > 0 && (
+                <View style={styles.selectAllRow}>
+                  <TouchableOpacity onPress={toggleSelectAll} style={styles.selectAllButton}>
+                    <Ionicons
+                      name={selectedIds.size === receitasFiltradas.length ? 'checkbox' : 'square-outline'}
+                      size={22}
+                      color={colors.primary}
                     />
-                  </View>
-                  <View style={styles.receitaDetails}>
-                    <Text style={styles.receitaDetail}>
-                      <Ionicons name="calendar" size={14} /> {formatarData(receita.receita_data)}
+                    <Text style={styles.selectAllText}>
+                      {selectedIds.size === receitasFiltradas.length ? 'Desmarcar todas' : 'Selecionar todas'}
                     </Text>
-                    <Text style={styles.receitaDetail}>
-                      <Ionicons name="pricetag" size={14} /> {receita.receita_tipo}
-                    </Text>
-                    {conta && (
-                      <Text style={styles.receitaDetail}>
-                        <Ionicons name="wallet" size={14} /> {conta.conta_nome}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.receitaActions}>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleEdit(receita)}
-                    >
-                      <Ionicons name="create" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleDelete(receita.receita_id)}
-                    >
-                      <Ionicons name="trash" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              );
-            })
+              )}
+              {selectedIds.size > 0 && (
+                <View style={styles.bulkActionsRow}>
+                  <Text style={styles.bulkCount}>{selectedIds.size} selecionada(s)</Text>
+                  <TouchableOpacity style={styles.bulkDeleteButton} onPress={handleDeleteSelected}>
+                    <Ionicons name="trash" size={20} color="#fff" />
+                    <Text style={styles.bulkDeleteText}>Excluir selecionadas</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => (
+                <View key={tipoGrupo}>
+                  <View style={styles.groupHeader}>
+                    <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
+                    <TouchableOpacity
+                      style={styles.groupDeleteButton}
+                      onPress={() => handleDeleteGroup(tipoGrupo, itens)}
+                    >
+                      <Ionicons name="trash" size={18} color={colors.error} />
+                      <Text style={styles.groupDeleteText}>Excluir grupo ({itens.length})</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {itens.map(receita => {
+                    const conta = contas.find(c => c.conta_id === receita.conta_id);
+                    const isSelected = selectedIds.has(receita.receita_id);
+                    return (
+                      <View key={receita.receita_id} style={styles.receitaCard}>
+                        <TouchableOpacity
+                          style={styles.cardCheckbox}
+                          onPress={() => toggleSelect(receita.receita_id)}
+                        >
+                          <Ionicons
+                            name={isSelected ? 'checkbox' : 'square-outline'}
+                            size={22}
+                            color={isSelected ? colors.primary : colors.textSecondary}
+                          />
+                        </TouchableOpacity>
+                        <View style={styles.receitaCardContent}>
+                          <View style={styles.receitaHeader}>
+                            <View style={styles.receitaInfo}>
+                              <Text style={styles.receitaDescricao}>{receita.receita_descricao}</Text>
+                              <Text style={styles.receitaValor}>{formatarValor(receita.receita_valor)}</Text>
+                            </View>
+                            <Switch
+                              value={receita.receita_recebido || false}
+                              onValueChange={() => handleToggleRecebido(receita)}
+                            />
+                          </View>
+                          <View style={styles.receitaDetails}>
+                            <Text style={styles.receitaDetail}>
+                              <Ionicons name="calendar" size={14} /> {formatarData(receita.receita_data)}
+                            </Text>
+                            <Text style={styles.receitaDetail}>
+                              <Ionicons name="pricetag" size={14} /> {receita.receita_tipo}
+                            </Text>
+                            {conta && (
+                              <Text style={styles.receitaDetail}>
+                                <Ionicons name="wallet" size={14} /> {conta.conta_nome}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.receitaActions}>
+                            <TouchableOpacity
+                              style={styles.actionButton}
+                              onPress={() => handleEdit(receita)}
+                            >
+                              <Ionicons name="create" size={20} color={colors.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.actionButton}
+                              onPress={() => handleDelete(receita.receita_id)}
+                            >
+                              <Ionicons name="trash" size={20} color={colors.error} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </>
           )}
         </ScrollView>
       )}
@@ -462,18 +654,34 @@ export default function ReceitaScreen() {
                   <Text style={styles.formButtonTextCancel}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.formButton, styles.formButtonSave]}
+                  style={[styles.formButton, styles.formButtonSave, submitting && styles.formButtonDisabled]}
                   onPress={handleSubmit}
+                  disabled={submitting}
                 >
-                  <Text style={styles.formButtonTextSave}>
-                    {editId ? 'Atualizar' : 'Salvar'}
-                  </Text>
+                  {submitting ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                      <Text style={styles.formButtonTextSave}>
+                        {recorrente && !editId ? `Processando ${proximasParcelas || 0} parcelas...` : 'Processando...'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.formButtonTextSave}>
+                      {editId ? 'Atualizar' : 'Salvar'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
+
+      {deletingInProgress && (
+        <View style={styles.processingDeleteBar}>
+          <Text style={styles.processingDeleteText}>Processando exclusão... Aguarde.</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -527,6 +735,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  statCardPrevisao: {
+    flex: 0.9,
+  },
+  statValuePrevisao: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
   filterContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -554,7 +770,82 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
+  selectAllRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  selectAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectAllText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  bulkActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+  },
+  bulkCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2e7d32',
+  },
+  bulkDeleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.error,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  bulkDeleteText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#e8ecf4',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  groupHeaderText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  groupDeleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  groupDeleteText: {
+    fontSize: 13,
+    color: colors.error,
+    fontWeight: '600',
+  },
   receitaCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
@@ -564,6 +855,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  cardCheckbox: {
+    marginRight: 12,
+    paddingTop: 2,
+  },
+  receitaCardContent: {
+    flex: 1,
   },
   receitaHeader: {
     flexDirection: 'row',
@@ -694,6 +992,25 @@ const styles = StyleSheet.create({
   },
   formButtonSave: {
     backgroundColor: colors.primary,
+  },
+  formButtonDisabled: {
+    opacity: 0.7,
+  },
+  processingDeleteBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1e3a5f',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  processingDeleteText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   formButtonTextCancel: {
     fontSize: 16,

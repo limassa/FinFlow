@@ -373,6 +373,15 @@
   font-weight: 700;
 }
 
+/* Previsão: total independente de pago/recebido, um pouco menor */
+.stat-card-previsao .stat-label {
+  font-size: 11px;
+}
+.stat-card-previsao .stat-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* Filtro por mês */
 .filtro-container {
   display: flex;
@@ -398,6 +407,40 @@
   color: #333;
   font-size: 14px;
   min-width: 200px;
+}
+
+.filtro-row {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filtro-row .filtro-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filtro-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+/* Barra de "processando exclusão" (fixa embaixo) */
+.processing-delete-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 16px;
+  background: #1e3a5f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  z-index: 1000;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
 }
 
 /* Formulário de receitas/despesas */
@@ -1436,6 +1479,47 @@
   font-weight: 500;
 }
 
+.form-input.form-input-error {
+  border-color: #f44336;
+}
+
+.form-error-msg {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #f44336;
+}
+
+/* Campo senha com olhinho (login) */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .form-input {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: #4a67af;
+}
+
 /* Estilos específicos para textarea */
 textarea.form-input {
   font-family: inherit;
@@ -2426,6 +2510,13 @@ select.form-input:focus {
   background: #2563eb;
 }
 
+.btn-atualizar:disabled,
+.btn-adicionar:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .btn-cancelar {
   background: #6b7280;
   color: white;
@@ -2451,7 +2542,28 @@ select.form-input:focus {
 /* Estilos específicos para o grid de despesas */
 .despesas-grid .grid-header,
 .despesas-grid .grid-row {
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 100px 80px;
+  grid-template-columns: 40px 2fr 1fr 1fr 1fr 1fr 1fr 100px 80px;
+}
+
+.despesas-grid .grid-group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #e8ecf4;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #d0d7e2;
+}
+
+.despesas-grid .grid-group-header .btn-delete-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
 }
 
 .despesas-grid .grid-cell {
@@ -2481,8 +2593,22 @@ select.form-input:focus {
   padding-right: 8px;
 }
 
-/* Diminuir o campo descrição */
-.despesas-grid .grid-cell:first-child {
+/* Coluna checkbox */
+.despesas-grid .grid-cell-check,
+.receitas-grid .grid-cell-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.despesas-grid .grid-cell-check input[type="checkbox"],
+.receitas-grid .grid-cell-check input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Diminuir o campo descrição (2ª coluna) */
+.despesas-grid .grid-row .grid-cell:nth-child(2) {
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2494,15 +2620,59 @@ select.form-input:focus {
   justify-content: flex-end;
 }
 
-.despesas-grid .grid-header .grid-cell:nth-child(2) {
+.despesas-grid .grid-header .grid-cell:nth-child(3) {
   justify-content: flex-end;
   text-align: right;
+}
+
+/* Ações em lote */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #fff3e0;
+  border-radius: 8px;
+  border: 1px solid #ffcc80;
+}
+
+.bulk-count {
+  font-weight: 600;
+  color: #e65100;
+}
+
+.bulk-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Estilos específicos para o grid de receitas */
 .receitas-grid .grid-header,
 .receitas-grid .grid-row {
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 80px 80px;
+  grid-template-columns: 40px 2fr 1fr 1fr 1fr 1fr 1fr 80px 80px;
+}
+
+.receitas-grid .grid-group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #e8ecf4;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #d0d7e2;
+}
+
+.receitas-grid .grid-group-header .btn-delete-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
 }
 
 .receitas-grid .grid-cell.acoes {
@@ -2524,9 +2694,16 @@ select.form-input:focus {
   justify-content: flex-end;
 }
 
-.receitas-grid .grid-header .grid-cell:nth-child(2) {
+.receitas-grid .grid-header .grid-cell:nth-child(3) {
   justify-content: flex-end;
   text-align: right;
+}
+
+.receitas-grid .grid-row .grid-cell:nth-child(2) {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .receitas-grid .grid-header .grid-cell:last-child {
@@ -2539,7 +2716,7 @@ select.form-input:focus {
   cursor: pointer;
 }
 
-.receitas-grid .grid-cell:nth-child(7) {
+.receitas-grid .grid-cell:nth-child(8) {
   justify-content: center;
   align-items: center;
 }

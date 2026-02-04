@@ -24,6 +24,9 @@ import CalculadoraJurosScreen from './src/screens/CalculadoraJurosScreen';
 import CalculadoraRetiradasScreen from './src/screens/CalculadoraRetiradasScreen';
 import SobreScreen from './src/screens/SobreScreen';
 import FaleConoscoScreen from './src/screens/FaleConoscoScreen';
+import SairScreen from './src/screens/SairScreen';
+import CalculadorasScreen from './src/screens/CalculadorasScreen';
+import CalculadoraSalarioHoraScreen from './src/screens/CalculadoraSalarioHoraScreen';
 
 // Auth Context
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -35,13 +38,47 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
+// Stack da aba Home: Drawer + telas de Calculadoras (para manter menu horizontal visível)
+function HomeStackNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#3e57a2' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+      }}
+    >
+      <Stack.Screen
+        name="Drawer"
+        component={DrawerNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CalculadoraJuros"
+        component={CalculadoraJurosScreen}
+        options={{ title: 'Calculadora de Juros' }}
+      />
+      <Stack.Screen
+        name="CalculadoraRetiradas"
+        component={CalculadoraRetiradasScreen}
+        options={{ title: 'Calculadora de Retiradas' }}
+      />
+      <Stack.Screen
+        name="CalculadoraSalarioHora"
+        component={CalculadoraSalarioHoraScreen}
+        options={{ title: 'Salário por Hora' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 // Drawer Navigator com menu lateral
 function DrawerNavigator() {
   return (
     <Drawer.Navigator
       screenOptions={({ navigation }) => ({
         headerStyle: {
-          backgroundColor: '#4a67af',
+          backgroundColor: '#3e57a2',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -56,7 +93,7 @@ function DrawerNavigator() {
             onPress={() => navigation.openDrawer()}
           />
         ),
-        drawerActiveTintColor: '#4a67af',
+        drawerActiveTintColor: '#3e57a2',
         drawerInactiveTintColor: '#666',
         drawerStyle: {
           backgroundColor: '#fff',
@@ -153,33 +190,13 @@ function DrawerNavigator() {
         })}
       />
       <Drawer.Screen
-        name="CalculadoraJuros"
-        component={CalculadoraJurosScreen}
+        name="Calculadoras"
+        component={CalculadorasScreen}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="calculator" size={size} color={color} />
           ),
-          title: 'Calculadora de Juros',
-        }}
-      />
-      <Drawer.Screen
-        name="CalculadoraRetiradas"
-        component={CalculadoraRetiradasScreen}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="cash" size={size} color={color} />
-          ),
-          title: 'Calculadora de Retiradas',
-        }}
-      />
-      <Drawer.Screen
-        name="Configuracoes"
-        component={ConfiguracoesScreen}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
-          title: 'Configurações',
+          title: 'Calculadoras',
         }}
       />
       <Drawer.Screen
@@ -193,49 +210,53 @@ function DrawerNavigator() {
         }}
       />
       <Drawer.Screen
-        name="FaleConosco"
-        component={FaleConoscoScreen}
+        name="Configuracoes"
+        component={ConfiguracoesScreen}
         options={{
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
+            <Ionicons name="settings" size={size} color={color} />
           ),
-          title: 'Fale Conosco',
+          title: 'Configurações',
         }}
       />
     </Drawer.Navigator>
   );
 }
 
-// Tab Navigator para rotas autenticadas (apenas Home e Contas)
+// Tab Navigator para rotas autenticadas (Home, Contas, Configurações, Sair)
 function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Contas') {
             iconName = focused ? 'wallet' : 'wallet-outline';
+          } else if (route.name === 'Configurações') {
+            iconName = focused ? 'settings' : 'settings-outline';
+          } else if (route.name === 'Sair') {
+            iconName = 'log-out-outline';
           }
-
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#4a67af',
+        tabBarActiveTintColor: '#3e57a2',
         tabBarInactiveTintColor: 'gray',
-        headerShown: false,
+        headerShown: true,
+        headerStyle: { backgroundColor: '#3e57a2' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={DrawerNavigator}
+      <Tab.Screen
+        name="Home"
+        component={HomeStackNavigator}
+        options={{ headerShown: false }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
-            // Navegar para a tela Home dentro do Drawer quando clicar na tab
             const parent = navigation.getParent();
             if (parent) {
-              // Resetar navegação para Home
               parent.dispatch(
                 CommonActions.reset({
                   index: 0,
@@ -243,7 +264,7 @@ function MainTabs() {
                     {
                       name: 'Home',
                       state: {
-                        routes: [{ name: 'Home' }],
+                        routes: [{ name: 'Drawer' }],
                         index: 0,
                       },
                     },
@@ -254,7 +275,38 @@ function MainTabs() {
           },
         })}
       />
-      <Tab.Screen name="Contas" component={ContasScreen} />
+      <Tab.Screen
+        name="Contas"
+        component={ContasScreen}
+        options={{
+          headerShown: true,
+          title: 'Contas',
+          headerStyle: { backgroundColor: '#3e57a2' },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
+      <Tab.Screen
+        name="Configurações"
+        component={ConfiguracoesScreen}
+        options={{
+          headerShown: true,
+          title: 'Configurações',
+          headerStyle: { backgroundColor: '#3e57a2' },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
+      <Tab.Screen
+        name="Sair"
+        component={SairScreen}
+        options={{
+          title: 'Sair',
+          headerStyle: { backgroundColor: '#3e57a2' },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
     </Tab.Navigator>
   );
 }

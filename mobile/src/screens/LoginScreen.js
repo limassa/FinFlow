@@ -19,6 +19,7 @@ import { colors } from '../theme/theme';
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
@@ -48,8 +49,8 @@ export default function LoginScreen({ navigation }) {
           <Svg width="80" height="80" viewBox="0 0 80 80">
             <Defs>
               <LinearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#667eea" stopOpacity="1" />
-                <Stop offset="100%" stopColor="#764ba2" stopOpacity="1" />
+                <Stop offset="0%" stopColor="#3e57a2" stopOpacity="1" />
+                <Stop offset="100%" stopColor="#2d199c" stopOpacity="1" />
               </LinearGradient>
             </Defs>
             <Circle cx="40" cy="40" r="36" fill="url(#logoGradient)" />
@@ -73,15 +74,28 @@ export default function LoginScreen({ navigation }) {
             autoComplete="email"
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            placeholderTextColor={colors.placeholder}
-            value={senha}
-            onChangeText={setSenha}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder="Senha"
+              placeholderTextColor={colors.placeholder}
+              value={senha}
+              onChangeText={setSenha}
+              secureTextEntry={!mostrarSenha}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setMostrarSenha(!mostrarSenha)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.forgotPasswordButton}
@@ -160,6 +174,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  passwordWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  passwordInput: {
+    marginBottom: 0,
+    paddingRight: 48,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   button: {
     backgroundColor: colors.primary,

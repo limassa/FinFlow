@@ -7,18 +7,19 @@ const userRepository = {
     const saltRounds = 10;
     const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
     
+    const telefoneVal = telefone != null && String(telefone).trim() !== '' ? String(telefone).trim() : null;
     // Tentar com aspas duplas primeiro (case-sensitive)
     let result;
     try {
       result = await pool.query(
-        'INSERT INTO "Usuario" ("Usuario_Email", "Usuario_Senha", "Usuario_Nome") VALUES ($1, $2, $3) RETURNING *',
-        [email, senhaCriptografada, nome]
+        'INSERT INTO "Usuario" ("Usuario_Email", "Usuario_Senha", "Usuario_Nome", "Usuario_Telefone") VALUES ($1, $2, $3, $4) RETURNING *',
+        [email, senhaCriptografada, nome, telefoneVal]
       );
     } catch (err) {
       // Se falhar, tentar sem aspas (minúscula)
       result = await pool.query(
-        'INSERT INTO usuario (usuario_email, usuario_senha, usuario_nome) VALUES ($1, $2, $3) RETURNING *',
-        [email, senhaCriptografada, nome]
+        'INSERT INTO usuario (usuario_email, usuario_senha, usuario_nome, usuario_telefone) VALUES ($1, $2, $3, $4) RETURNING *',
+        [email, senhaCriptografada, nome, telefoneVal]
       );
     }
     return result.rows[0];
@@ -152,7 +153,7 @@ const userRepository = {
         params.push(mes + '-01');
       }
       
-      query += ' ORDER BY "Receita_Data" DESC';
+      query += ' ORDER BY "Receita_Data" ASC';
       
       result = await pool.query(query, params);
     } catch (err) {
@@ -165,7 +166,7 @@ const userRepository = {
         params.push(mes + '-01');
       }
       
-      query += ' ORDER BY receita_data DESC';
+      query += ' ORDER BY receita_data ASC';
       
       result = await pool.query(query, params);
     }
@@ -239,7 +240,7 @@ const userRepository = {
         params.push(mes + '-01');
       }
       
-      query += ' ORDER BY "Despesa_Data" DESC';
+      query += ' ORDER BY "Despesa_Data" ASC';
       
       result = await pool.query(query, params);
     } catch (err) {
@@ -252,7 +253,7 @@ const userRepository = {
         params.push(mes + '-01');
       }
       
-      query += ' ORDER BY despesa_data DESC';
+      query += ' ORDER BY despesa_data ASC';
       
       result = await pool.query(query, params);
     }
@@ -493,7 +494,11 @@ const userRepository = {
         [userId]
       );
     }
-    return result.rows[0];
+    const row = result.rows[0];
+    if (!row) return null;
+    // Garantir que telefone esteja acessível (PostgreSQL pode retornar Usuario_Telefone ou usuario_telefone)
+    const telefone = row.Usuario_Telefone ?? row.usuario_telefone ?? row.USUARIO_TELEFONE ?? null;
+    return { ...row, usuario_telefone: telefone, Usuario_Telefone: telefone };
   },
 
   async updateLembretesConfig(userId, { lembretesAtivos, lembretesEmail, lembretesWhatsApp, lembretesDiasAntes, lembretesHorario }) {

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { setUsuarioLogado } from '../functions/auth';
 import { funcoes } from '../functions/function.js';
 import AuthBanner from '../components/AuthBanner';
-import { FaEnvelope, FaCalculator } from 'react-icons/fa';
+import { FaEnvelope, FaCalculator, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../config/api';
 import '../App.css';
 
@@ -12,6 +12,7 @@ function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
   const [versao, setVersao] = useState(null);
   const [versaoLoading, setVersaoLoading] = useState(true);
@@ -116,14 +117,25 @@ function Login() {
         
         <div className="form-group">
           <label className='form-label'>Senha</label> 
-          <input
-            type="password"
-            placeholder="Digite sua senha"
-            value={senha}
-            onChange={e => setSenha(e.target.value)}
-            required
-            className="form-input"
-          />
+          <div className="password-input-wrapper">
+            <input
+              type={mostrarSenha ? 'text' : 'password'}
+              placeholder="Digite sua senha"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              required
+              className="form-input"
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setMostrarSenha(!mostrarSenha)}
+              title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+              aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {mostrarSenha ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
           <div className="forgot-password-link">
             <button
               type="button"

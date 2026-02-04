@@ -40,18 +40,9 @@ export default function SobreScreen() {
     });
   };
 
-  const handleWebsitePress = () => {
-    Linking.openURL('https://lizsoftwares.com.br');
-  };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Versão</Text>
-          <Text style={styles.sectionText}>1.0.0</Text>
-        </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Descrição</Text>
           <Text style={styles.sectionText}>
@@ -97,6 +88,14 @@ export default function SobreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Fale Conosco</Text>
           
+          <TouchableOpacity 
+            style={styles.enviarMensagemButton} 
+            onPress={() => navigation.navigate('FaleConosco')}
+          >
+            <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
+            <Text style={styles.enviarMensagemText}>Enviar Mensagem</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.contactButton} onPress={handleEmailPress}>
             <Ionicons name="mail" size={24} color={colors.primary} />
             <View style={styles.contactInfo}>
@@ -110,16 +109,7 @@ export default function SobreScreen() {
             <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>WhatsApp</Text>
-              <Text style={styles.contactValue}>(71) 98151-2769</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.contactButton} onPress={handleWebsitePress}>
-            <Ionicons name="globe" size={24} color={colors.primary} />
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactLabel}>Website</Text>
-              <Text style={styles.contactValue}>lizsoftwares.com.br</Text>
+              <Text style={styles.contactValue}>Fale conosco pelo WhatsApp</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -176,6 +166,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.primary,
     marginBottom: 5,
+  },
+  enviarMensagemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 16,
+    gap: 10,
+  },
+  enviarMensagemText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   contactButton: {
     flexDirection: 'row',

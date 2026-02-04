@@ -49,7 +49,7 @@ class EmailService {
         config: {
           service: 'gmail',
           auth: {
-            user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+            user: process.env.EMAIL_USER || 'contato@lizsoftware.com.br',
             pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
           },
           connectionTimeout: 60000,
@@ -72,7 +72,7 @@ class EmailService {
           port: 465,
           secure: true,
           auth: {
-            user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+            user: process.env.EMAIL_USER || 'contato@lizsoftware.com.br',
             pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
           },
           connectionTimeout: 30000,
@@ -90,7 +90,7 @@ class EmailService {
           port: 587,
           secure: false,
           auth: {
-            user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+            user: process.env.EMAIL_USER || 'contato@lizsoftware.com.br',
             pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
           },
           connectionTimeout: 30000,
@@ -133,9 +133,9 @@ class EmailService {
             continue;
           }
           
-          // Resend não precisa de teste de conexão
+          // Resend não precisa de teste de conexão (remover aspas se vieram do env)
           console.log(`      ✅ Resend configurado e disponível`);
-          this.transporter = new Resend(process.env.RESEND_API_KEY);
+          this.transporter = new Resend(this._stripQuotes(process.env.RESEND_API_KEY));
           this.configuracaoAtual = config.name;
           this.tipoAtual = 'resend';
           return true;
@@ -203,6 +203,12 @@ class EmailService {
     return false;
   }
   
+  // Remove aspas que o Railway (ou .env) pode ter deixado no valor
+  _stripQuotes(v) {
+    if (v == null || typeof v !== 'string') return v;
+    return v.replace(/^["']|["']$/g, '').trim();
+  }
+
   // Método para enviar email com Resend
   async sendEmailResend(mailOptions) {
     try {
@@ -210,25 +216,26 @@ class EmailService {
         if (!process.env.RESEND_API_KEY) {
           return false;
         }
-        this.transporter = new Resend(process.env.RESEND_API_KEY);
+        this.transporter = new Resend(this._stripQuotes(process.env.RESEND_API_KEY));
       }
-      
-      // Determinar email "from" - usar domínio verificado ou email do Resend
-      let fromEmail = process.env.RESEND_FROM_EMAIL || 'contatoLizSoftware@gmail.com';
-      
-      // Se o email for gmail.com, usar email do Resend (funciona sem verificação)
+
+      const verifiedDomain = this._stripQuotes(process.env.RESEND_VERIFIED_DOMAIN);
+      let fromEmail = this._stripQuotes(process.env.RESEND_FROM_EMAIL) || (verifiedDomain ? `noreply@${verifiedDomain}` : 'noreply@lizsoftware.com.br');
+
+      // Se o email for gmail.com, usar domínio verificado ou Resend
       if (fromEmail.includes('@gmail.com') || fromEmail.includes('@gmail')) {
         console.log('   ⚠️  Gmail.com não pode ser verificado no Resend');
-        // Usar email do Resend que funciona sem verificação
-        if (process.env.RESEND_VERIFIED_DOMAIN) {
-          fromEmail = `noreply@${process.env.RESEND_VERIFIED_DOMAIN}`;
+        if (verifiedDomain) {
+          fromEmail = `noreply@${verifiedDomain}`;
           console.log(`   📧 Usando domínio verificado: ${fromEmail}`);
         } else {
           fromEmail = 'onboarding@resend.dev';
-          console.log(`   📧 Usando email do Resend (funciona sem verificação): ${fromEmail}`);
+          console.log(`   📧 Usando email do Resend: ${fromEmail}`);
         }
       }
-      
+
+      console.log(`   📧 Resend: from=${fromEmail} to=${mailOptions.to}`);
+
       const { data, error } = await this.transporter.emails.send({
         from: fromEmail,
         to: mailOptions.to,
@@ -237,17 +244,17 @@ class EmailService {
       });
       
       if (error) {
-        console.error('❌ Erro Resend:', error);
+        const msg = (error && error.message) ? error.message : String(error);
+        console.error('❌ Resend falhou:', msg);
         if (error.message && error.message.includes('not verified')) {
           console.error('   💡 Solução: Verifique o domínio no Resend ou configure RESEND_VERIFIED_DOMAIN');
           console.error('   📖 Veja: backend/CONFIGURAR_RESEND.md');
         }
         // Se for erro de "only send to your own email", fazer fallback
-        if (error.message && (error.message.includes('only send testing emails') || error.message.includes('verify a domain'))) {
-          console.error('   ⚠️  Resend só permite enviar para o email cadastrado na conta');
-          console.error('   💡 Para enviar para qualquer email, verifique um domínio em: https://resend.com/domains');
-          console.error('   🔄 Fazendo fallback para outro serviço...');
-          return 'fallback'; // Retornar string especial para indicar fallback
+        if (error.message && (error.message.includes('only send testing emails') || error.message.includes('verify a domain') || error.message.toLowerCase().includes('only send'))) {
+          console.error('   ⚠️  Resend (conta gratuita) só permite enviar para o EMAIL DA SUA CONTA Resend.');
+          console.error('   💡 Para enviar para qualquer email: verifique um domínio em https://resend.com/domains');
+          return 'fallback';
         }
         return false;
       }
@@ -358,11 +365,21 @@ class EmailService {
   
   // Método para enviar email com fallback
   async sendWelcomeEmail(user) {
+    const temResend = !!process.env.RESEND_API_KEY;
+    const temSendGrid = !!process.env.SENDGRID_API_KEY;
+    const temGmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    console.log('📧 Boas-vindas: provedor=' + (this.tipoAtual || 'nenhum') + ', RESEND=' + (temResend ? 'sim' : 'não') + ', SENDGRID=' + (temSendGrid ? 'sim' : 'não') + ', Gmail=' + (temGmail ? 'sim' : 'não'));
+    // Se RESEND_API_KEY existe mas não estamos usando Resend, forçar reconfig para priorizar Resend (domínio verificado)
+    if (temResend && this.tipoAtual !== 'resend') {
+      this.transporter = null;
+      this.tipoAtual = null;
+      console.log('📧 Forçando uso do Resend para boas-vindas (RESEND_API_KEY presente)');
+    }
     // Se não temos transporter configurado, tentar configurar
     if (!this.transporter) {
       const configurado = await this.configurarTransporter();
       if (!configurado) {
-        // Fallback: apenas logar o email
+        console.log('📧 Nenhum provedor de email configurado. Cadastro prossegue, mas email não será enviado.');
         return this.fallbackEmail(user);
       }
     }
@@ -420,6 +437,15 @@ class EmailService {
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
         }
+      } else if (this.tipoAtual === 'resend') {
+        // Usar Resend
+        const resultado = await this.sendEmailResend(mailOptions);
+        if (resultado === true) {
+          console.log('✅ Email de boas-vindas enviado via Resend!');
+          console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          return true;
+        }
+        console.log('📧 Resend não enviou (veja log "❌ Resend falhou" acima). Se for "only send to": verifique domínio em https://resend.com/domains');
       } else if (this.tipoAtual === 'nodemailer') {
         // Usar Nodemailer
         const info = await this.transporter.sendMail(mailOptions);
@@ -445,6 +471,12 @@ class EmailService {
               console.log('✅ Email enviado na segunda tentativa via SendGrid!');
               return true;
             }
+          } else if (this.tipoAtual === 'resend') {
+            const resultado = await this.sendEmailResend(mailOptions);
+            if (resultado === true) {
+              console.log('✅ Email enviado na segunda tentativa via Resend!');
+              return true;
+            }
           } else if (this.tipoAtual === 'nodemailer') {
             const info = await this.transporter.sendMail(mailOptions);
             console.log('✅ Email enviado na segunda tentativa via Nodemailer!');
@@ -460,7 +492,8 @@ class EmailService {
       return this.fallbackEmail(user);
     }
     
-    // Se chegou aqui, algo deu errado
+    // Se chegou aqui: provedor configurado mas envio falhou ou tipo não tratado
+    console.log('📧 Motivo do fallback: provedor atual=' + (this.tipoAtual || 'nenhum') + '. Configure RESEND_API_KEY no Railway (Variáveis) para enviar emails.');
     return this.fallbackEmail(user);
   }
   
@@ -473,6 +506,7 @@ class EmailService {
     console.log(`   Data: ${new Date().toLocaleString('pt-BR')}`);
     console.log('   Status: Email simulado (sistema de email indisponível)');
     console.log('   Ação: Usuário cadastrado com sucesso, mas email não enviado');
+    console.log('   💡 Verifique o log acima: "❌ Resend falhou" mostra o motivo. No Railway: sem aspas nos valores; RESEND_FROM_EMAIL=noreply@lizsoftware.com.br; domínio verificado em https://resend.com/domains');
     console.log('📧 ===========================');
     
     // Retornar true para não bloquear o cadastro
@@ -533,6 +567,12 @@ class EmailService {
           console.log('✅ Email de redefinição enviado via SendGrid!');
           return true;
         }
+      } else if (this.tipoAtual === 'resend') {
+        const resultado = await this.sendEmailResend(mailOptions);
+        if (resultado === true) {
+          console.log('✅ Email de redefinição enviado via Resend!');
+          return true;
+        }
       } else if (this.tipoAtual === 'nodemailer') {
         const info = await this.transporter.sendMail(mailOptions);
         console.log('✅ Email de redefinição enviado via Nodemailer!');
@@ -547,16 +587,17 @@ class EmailService {
     }
   }
   
-  // Fallback para redefinição de senha
+  // Fallback para redefinição de senha (retorna false para API informar que o email não foi enviado)
   async fallbackPasswordReset(user, resetToken) {
     console.log('📧 === FALLBACK REDEFINIÇÃO DE SENHA ===');
     console.log(`   Para: ${user.email}`);
     console.log(`   Token: ${resetToken}`);
     console.log(`   Link: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`);
-    console.log('   Status: Email simulado (sistema de email indisponível)');
+    console.log('   Status: Email NÃO enviado (sistema de email indisponível)');
+    console.log('   Configure RESEND_API_KEY, SENDGRID_API_KEY ou EMAIL_USER/EMAIL_PASS no .env');
     console.log('📧 ======================================');
     
-    return true;
+    return false;
   }
   
   // Método para enviar lembrete de vencimento por email
@@ -638,6 +679,14 @@ class EmailService {
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
         }
+      } else if (this.tipoAtual === 'resend') {
+        const resultado = await this.sendEmailResend(mailOptions);
+        if (resultado === true) {
+          console.log('✅ Email de lembrete enviado via Resend!');
+          console.log(`   📧 Para: ${user.email}`);
+          console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          return true;
+        }
       } else if (this.tipoAtual === 'nodemailer') {
         // Usar Nodemailer
         const info = await this.transporter.sendMail(mailOptions);
@@ -664,6 +713,12 @@ class EmailService {
               console.log('✅ Email enviado na segunda tentativa via SendGrid!');
               return true;
             }
+          } else if (this.tipoAtual === 'resend') {
+            const resultado = await this.sendEmailResend(mailOptions);
+            if (resultado === true) {
+              console.log('✅ Email enviado na segunda tentativa via Resend!');
+              return true;
+            }
           } else if (this.tipoAtual === 'nodemailer') {
             const info = await this.transporter.sendMail(mailOptions);
             console.log('✅ Email enviado na segunda tentativa via Nodemailer!');
@@ -679,7 +734,7 @@ class EmailService {
       return this.fallbackReminderEmail(user, vencimentos);
     }
     
-    // Se chegou aqui, algo deu errado
+    // Se chegou aqui, algo deu errado (ex.: Resend configurado mas nenhum branch tratou)
     return this.fallbackReminderEmail(user, vencimentos);
   }
 
@@ -714,9 +769,10 @@ class EmailService {
 
     const tipoTexto = tipoLabels[tipo] || tipo || 'Não especificado';
 
+    const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || 'contato@lizsoftware.com.br';
     const mailOptions = {
       from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
-      to: 'contatoLizSoftware@gmail.com', // Email de destino fixo
+      to: supportEmail,
       subject: `📧 Fale Conosco - FinFlow: ${tipoTexto}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -775,7 +831,7 @@ class EmailService {
             const resultadoSendGrid = await this.sendEmailSendGrid(mailOptions);
             if (resultadoSendGrid) {
               console.log('✅ Email de "Fale Conosco" enviado via SendGrid (fallback)!');
-              console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+              console.log(`   📧 Para: contato@lizsoftware.com.br`);
               console.log(`   📧 De: ${email} (${nome})`);
               return true;
             }
@@ -788,7 +844,7 @@ class EmailService {
             if (this.tipoAtual === 'nodemailer') {
               const info = await this.transporter.sendMail(mailOptions);
               console.log('✅ Email de "Fale Conosco" enviado via Gmail (fallback)!');
-              console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+              console.log(`   📧 Para: contato@lizsoftware.com.br`);
               console.log(`   📧 De: ${email} (${nome})`);
               return true;
             }
@@ -797,7 +853,7 @@ class EmailService {
           return false;
         } else if (resultado) {
           console.log('✅ Email de "Fale Conosco" enviado via Resend!');
-          console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+          console.log(`   📧 Para: contato@lizsoftware.com.br`);
           console.log(`   📧 De: ${email} (${nome})`);
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
@@ -810,7 +866,7 @@ class EmailService {
         const resultado = await this.sendEmailSendGrid(mailOptions);
         if (resultado) {
           console.log('✅ Email de "Fale Conosco" enviado via SendGrid!');
-          console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+          console.log(`   📧 Para: contato@lizsoftware.com.br`);
           console.log(`   📧 De: ${email} (${nome})`);
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
@@ -822,7 +878,7 @@ class EmailService {
         // Usar Nodemailer
         const info = await this.transporter.sendMail(mailOptions);
         console.log('✅ Email de "Fale Conosco" enviado via Nodemailer!');
-        console.log(`   📧 Para: contatoLizSoftware@gmail.com`);
+        console.log(`   📧 Para: contato@lizsoftware.com.br`);
         console.log(`   📧 De: ${email} (${nome})`);
         console.log(`   📧 Message ID: ${info.messageId}`);
         console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
@@ -873,7 +929,7 @@ class EmailService {
   // Fallback para formulário de contato
   async fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem }) {
     console.log('📧 === FALLBACK EMAIL FALE CONOSCO ===');
-    console.log(`   Para: contatoLizSoftware@gmail.com`);
+    console.log(`   Para: contato@lizsoftware.com.br`);
     console.log(`   De: ${email} (${nome})`);
     console.log(`   Telefone: ${telefone || 'Não informado'}`);
     console.log(`   Tipo: ${tipo || 'Não especificado'}`);

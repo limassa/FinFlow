@@ -38,3 +38,4 @@ Write-Host "   2. Reinicie o app no dispositivo`n" -ForegroundColor White
 
 
 
+

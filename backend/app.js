@@ -141,7 +141,7 @@ app.get('/api/versao', async (req, res) => {
         return res.json({
           success: true,
           versao: {
-            versao_numero: '1.0.0',
+            versao_numero: '1.0.1',
             versao_nome: 'FinFlow',
             versao_data: new Date().toISOString(),
             versao_descricao: 'Versão de desenvolvimento',
@@ -162,7 +162,7 @@ app.get('/api/versao', async (req, res) => {
       res.json({
         success: true,
         versao: {
-          versao_numero: '1.0.0',
+          versao_numero: '1.0.1',
           versao_nome: 'FinFlow',
           versao_data: new Date().toISOString(),
           versao_descricao: 'Versão de desenvolvimento',
@@ -177,7 +177,7 @@ app.get('/api/versao', async (req, res) => {
     res.json({
       success: true,
       versao: {
-        versao_numero: '1.0.0',
+        versao_numero: '1.0.1',
         versao_nome: 'FinFlow',
         versao_data: new Date().toISOString(),
         versao_descricao: 'Versão de desenvolvimento',
@@ -296,7 +296,9 @@ app.use((req, res, next) => {
 
 app.post('/api/cadastro', async (req, res) => {
   const { nome, telefone, email, senha } = req.body;
-  
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('📋 Cadastro recebido:', { nome: !!nome, email: !!email, telefone: telefone != null ? (String(telefone).trim() || '(vazio)') : '(ausente)' });
+  }
   try {
     // Validação de email
     if (!email || !email.includes('@')) {
@@ -766,9 +768,11 @@ app.post('/api/forgot-password', async (req, res) => {
     }, resetToken);
     
     if (emailSent) {
-      res.json({ message: 'Email de redefinição enviado com sucesso!' });
+      res.json({ message: 'Email de redefinição enviado com sucesso! Verifique sua caixa de entrada e spam.' });
     } else {
-      res.status(500).json({ error: 'Erro ao enviar email de redefinição' });
+      res.status(500).json({
+        error: 'Não foi possível enviar o email de redefinição. Verifique se o servidor está configurado para envio de emails (RESEND_API_KEY, SENDGRID_API_KEY ou EMAIL_USER/EMAIL_PASS). Tente novamente mais tarde ou entre em contato com o suporte.'
+      });
     }
   } catch (err) {
     console.error('Erro na redefinição de senha:', err);

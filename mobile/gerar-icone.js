@@ -4,13 +4,13 @@ const path = require('path');
 const sharp = require('sharp');
 
 // SVG do ícone baseado no logo (apenas o círculo com símbolo)
-// Usando as mesmas cores azuis do sistema web (#667eea para #764ba2)
+// Azul mais escuro alinhado ao tema do app (#3e57a2 → #2d199c)
 const iconSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="finGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#3e57a2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d199c;stop-opacity:1" />
     </linearGradient>
   </defs>
   

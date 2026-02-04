@@ -18,6 +18,7 @@ function Despesa() {
   const [editId, setEditId] = useState(null);
   const [totalDespesas, setTotalDespesas] = useState(0);
   const [mesFiltro, setMesFiltro] = useState('');
+  const [filtroPago, setFiltroPago] = useState('todos');
   const [loading, setLoading] = useState(true); // Mudando para true para forçar o carregamento
   const [pago, setPago] = useState(false);
   const [recorrente, setRecorrente] = useState(false);
@@ -48,6 +49,9 @@ function Despesa() {
     'Presentes'
   ];        
   const [tipo, setTipo] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState(false);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -135,7 +139,8 @@ function Despesa() {
       alert('Preencha todos os campos obrigatórios');
       return;
     }
-    
+    if (submitting) return;
+    setSubmitting(true);
     try {
       const despesaData = {
         descricao, 
@@ -166,6 +171,8 @@ function Despesa() {
       alert(recorrente ? 'Despesas recorrentes criadas com sucesso!' : 'Despesa adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar despesa');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -191,22 +198,105 @@ function Despesa() {
     if (window.confirm('Deseja realmente excluir esta despesa? Esta ação pode ser desfeita.')) {
       try {
         console.log('🗑️ Tentando deletar despesa ID:', id);
-        console.log('🔗 URL:', `${API_ENDPOINTS.DESPESAS}/${id}`);
-        
         const response = await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
         console.log('✅ Despesa deletada com sucesso:', response.status);
-        
+        setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
         fetchDespesas();
         alert('Despesa excluída com sucesso!');
       } catch (err) {
         console.error('❌ Erro ao deletar despesa:', err);
-        console.error('📊 Status:', err.response?.status);
-        console.error('📊 Data:', err.response?.data);
-        console.error('📊 Headers:', err.response?.headers);
-        
         const errorMessage = err.response?.data?.error || err.message || 'Erro desconhecido';
         alert(`Erro ao deletar despesa: ${errorMessage}`);
       }
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === despesasFiltradas.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(despesasFiltradas.map(d => d.despesa_id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const qtd = selectedIds.size;
+    if (qtd === 0) return;
+    if (!window.confirm(`Deseja realmente excluir ${qtd} despesa(s) selecionada(s)? Esta ação pode ser desfeita.`)) {
+      return;
+    }
+    setDeletingInProgress(true);
+    try {
+      for (const id of selectedIds) {
+        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
+      }
+      setSelectedIds(new Set());
+      fetchDespesas();
+      alert(`${qtd} despesa(s) excluída(s) com sucesso!`);
+    } catch (err) {
+      console.error('Erro ao excluir despesas:', err);
+      alert(err.response?.data?.error || 'Erro ao excluir despesas. Tente novamente.');
+    } finally {
+      setDeletingInProgress(false);
+    }
+  };
+
+  const despesasFiltradas = React.useMemo(() => {
+    if (filtroPago === 'todos') return despesas;
+    if (filtroPago === 'pago') return despesas.filter(d => d.despesa_pago);
+    return despesas.filter(d => !d.despesa_pago);
+  }, [despesas, filtroPago]);
+
+  const despesasPorTipo = React.useMemo(() => {
+    const grupos = {};
+    despesasFiltradas.forEach(d => {
+      const tipoKey = d.despesa_tipo || 'Sem tipo';
+      if (!grupos[tipoKey]) grupos[tipoKey] = [];
+      grupos[tipoKey].push(d);
+    });
+    const ordem = [...tiposDespesa];
+    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
+    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
+    return ordemFinal.map(tipo => {
+      const itens = grupos[tipo];
+      const ordenados = [...itens].sort((a, b) => {
+        const dataA = (a.despesa_data || '').split('T')[0];
+        const dataB = (b.despesa_data || '').split('T')[0];
+        return dataA.localeCompare(dataB);
+      });
+      return { tipo, itens: ordenados };
+    });
+  }, [despesasFiltradas, tiposDespesa]);
+
+  const handleDeleteGroup = async (tipoGrupo, itens) => {
+    const qtd = itens.length;
+    if (qtd === 0) return;
+    if (!window.confirm(`Excluir todas as ${qtd} despesa(s) do tipo "${tipoGrupo}"? Esta ação pode ser desfeita.`)) return;
+    setDeletingInProgress(true);
+    try {
+      for (const d of itens) {
+        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${d.despesa_id}`);
+      }
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        itens.forEach(d => next.delete(d.despesa_id));
+        return next;
+      });
+      fetchDespesas();
+      alert(`${qtd} despesa(s) excluída(s) com sucesso!`);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao excluir despesas. Tente novamente.');
+    } finally {
+      setDeletingInProgress(false);
     }
   };
 
@@ -229,7 +319,8 @@ function Despesa() {
       alert('Preencha todos os campos obrigatórios');
       return;
     }
-    
+    if (submitting) return;
+    setSubmitting(true);
     try {
       await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, { 
         descricao, 
@@ -252,6 +343,8 @@ function Despesa() {
       alert('Despesa atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar despesa');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -378,31 +471,49 @@ function Despesa() {
         <div className="receita-stats">
           <div className="stat-card">
             <span className="stat-label">Total</span>
-            <span className="stat-value">{formatarValor(despesas.filter(despesa => despesa.despesa_pago)
+            <span className="stat-value">{formatarValor(despesasFiltradas.filter(despesa => despesa.despesa_pago)
               .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0))}</span>
+          </div>
+          <div className="stat-card stat-card-previsao">
+            <span className="stat-label">Previsão</span>
+            <span className="stat-value">{formatarValor(despesasFiltradas.reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0))}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Quantidade</span>
-            <span className="stat-value">{despesas.length}</span>
+            <span className="stat-value">{despesasFiltradas.length}</span>
           </div>
         </div>
       </div>
 
-      {/* Filtro por mês */}
-      <div className="filtro-container">
-        <FaFilter className="filtro-icon" />
-        <select 
-          value={mesFiltro} 
-          onChange={(e) => setMesFiltro(e.target.value)}
-          className="filtro-select"
-        >
-          <option value="">Todos os meses</option>
-          {opcoesMeses.map(opcao => (
-            <option key={opcao.value} value={opcao.value}>
-              {opcao.label}
-            </option>
-          ))}
-        </select>
+      {/* Filtros */}
+      <div className="filtro-container filtro-row">
+        <div className="filtro-group">
+          <FaFilter className="filtro-icon" />
+          <select 
+            value={mesFiltro} 
+            onChange={(e) => setMesFiltro(e.target.value)}
+            className="filtro-select"
+          >
+            <option value="">Todos os meses</option>
+            {opcoesMeses.map(opcao => (
+              <option key={opcao.value} value={opcao.value}>
+                {opcao.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="filtro-group">
+          <label className="filtro-label">Status:</label>
+          <select 
+            value={filtroPago} 
+            onChange={(e) => setFiltroPago(e.target.value)}
+            className="filtro-select"
+          >
+            <option value="todos">Todos</option>
+            <option value="pago">Pago</option>
+            <option value="nao_pago">Não pago</option>
+          </select>
+        </div>
       </div>
 
       {/* Formulário */}
@@ -509,9 +620,9 @@ function Despesa() {
                   <input
                     type="number"
                     min="1"
-                    max="60"
+                    max="600"
                     value={proximasParcelas}
-                    onChange={e => setProximasParcelas(parseInt(e.target.value))}
+                    onChange={e => setProximasParcelas(parseInt(e.target.value) || 1)}
                   />
                 </div>
               </>
@@ -520,16 +631,20 @@ function Despesa() {
           <div className="form-buttons">
             {editId ? (
               <>
-                <button type="submit" className="btn-atualizar">
-                  <FaEdit /> Atualizar Despesa
+                <button type="submit" className="btn-atualizar" disabled={submitting}>
+                  {submitting ? 'Processando...' : <><FaEdit /> Atualizar Despesa</>}
                 </button>
                 <button type="button" onClick={handleCancel} className="btn-cancelar">
                   Cancelar
                 </button>
               </>
             ) : (
-              <button type="submit" className="btn-adicionar">
-                <FaPlus /> Adicionar Despesa
+              <button type="submit" className="btn-adicionar" disabled={submitting}>
+                {submitting ? (
+                  <>Processando{recorrente ? ` ${proximasParcelas} parcelas` : ''}...</>
+                ) : (
+                  <><FaPlus /> Adicionar Despesa</>
+                )}
               </button>
             )}
           </div>
@@ -621,14 +736,34 @@ function Despesa() {
       {/* Grid de Despesas */}
       <div className="grid-container">
         <h3>Lista de Despesas</h3>
-        
+        {selectedIds.size > 0 && (
+          <div className="bulk-actions">
+            <span className="bulk-count">{selectedIds.size} selecionada(s)</span>
+            <button
+              type="button"
+              className="btn-delete bulk-delete"
+              onClick={handleDeleteSelected}
+              title="Excluir selecionadas"
+            >
+              <FaTrash /> Excluir selecionadas
+            </button>
+          </div>
+        )}
         {loading ? (
           <div className="loading">Carregando...</div>
-            ) : despesas.length === 0 ? (
-          <div className="no-data">Nenhuma despesa encontrada</div>
+            ) : despesasFiltradas.length === 0 ? (
+          <div className="no-data">Nenhuma despesa encontrada{filtroPago !== 'todos' ? ' com esse filtro' : ''}</div>
         ) : (
           <div className="despesas-grid">
             <div className="grid-header">
+              <div className="grid-cell grid-cell-check">
+                <input
+                  type="checkbox"
+                  checked={despesasFiltradas.length > 0 && selectedIds.size === despesasFiltradas.length}
+                  onChange={toggleSelectAll}
+                  title="Selecionar todas"
+                />
+              </div>
               <div className="grid-cell">Descrição</div>
               <div className="grid-cell">Valor</div>
               <div className="grid-cell">Data</div>
@@ -638,46 +773,75 @@ function Despesa() {
               <div className="grid-cell">Pago</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {despesas.map(despesa => {
-              const conta = contas.find(c => c.Conta_Id === despesa.Conta_id);
-              return (
-                <div key={despesa.despesa_id} className="grid-row">
-                  <div className="grid-cell">{despesa.despesa_descricao}</div>
-                  <div className="grid-cell valor">{formatarValor(despesa.despesa_valor)}</div>
-                  <div className="grid-cell">{formatarData(despesa.despesa_data)}</div>
-                  <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
-                  <div className="grid-cell">{despesa.despesa_tipo}</div>
-                  <div className="grid-cell">{conta ? conta.conta_nome : '-'}</div>
-                  <div className="grid-cell">
-                    <input
-                      type="checkbox"
-                      checked={despesa.despesa_pago || false}
-                      onChange={() => handleTogglePago(despesa)}
-                      title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
-                    />
-                  </div>
-                  <div className="grid-cell acoes">
-                    <button 
-                      onClick={() => handleEdit(despesa)}
-                      className="btn-edit"
-                      title="Editar"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(despesa.despesa_id)}
-                      className="btn-delete"
-                      title="Excluir"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
+            {despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => (
+              <React.Fragment key={tipoGrupo}>
+                <div className="grid-group-header">
+                  <span>{tipoGrupo}</span>
+                  <button
+                    type="button"
+                    className="btn-delete btn-delete-group"
+                    onClick={() => handleDeleteGroup(tipoGrupo, itens)}
+                    title={`Excluir todas as despesas do tipo ${tipoGrupo}`}
+                  >
+                    <FaTrash /> Excluir grupo ({itens.length})
+                  </button>
                 </div>
-              );
-            })}
+                {itens.map(despesa => {
+                  const conta = contas.find(c => c.Conta_Id === despesa.Conta_id || c.conta_id === despesa.conta_id);
+                  return (
+                    <div key={despesa.despesa_id} className="grid-row">
+                      <div className="grid-cell grid-cell-check">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(despesa.despesa_id)}
+                          onChange={() => toggleSelect(despesa.despesa_id)}
+                          title="Selecionar para excluir"
+                        />
+                      </div>
+                      <div className="grid-cell">{despesa.despesa_descricao}</div>
+                      <div className="grid-cell valor">{formatarValor(despesa.despesa_valor)}</div>
+                      <div className="grid-cell">{formatarData(despesa.despesa_data)}</div>
+                      <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
+                      <div className="grid-cell">{despesa.despesa_tipo}</div>
+                      <div className="grid-cell">{conta ? (conta.conta_nome || conta.Conta_Nome) : '-'}</div>
+                      <div className="grid-cell">
+                        <input
+                          type="checkbox"
+                          checked={despesa.despesa_pago || false}
+                          onChange={() => handleTogglePago(despesa)}
+                          title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
+                        />
+                      </div>
+                      <div className="grid-cell acoes">
+                        <button 
+                          onClick={() => handleEdit(despesa)}
+                          className="btn-edit"
+                          title="Editar"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(despesa.despesa_id)}
+                          className="btn-delete"
+                          title="Excluir"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </div>
         )}
       </div>
+
+      {deletingInProgress && (
+        <div className="processing-delete-bar">
+          <span>Processando exclusão... Aguarde.</span>
+        </div>
+      )}
     </div>
   );
 }

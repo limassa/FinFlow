@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
 import { useNavigate } from 'react-router-dom';
+import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import '../App.css';
 
 function Contas() {
@@ -67,7 +68,7 @@ function Contas() {
       await axios.post(API_ENDPOINTS.CONTAS, { 
         nome, 
         tipo,
-        saldo: saldo || 0,
+        saldo: parseCurrencyToNumber(saldo) || 0,
         incrementarSaldoTotal: true,
         usuario_id: userId
       });
@@ -84,7 +85,8 @@ function Contas() {
   const handleEdit = (conta) => {
     setNome(conta.conta_nome);
     setTipo(conta.conta_tipo);
-    setSaldo(conta.conta_saldo || '');
+    const saldoNum = parseFloat(conta.conta_saldo || 0);
+    setSaldo(formatCurrency(Math.round(saldoNum * 100).toString()));
     setEditId(conta.conta_id);
   };
 
@@ -99,7 +101,7 @@ function Contas() {
       await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { 
         nome, 
         tipo,
-        saldo: saldo || 0
+        saldo: parseCurrencyToNumber(saldo) || 0
       });
       setNome('');
       setTipo('');
@@ -191,11 +193,14 @@ function Contas() {
             <div className="form-group">
               <label>Saldo Inicial:</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="0,00"
                 value={saldo}
-                onChange={e => setSaldo(e.target.value)}
+                onChange={e => {
+                  const numbers = e.target.value.replace(/\D/g, '');
+                  setSaldo(formatCurrency(numbers));
+                }}
               />
             </div>
             <div className="form-group">

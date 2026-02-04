@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#667eea"
+      "backgroundColor": "#3e57a2"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,7 +22,7 @@
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#667eea"
+        "backgroundColor": "#3e57a2"
       },
       "package": "com.lizsoftwares.finflow"
     },

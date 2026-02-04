@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   DESPESAS: `${API_BASE_URL}/api/despesas`,
   CONTAS: `${API_BASE_URL}/api/contas`,
   CONTAS_SALDO_TOTAL: `${API_BASE_URL}/api/contas/saldo-total`,
+  METAS_DESPESA: `${API_BASE_URL}/api/metas-despesa`,
   
   // Parcelas
   PARCELA_ATUAL_RECEITA: `${API_BASE_URL}/api/parcela-atual/receita`,

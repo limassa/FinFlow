@@ -48,8 +48,8 @@ function Cadastro() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(data.message || 'Cadastro realizado com sucesso! Verifique seu email.');
-        navigate('/home');
+        alert(data.message || 'Cadastro realizado com sucesso! Faça login para acessar.');
+        navigate('/login');
       } else {
         if (data.passwordErrors) {
           // Mostrar erros de validação de senha
@@ -97,7 +97,7 @@ function Cadastro() {
               <input
                 {...inputProps}
                 type="text"
-                placeholder="(99) 99999-9999"
+                placeholder="Telefone"
                 required
                 className="form-input"
               />
@@ -134,8 +134,11 @@ function Cadastro() {
             value={senhaConfirm}
             onChange={e => setSenhaConfirm(e.target.value)}
             required
-            className="form-input"
+            className={`form-input ${senhaConfirm && senha !== senhaConfirm ? 'form-input-error' : ''}`}
           />
+          {senhaConfirm && senha !== senhaConfirm && (
+            <p className="form-error-msg">As senhas não coincidem.</p>
+          )}
         </div>
         
         <button
