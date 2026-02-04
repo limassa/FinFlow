@@ -56,12 +56,14 @@ export function AuthProvider({ children }) {
 
   async function cadastro(nome, email, telefone, senha) {
     try {
-      const response = await axios.post(API_ENDPOINTS.CADASTRO, {
+      // Enviar telefone explicitamente (string ou null) para o backend sempre gravar o campo
+      const payload = {
         nome,
         email,
-        telefone,
+        telefone: telefone != null && String(telefone).trim() !== '' ? String(telefone).trim() : null,
         senha
-      });
+      };
+      const response = await axios.post(API_ENDPOINTS.CADASTRO, payload);
       
       if (response.data.usuario_id) {
         // Não faz login automático: usuário deve ir para a tela de login

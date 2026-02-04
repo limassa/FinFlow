@@ -295,9 +295,14 @@ app.use((req, res, next) => {
 });
 
 app.post('/api/cadastro', async (req, res) => {
-  const { nome, telefone, email, senha } = req.body;
+  const { nome, email, senha } = req.body;
+  // Garantir que telefone seja lido (pode vir como undefined se o cliente não enviar a chave)
+  const telefoneRaw = req.body.telefone;
+  const telefone = telefoneRaw != null && String(telefoneRaw).trim() !== '' ? String(telefoneRaw).trim() : null;
   if (process.env.NODE_ENV !== 'production') {
-    console.log('📋 Cadastro recebido:', { nome: !!nome, email: !!email, telefone: telefone != null ? (String(telefone).trim() || '(vazio)') : '(ausente)' });
+    console.log('📋 Cadastro recebido:', { nome: !!nome, email: !!email, telefone: telefone != null ? '(preenchido)' : '(vazio/ausente)' });
+  } else {
+    console.log('📋 Cadastro: telefone no body=', typeof telefoneRaw, 'valor preenchido=', !!telefone);
   }
   try {
     // Validação de email
@@ -324,10 +329,14 @@ app.post('/api/cadastro', async (req, res) => {
     // Criar usuário
     const user = await userRepository.createUser({ nome, telefone, email, senha });
     
+    // Normalizar campos (PostgreSQL pode retornar Usuario_Email ou usuario_email)
+    const userNome = user.usuario_nome || user.Usuario_Nome || nome;
+    const userEmail = user.usuario_email || user.Usuario_Email || email;
+    
     // Enviar email de boas-vindas (em background para não bloquear a resposta)
     emailService.sendWelcomeEmail({
-      nome: user.usuario_nome,
-      email: user.usuario_email
+      nome: userNome,
+      email: userEmail
     }).catch(err => {
       console.error('Erro ao enviar email de boas-vindas:', err);
     });
@@ -801,11 +810,12 @@ app.post('/api/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Token inválido ou expirado' });
     }
     
-    // Enviar alerta de segurança
-    emailService.sendSecurityAlert({
-      nome: user.usuario_nome,
-      email: user.usuario_email
-    }, 'Redefinição de senha').catch(err => {
+    // Normalizar campos (PostgreSQL pode retornar Usuario_Nome ou usuario_nome)
+    const userNome = user.usuario_nome || user.Usuario_Nome;
+    const userEmail = user.usuario_email || user.Usuario_Email;
+    
+    // Enviar alerta de segurança (não bloqueia a resposta)
+    emailService.sendSecurityAlert({ nome: userNome, email: userEmail }, 'Redefinição de senha').catch(err => {
       console.error('Erro ao enviar alerta de segurança:', err);
     });
     

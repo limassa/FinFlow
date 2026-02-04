@@ -238,7 +238,7 @@ class EmailService {
 
       const { data, error } = await this.transporter.emails.send({
         from: fromEmail,
-        to: mailOptions.to,
+        to: Array.isArray(mailOptions.to) ? mailOptions.to[0] : mailOptions.to,
         subject: mailOptions.subject,
         html: mailOptions.html
       });
@@ -445,7 +445,7 @@ class EmailService {
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
         }
-        console.log('📧 Resend não enviou (veja log "❌ Resend falhou" acima). Se for "only send to": verifique domínio em https://resend.com/domains');
+        console.log('📧 Resend não enviou (resultado=' + resultado + '). Veja "❌ Resend falhou" ou "❌ Erro Resend" acima. Para enviar para qualquer email: verifique domínio em https://resend.com/domains e configure RESEND_FROM_EMAIL=noreply@seudominio.com');
       } else if (this.tipoAtual === 'nodemailer') {
         // Usar Nodemailer
         const info = await this.transporter.sendMail(mailOptions);
@@ -506,10 +506,52 @@ class EmailService {
     console.log(`   Data: ${new Date().toLocaleString('pt-BR')}`);
     console.log('   Status: Email simulado (sistema de email indisponível)');
     console.log('   Ação: Usuário cadastrado com sucesso, mas email não enviado');
-    console.log('   💡 Verifique o log acima: "❌ Resend falhou" mostra o motivo. No Railway: sem aspas nos valores; RESEND_FROM_EMAIL=noreply@lizsoftware.com.br; domínio verificado em https://resend.com/domains');
+    console.log('   💡 Para o email chegar: 1) Verifique um domínio em https://resend.com/domains (ex: lizsoftware.com.br)');
+    console.log('      2) No Railway: RESEND_FROM_EMAIL=noreply@lizsoftware.com.br e RESEND_VERIFIED_DOMAIN=lizsoftware.com.br (sem aspas)');
+    console.log('      3) Conta gratuita Resend só envia para o email da conta até o domínio ser verificado.');
     console.log('📧 ===========================');
     
     // Retornar true para não bloquear o cadastro
+    return true;
+  }
+
+  async sendSecurityAlert(user, evento) {
+    if (!user || !user.email) {
+      console.log('📧 sendSecurityAlert: usuário ou email ausente');
+      return true;
+    }
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'noreply@finflow.com',
+      to: user.email,
+      subject: `🔒 Alerta de Segurança - FinFlow: ${evento}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🔒 Alerta de Segurança</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">${evento}</p>
+          </div>
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p style="color: #666;">Olá, ${user.nome || 'usuário'}!</p>
+            <p style="color: #666;">Informamos que a ação <strong>${evento}</strong> foi realizada na sua conta FinFlow.</p>
+            <p style="color: #999; font-size: 14px;">Se não foi você, altere sua senha imediatamente.</p>
+          </div>
+        </div>
+      `
+    };
+    try {
+      if (this.tipoAtual === 'resend') {
+        const r = await this.sendEmailResend(mailOptions);
+        if (r === true) console.log('✅ Alerta de segurança enviado via Resend');
+        return true;
+      }
+      if (this.tipoAtual === 'nodemailer' && this.transporter) {
+        await this.transporter.sendMail(mailOptions);
+        console.log('✅ Alerta de segurança enviado via Nodemailer');
+        return true;
+      }
+    } catch (e) {
+      console.error('Erro ao enviar alerta de segurança:', e.message);
+    }
     return true;
   }
   
