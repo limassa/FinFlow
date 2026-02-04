@@ -89,3 +89,6 @@ out/
 # Temporary files
 *.tmp
 *.temp
+
+# Submodule (evita conflito no Netlify; use em outro repositório se precisar)
+services/evolution-api/
