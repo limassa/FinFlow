@@ -1,0 +1,137 @@
+# 🚀 .gitignore para Produção - FinFlow
+# Desenvolvido por: Liz Softwares
+
+# ========================================
+# 🔒 ARQUIVOS SENSÍVEIS (NUNCA SUBIR)
+# ========================================
+
+# Configurações de ambiente com credenciais
+config.env
+.env
+.env.local
+.env.production
+.env.staging
+
+# Configurações de banco local
+config-homolog.js
+config-local.js
+
+# ========================================
+# 🧪 SCRIPTS DE TESTE LOCAL
+# ========================================
+
+# Scripts de teste que não devem ir para produção
+teste-*.js
+verificar-*.js
+test-backend-*.js
+teste-*.js
+
+# Scripts de deploy local
+deploy-*.ps1
+deploy-*.sh
+deploy-*.bat
+
+# ========================================
+# 🔧 ARQUIVOS DE DESENVOLVIMENTO
+# ========================================
+
+# Logs locais
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependências locais
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos temporários
+.tmp/
+.temp/
+*.tmp
+*.temp
+
+# ========================================
+# 🖥️ ARQUIVOS DO SISTEMA
+# ========================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ========================================
+# 📁 DIRETÓRIOS ESPECÍFICOS
+# ========================================
+
+# Documentação de desenvolvimento
+documentacao/desenvolvimento/
+documentacao/testes/
+documentacao/local/
+
+# Scripts de desenvolvimento
+scripts/desenvolvimento/
+scripts/testes/
+scripts/local/
+
+# ========================================
+# ✅ ARQUIVOS QUE DEVEM SUBIR
+# ========================================
+
+# NÃO IGNORAR (essenciais para produção):
+!backend/src/services/emailService.js
+!backend/config-email-producao.js
+!backend/teste-email-timeout-resolvido.js
+!documentacao/SOLUCAO_TIMEOUT_EMAIL.md
+!documentacao/SOLUCAO_EMAIL_PRODUCAO.md
+!RESUMO_SOLUCAO_TIMEOUT.md
+
+# ========================================
+# 📝 NOTAS IMPORTANTES
+# ========================================
+
+# 1. Este .gitignore é específico para produção
+# 2. Mantenha o .gitignore original para desenvolvimento
+# 3. Use este arquivo apenas quando fizer deploy para produção
+# 4. Sempre verifique se as configurações de banco estão preservadas
+# 5. As variáveis de ambiente devem ser configuradas no Railway
+
+# ========================================
+# 🚨 ARQUIVOS CRÍTICOS PARA PRODUÇÃO
+# ========================================
+
+# Configurações de produção
+!backend/config.production.js
+!railway.json
+!railway.toml
+!render.yaml
+!vercel.json
+!netlify.toml
+
+# Código fonte
+!backend/src/
+!src/
+!public/
+!package.json
+!package-lock.json
+
+# Documentação de produção
+!documentacao/
+!README.md

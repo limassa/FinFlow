@@ -1,70 +1,197 @@
-# Getting Started with Create React App
+# FinFlow Mobile App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+📱 **App móvel do FinFlow - Controle Financeiro**
 
-## Available Scripts
+## 🚀 Sobre o Projeto
 
-In the project directory, you can run:
+O FinFlow Mobile é o aplicativo móvel oficial do sistema FinFlow, permitindo que os usuários controlem suas finanças de forma simples e eficiente diretamente no smartphone.
 
-### `npm start`
+## ✨ Funcionalidades
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- 📊 **Dashboard Intuitivo** - Visualize suas finanças em tempo real
+- 💰 **Controle de Receitas e Despesas** - Cadastre e gerencie suas transações
+- 📈 **Relatórios Detalhados** - Gráficos e análises completas
+- 🔔 **Notificações Push** - Lembretes de vencimentos e alertas
+- 🔐 **Segurança Avançada** - Biometria e autenticação segura
+- 📱 **Sincronização** - Dados sincronizados com a versão web
+- 🌙 **Modo Escuro** - Interface adaptável ao seu gosto
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🛠️ Tecnologias
 
-### `npm test`
+- **React Native** - Framework principal
+- **TypeScript** - Tipagem estática
+- **React Navigation** - Navegação entre telas
+- **Axios** - Requisições HTTP
+- **React Native Chart Kit** - Gráficos e visualizações
+- **React Native Vector Icons** - Ícones
+- **AsyncStorage** - Armazenamento local
+- **React Native Biometrics** - Autenticação biométrica
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 📱 Requisitos
 
-### `npm run build`
+- **Android**: API 21+ (Android 5.0+)
+- **iOS**: iOS 12.0+
+- **Node.js**: 16+
+- **React Native CLI**
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🚀 Instalação
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 1. Clone o repositório
+```bash
+git clone https://github.com/limassa/FinFlow-Mobile.git
+cd finflow-mobile
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 2. Instale as dependências
+```bash
+npm install
+```
 
-### `npm run eject`
+### 3. Configuração do ambiente
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+#### Android
+```bash
+# Certifique-se de ter o Android Studio instalado
+# Configure as variáveis de ambiente ANDROID_HOME e JAVA_HOME
+npm run android
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+#### iOS
+```bash
+# Certifique-se de ter o Xcode instalado
+cd ios && pod install && cd ..
+npm run ios
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🔧 Configuração
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Variáveis de Ambiente
+Crie um arquivo `.env` na raiz do projeto:
 
-## Learn More
+```env
+# API Configuration
+API_BASE_URL=https://finflow-production.up.railway.app
+API_TIMEOUT=10000
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+# App Configuration
+APP_NAME=FinFlow
+APP_VERSION=1.0.0
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+# Feature Flags
+ENABLE_BIOMETRICS=true
+ENABLE_PUSH_NOTIFICATIONS=true
+ENABLE_OFFLINE_MODE=true
+```
 
-### Code Splitting
+## 📁 Estrutura do Projeto
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```
+src/
+├── components/          # Componentes reutilizáveis
+├── screens/            # Telas do aplicativo
+├── navigation/         # Configuração de navegação
+├── services/           # Serviços (API, storage, etc.)
+├── hooks/              # Custom hooks
+├── utils/              # Utilitários e helpers
+├── types/              # Definições de tipos TypeScript
+├── constants/          # Constantes do app
+├── assets/             # Imagens, ícones, etc.
+└── styles/             # Estilos globais
+```
 
-### Analyzing the Bundle Size
+## 🎨 Design System
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+O app segue o design system do FinFlow com:
+- **Cores**: Gradientes azuis e roxos
+- **Tipografia**: Roboto (Android) / SF Pro (iOS)
+- **Ícones**: Material Design Icons
+- **Componentes**: Consistentes com a versão web
 
-### Making a Progressive Web App
+## 🔐 Segurança
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- **Autenticação biométrica** (Touch ID / Face ID)
+- **Criptografia local** de dados sensíveis
+- **Tokens JWT** para autenticação
+- **Validação de entrada** em todos os formulários
 
-### Advanced Configuration
+## 📊 Performance
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- **Lazy loading** de componentes
+- **Memoização** de componentes pesados
+- **Otimização de imagens**
+- **Cache inteligente** de dados
 
-### Deployment
+## 🧪 Testes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+# Executar testes
+npm test
 
-### `npm run build` fails to minify
+# Executar testes com coverage
+npm run test:coverage
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+# Executar linting
+npm run lint
+```
+
+## 📦 Build
+
+### Android
+```bash
+# Build de desenvolvimento
+npm run android
+
+# Build de produção
+npm run build:android
+```
+
+### iOS
+```bash
+# Build de desenvolvimento
+npm run ios
+
+# Build de produção
+npm run build:ios
+```
+
+## 🚀 Deploy
+
+### Google Play Store
+1. Gere o APK/AAB de release
+2. Configure o Google Play Console
+3. Faça upload do arquivo
+4. Configure as informações do app
+
+### Apple App Store
+1. Gere o IPA de release
+2. Configure o App Store Connect
+3. Faça upload via Xcode
+4. Configure as informações do app
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 📞 Suporte
+
+- **Email**: contatoLizSoftware@gmail.com
+- **Website**: https://finflow.lizsoftware.com.br
+- **Documentação**: [Wiki do projeto](https://github.com/limassa/FinFlow-Mobile/wiki)
+
+## 🙏 Agradecimentos
+
+- **React Native Community** - Framework incrível
+- **Expo** - Ferramentas de desenvolvimento
+- **Nossos usuários** - Feedback e suporte
+
+---
+
+**Desenvolvido com ❤️ pela Liz Softwares** 

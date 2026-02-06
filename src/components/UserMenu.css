@@ -1,0 +1,145 @@
+.user-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.user-menu-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.user-menu-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  font-weight: 500;
+}
+
+.user-icon {
+  font-size: 16px;
+  color: #667eea;
+}
+
+.user-name {
+  font-size: 14px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+  color: #6c757d;
+}
+
+.chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.user-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  margin-top: 5px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.menu-header {
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.menu-header svg {
+  font-size: 16px;
+}
+
+.menu-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
+  color: #495057;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.menu-item:hover {
+  background-color: #f8f9fa;
+}
+
+.menu-item svg {
+  font-size: 14px;
+  color: #6c757d;
+  width: 16px;
+}
+
+.menu-item.logout {
+  color: #dc3545;
+}
+
+.menu-item.logout svg {
+  color: #dc3545;
+}
+
+.menu-item.logout:hover {
+  background-color: #fff5f5;
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: #e9ecef;
+  margin: 5px 0;
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .user-name {
+    max-width: 80px;
+  }
+  
+  .user-menu-dropdown {
+    min-width: 180px;
+    right: -10px;
+  }
+  
+  .menu-header,
+  .menu-item {
+    padding: 12px 15px;
+  }
+} 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="finGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3e57a2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d199c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fundo -->
+  <rect width="1024" height="1024" fill="url(#finGradient)"/>
+  
+  <!-- Círculo central -->
+  <circle cx="512" cy="512" r="400" fill="white" opacity="0.15"/>
+  <circle cx="512" cy="512" r="350" fill="white" opacity="0.2"/>
+  
+  <!-- Símbolo de fluxo financeiro (escalado) -->
+  <g transform="translate(512, 512)">
+    <!-- Seta para cima -->
+    <path d="M -120 -150 L 0 -200 L 120 -150 L 0 -100 Z" fill="white" opacity="0.95"/>
+    <!-- Seta para baixo -->
+    <path d="M -120 150 L 0 200 L 120 150 L 0 100 Z" fill="white" opacity="0.75"/>
+    <!-- Linha central -->
+    <path d="M 0 -200 L 0 200" stroke="white" stroke-width="20" fill="none" opacity="0.9"/>
+    <!-- Símbolo de dinheiro -->
+    <text x="0" y="20" textAnchor="middle" fill="white" fontSize="180" fontWeight="bold" opacity="0.9">$</text>
+  </g>
+</svg>
