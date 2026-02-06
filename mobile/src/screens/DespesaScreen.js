@@ -22,7 +22,20 @@ import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
 
-const tiposDespesa = ['Alimentação', 'Transporte', 'Saúde', 'Moradia', 'Aluguel', 'Outros', 'Veículos'];
+const tiposDespesa = [
+  'Alimentação',
+  'Transporte',
+  'Saúde',
+  'Moradia',
+  'Aluguel',
+  'Outros',
+  'Veículos',
+  'Poupança',
+  'Investimento',
+  'Educação',
+  'Lazer',
+  'Presentes'
+];
 
 export default function DespesaScreen() {
   const navigation = useNavigation();

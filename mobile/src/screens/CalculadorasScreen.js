@@ -26,6 +26,13 @@ const calculadoras = [
     route: 'CalculadoraRetiradas',
   },
   {
+    id: 'aporte-meta',
+    name: 'Aporte para Meta',
+    description: 'Quanto investir por mês para atingir um total alvo',
+    icon: 'trending-up',
+    route: 'CalculadoraAporteMeta',
+  },
+  {
     id: 'salario-hora',
     name: 'Salário por Hora',
     description: 'Converta seu salário mensal em valor por hora',

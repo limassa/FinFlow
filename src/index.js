@@ -19,6 +19,7 @@ import ResetPassword from './pages/ResetPassword';
 import DetalhesGrafico from './pages/DetalhesGrafico';
 import CalculadoraJuros from './pages/CalculadoraJuros';
 import CalculadoraRetiradas from './pages/CalculadoraRetiradas';
+import CalculadoraAporteMeta from './pages/CalculadoraAporteMeta';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import reportWebVitals from './reportWebVitals';
@@ -39,6 +40,7 @@ root.render(
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/calculadora-juros" element={<CalculadoraJuros />} />
         <Route path="/calculadora-retiradas" element={<CalculadoraRetiradas />} />
+        <Route path="/calculadora-aporte-meta" element={<CalculadoraAporteMeta />} />
         <Route path="/app" element={<App />}/>
         <Route path="/layout" element={<Layout />}>
           <Route path="principal" element={<Principal />} />

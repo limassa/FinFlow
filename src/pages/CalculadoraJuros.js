@@ -341,6 +341,14 @@ function CalculadoraJuros() {
             <button
               type="button"
               className="calculadora-button"
+              onClick={() => navigate('/calculadora-aporte-meta')}
+            >
+              <FaCalculator />
+              Aporte para Meta
+            </button>
+            <button
+              type="button"
+              className="calculadora-button"
               onClick={() => navigate('/calculadora-retiradas')}
             >
               <FaCalculator />

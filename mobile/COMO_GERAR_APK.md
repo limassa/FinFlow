@@ -16,6 +16,8 @@ Este guia mostra como gerar um APK instalável para testar no Android.
 - ⚠️ Requer Android Studio configurado
 - ⚠️ Mais demorado
 
+**Importante:** O APK deve ser gerado em **release** (não debug). O build de *debug* não inclui o bundle JavaScript no APK e ao abrir no celular aparece "Unable to load script". O script `gerar-apk.ps1` gera APK **release** com o JS incluído.
+
 ---
 
 ## 🚀 Opção 1: EAS Build (Recomendado)
@@ -102,21 +104,23 @@ Ou abra manualmente: `File > Open > selecione pasta android/`
 
 Para APK de teste, você pode usar uma assinatura de debug (já configurada).
 
-### 4. Gerar APK de Debug
+### 4. Gerar APK para testar (com bundle JS – evita "Unable to load script")
 
-**No Android Studio:**
-1. Menu: `Build > Build Bundle(s) / APK(s) > Build APK(s)`
-2. Aguarde o build concluir
-3. Clique em `locate` quando aparecer a notificação
-4. O APK estará em: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-**Ou via linha de comando:**
+**Use o script (recomendado):**
 ```powershell
-cd android
-.\gradlew assembleDebug
+cd mobile
+.\gerar-apk.ps1
 ```
+O APK estará em: `android/app/build/outputs/apk/release/app-release.apk`
 
-O APK estará em: `android/app/build/outputs/apk/debug/app-debug.apk`
+**Ou manualmente (release = bundle incluído):**
+```powershell
+cd mobile\android
+.\gradlew.bat clean assembleRelease
+```
+O APK estará em: `android/app/build/outputs/apk/release/app-release.apk`
+
+**Atenção:** Não use `assembleDebug` para instalar no celular sem computador – o APK de debug não inclui o JavaScript e mostra "Unable to load script".
 
 ### 5. Gerar APK de Release (Assinado)
 

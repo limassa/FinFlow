@@ -2,6 +2,7 @@
 import 'react-native-gesture-handler';
 
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -22,6 +23,7 @@ import CalendarioScreen from './src/screens/CalendarioScreen';
 import ConfiguracoesScreen from './src/screens/ConfiguracoesScreen';
 import CalculadoraJurosScreen from './src/screens/CalculadoraJurosScreen';
 import CalculadoraRetiradasScreen from './src/screens/CalculadoraRetiradasScreen';
+import CalculadoraAporteMetaScreen from './src/screens/CalculadoraAporteMetaScreen';
 import SobreScreen from './src/screens/SobreScreen';
 import FaleConoscoScreen from './src/screens/FaleConoscoScreen';
 import SairScreen from './src/screens/SairScreen';
@@ -67,6 +69,11 @@ function HomeStackNavigator() {
         name="CalculadoraSalarioHora"
         component={CalculadoraSalarioHoraScreen}
         options={{ title: 'Salário por Hora' }}
+      />
+      <Stack.Screen
+        name="CalculadoraAporteMeta"
+        component={CalculadoraAporteMetaScreen}
+        options={{ title: 'Aporte para Meta' }}
       />
     </Stack.Navigator>
   );
@@ -278,24 +285,42 @@ function MainTabs() {
       <Tab.Screen
         name="Contas"
         component={ContasScreen}
-        options={{
+        options={({ navigation }) => ({
           headerShown: true,
           title: 'Contas',
           headerStyle: { backgroundColor: '#3e57a2' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Home')}
+              style={{ marginLeft: 15 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="menu" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Tab.Screen
         name="Configurações"
         component={ConfiguracoesScreen}
-        options={{
+        options={({ navigation }) => ({
           headerShown: true,
           title: 'Configurações',
           headerStyle: { backgroundColor: '#3e57a2' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Home')}
+              style={{ marginLeft: 15 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="menu" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Tab.Screen
         name="Sair"

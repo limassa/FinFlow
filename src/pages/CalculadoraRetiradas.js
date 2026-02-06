@@ -355,6 +355,25 @@ function CalculadoraRetiradas() {
         >
           Voltar ao Login
         </button>
+
+        <div className="calculadora-section">
+          <button
+            type="button"
+            className="calculadora-button"
+            onClick={() => navigate('/calculadora-juros')}
+          >
+            <FaCalculator />
+            Calculadora de Juros
+          </button>
+          <button
+            type="button"
+            className="calculadora-button"
+            onClick={() => navigate('/calculadora-aporte-meta')}
+          >
+            <FaCalculator />
+            Aporte para Meta
+          </button>
+        </div>
       </form>
 
       {/* Resultados */}
