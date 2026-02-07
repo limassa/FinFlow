@@ -30,16 +30,17 @@ if not exist "android" (
 
 echo.
 echo 2. Gerando APK Release (bundle JS incluido)...
-echo    Pode levar alguns minutos...
+echo    AGUARDE: pode levar 10 a 15 minutos. Nao feche esta janela.
 echo.
 
-cd android
-
-if exist "gradlew.bat" (
-    call gradlew.bat clean assembleRelease
-) else (
-    call gradlew clean assembleRelease
+cd /d "%~dp0android"
+if not exist "gradlew.bat" (
+    echo Erro: gradlew.bat nao encontrado em %~dp0android
+    pause
+    exit /b 1
 )
+
+call gradlew.bat clean assembleRelease
 
 if errorlevel 1 (
     echo.
@@ -51,8 +52,7 @@ if errorlevel 1 (
 
 set "APK_PATH=app\build\outputs\apk\release\app-release.apk"
 if exist "%APK_PATH%" (
-    cd ..
-    set "FULL_PATH=%cd%\android\app\build\outputs\apk\release\app-release.apk"
+    set "FULL_PATH=%~dp0android\app\build\outputs\apk\release\app-release.apk"
     echo.
     echo ============================================================
     echo APK GERADO COM SUCESSO!

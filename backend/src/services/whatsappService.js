@@ -221,7 +221,7 @@ class WhatsAppService {
     }
 
     // Montar mensagem
-    let mensagem = `🔔 *LEMBRETES DE VENCIMENTO - FinFlow*\n\n`;
+    let mensagem = `🔔 *LEMBRETES DE VENCIMENTO - Claricash*\n\n`;
     mensagem += `Olá, *${user.nome}*!\n\n`;
     mensagem += `Você tem ${vencimentos.length} despesa(s) com vencimento próximo:\n\n`;
 
@@ -235,7 +235,7 @@ class WhatsAppService {
       mensagem += `   ⚠️ Status: ${venc.despesa_pago ? '✅ Pago' : '⏳ Pendente'}\n\n`;
     });
 
-    mensagem += `📱 Acesse o FinFlow para mais detalhes.\n\n`;
+    mensagem += `📱 Acesse o Claricash para mais detalhes.\n\n`;
     mensagem += `_Esta é uma mensagem automática. Não responda._`;
 
     // Enviar mensagem
@@ -261,7 +261,7 @@ class WhatsAppService {
    * @param {string} mensagem - Mensagem de teste
    * @returns {Promise<boolean>}
    */
-  async testMessage(telefone, mensagem = 'Teste de mensagem do FinFlow') {
+  async testMessage(telefone, mensagem = 'Teste de mensagem do Claricash') {
     const phoneNumber = this.formatPhoneNumber(telefone);
     if (!phoneNumber) {
       console.log('⚠️ Número de telefone inválido');

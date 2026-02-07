@@ -3834,17 +3834,17 @@ select.form-input:focus {
   }
 }
 
-/* Estilos da Calculadora de Juros Compostos */
+/* Estilos da Calculadora de Juros Compostos - branco com azul */
 .calculadora-fullscreen {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f8fafc;
   padding: 2rem;
 }
 
 .calculadora-header {
   text-align: center;
   margin-bottom: 2rem;
-  color: white;
+  color: #3e57a2;
 }
 
 .calculadora-header h1 {
@@ -3855,14 +3855,14 @@ select.form-input:focus {
 
 .calculadora-header p {
   font-size: 1.2rem;
-  opacity: 0.9;
+  color: #5a6c9e;
 }
 
 .calculadora-form-full {
-  background: white;
+  background: linear-gradient(135deg, #3e57a2 0%, #5a6c9e 100%);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(62, 87, 162, 0.25);
   max-width: 800px;
   margin: 0 auto;
 }
@@ -3876,7 +3876,7 @@ select.form-input:focus {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  color: #333;
+  color: white;
   margin-bottom: 0.5rem;
   font-size: 1rem;
 }
@@ -3884,15 +3884,18 @@ select.form-input:focus {
 .calculadora-form-full .form-input {
   width: 100%;
   padding: 0.875rem;
+  background: white;
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   font-size: 1rem;
+  color: #333;
   transition: border-color 0.2s;
 }
 
 .calculadora-form-full .form-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: white;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
 }
 
 .calculadora-form-full .form-button {
@@ -3908,54 +3911,77 @@ select.form-input:focus {
 }
 
 .calculadora-form-full .form-button.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: white;
+  color: #3e57a2;
+  border: 1px solid rgba(255,255,255,0.9);
 }
 
 .calculadora-form-full .form-button.primary:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background: #f8fafc;
+  border-color: white;
+  color: #3e57a2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .calculadora-form-full .form-button.secondary {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 2px solid #e9ecef;
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.6);
 }
 
 .calculadora-form-full .form-button.secondary:hover {
-  background: #e9ecef;
-  border-color: #dee2e6;
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.9);
+}
+
+/* Divisor "ou" dentro do form azul - sem fundo branco */
+.calculadora-form-full .calculadora-divider::before {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.calculadora-form-full .calculadora-divider span {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
 }
 
 .calculadora-section {
   margin: 1.5rem 0;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.calculadora-section .calculadora-button {
+  flex: 1;
+  min-width: 140px;
+  max-width: 50%;
 }
 
 .calculadora-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  color: #3e57a2;
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 8px;
-  padding: 1rem 2rem;
-  font-size: 1rem;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  width: 100%;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  gap: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .calculadora-button:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background: white;
+  border-color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .calculadora-button:active {
@@ -3986,26 +4012,28 @@ select.form-input:focus {
 
 .form-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: white;
 }
 
 .form-select:hover {
-  border-color: #667eea;
+  border-color: white;
 }
 
 .resultados-container {
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(62, 87, 162, 0.12);
+  border: 1px solid #e8ecf4;
   margin-top: 2rem;
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 }
 
-.resultados-container h3 {
-  color: #333;
+.resultados-container h3,
+.resultados-container h2 {
+  color: #3e57a2;
   margin-bottom: 1.5rem;
   text-align: center;
   font-size: 1.5rem;
@@ -4013,35 +4041,48 @@ select.form-input:focus {
 
 .resultados-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.resultado-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 1.5rem;
-  border-radius: 12px;
+.resultado-card,
+.result-card {
+  background: #f8fafc;
+  color: #3e57a2;
+  padding: 1.25rem;
+  border-radius: 10px;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d1d9e8;
+  box-shadow: 0 2px 8px rgba(62, 87, 162, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+}
+
+.result-label {
+  font-size: 0.9rem;
+  color: #5a6c9e;
 }
 
 .resultado-card.secundario {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: #fef7f7;
+  border-color: #e8b4b4;
+  color: #c62828;
 }
 
 .resultado-card.terciario {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: #e8f4fc;
+  border-color: #90caf9;
+  color: #1565c0;
 }
 
 .resultado-card .card-icon {
   font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: inherit;
 }
 
 .resultado-card h4 {
@@ -4131,6 +4172,11 @@ select.form-input:focus {
 
   .calculadora-form-full {
     padding: 1.5rem;
+  }
+
+  .calculadora-section .calculadora-button {
+    max-width: 100%;
+    min-width: 120px;
   }
 
   .resultados-container {

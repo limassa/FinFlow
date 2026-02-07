@@ -228,10 +228,6 @@ function CalculadoraRetiradas() {
     navigate('/');
   };
 
-  const voltarCalculadoraJuros = () => {
-    navigate('/calculadora-juros');
-  };
-
   return (
     <div className="calculadora-fullscreen">
       <div className="calculadora-header">
@@ -330,20 +326,7 @@ function CalculadoraRetiradas() {
           {loading ? 'Calculando...' : 'Calcular'}
         </button>
 
-        <div className="form-divider">
-          <br />
-          <span>ou</span>
-        </div>
-
-        <button
-          type="button"
-          className="form-button secondary"
-          onClick={voltarCalculadoraJuros}
-        >
-          Voltar para Calculadora de Juros
-        </button>
-
-        <div className="form-divider">
+        <div className="form-divider calculadora-divider">
           <br />
           <span>ou</span>
         </div>

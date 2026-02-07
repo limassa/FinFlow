@@ -387,11 +387,11 @@ class EmailService {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'noreply@finflow.com',
       to: user.email,
-      subject: 'Bem-vindo ao FinFlow! 🎉',
+      subject: 'Bem-vindo ao Claricash! 🎉',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🎉 Bem-vindo ao FinFlow!</h1>
+            <h1 style="margin: 0; font-size: 28px;">🎉 Bem-vindo ao Claricash!</h1>
             <p style="margin: 10px 0 0 0; font-size: 16px;">Sua conta foi criada com sucesso</p>
           </div>
           
@@ -399,7 +399,7 @@ class EmailService {
             <h2 style="color: #333; margin-top: 0;">Olá, ${user.nome}!</h2>
             
             <p style="color: #666; line-height: 1.6;">
-              Estamos muito felizes em tê-lo conosco! O FinFlow é a ferramenta perfeita para 
+              Estamos muito felizes em tê-lo conosco! O Claricash é a ferramenta perfeita para 
               controlar suas finanças de forma simples e eficiente.
             </p>
             
@@ -416,7 +416,7 @@ class EmailService {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                Acessar FinFlow
+                Acessar Claricash
               </a>
             </div>
             
@@ -501,7 +501,7 @@ class EmailService {
   async fallbackEmail(user) {
     console.log('📧 === FALLBACK DE EMAIL ===');
     console.log(`   Para: ${user.email}`);
-    console.log(`   Assunto: Bem-vindo ao FinFlow! 🎉`);
+    console.log(`   Assunto: Bem-vindo ao Claricash! 🎉`);
     console.log(`   Usuário: ${user.nome}`);
     console.log(`   Data: ${new Date().toLocaleString('pt-BR')}`);
     console.log('   Status: Email simulado (sistema de email indisponível)');
@@ -523,7 +523,7 @@ class EmailService {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'noreply@finflow.com',
       to: user.email,
-      subject: `🔒 Alerta de Segurança - FinFlow: ${evento}`,
+      subject: `🔒 Alerta de Segurança - Claricash: ${evento}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -532,7 +532,7 @@ class EmailService {
           </div>
           <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
             <p style="color: #666;">Olá, ${user.nome || 'usuário'}!</p>
-            <p style="color: #666;">Informamos que a ação <strong>${evento}</strong> foi realizada na sua conta FinFlow.</p>
+            <p style="color: #666;">Informamos que a ação <strong>${evento}</strong> foi realizada na sua conta Claricash.</p>
             <p style="color: #999; font-size: 14px;">Se não foi você, altere sua senha imediatamente.</p>
           </div>
         </div>
@@ -561,12 +561,12 @@ class EmailService {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'noreply@finflow.com',
       to: user.email,
-      subject: 'Redefinição de Senha - FinFlow',
+      subject: 'Redefinição de Senha - Claricash',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 28px;">🔐 Redefinição de Senha</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Segurança em primeiro lugar</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Claricash - Segurança em primeiro lugar</p>
           </div>
           
           <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -679,12 +679,12 @@ class EmailService {
     const mailOptions = {
       from: process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
       to: user.email,
-      subject: `🔔 Lembretes de Vencimento - FinFlow`,
+      subject: `🔔 Lembretes de Vencimento - Claricash`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 28px;">🔔 Lembretes de Vencimento</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Controle Financeiro</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Claricash - Controle Financeiro</p>
           </div>
           
           <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -697,9 +697,9 @@ class EmailService {
             ${htmlVencimentos}
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL || 'https://finflow.lizsoftware.com.br'}" 
+              <a href="${process.env.FRONTEND_URL || 'https://claricash.com.br'}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                Acessar FinFlow
+                Acessar Claricash
               </a>
             </div>
             
@@ -815,12 +815,12 @@ class EmailService {
     const mailOptions = {
       from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
       to: supportEmail,
-      subject: `📧 Fale Conosco - FinFlow: ${tipoTexto}`,
+      subject: `📧 Fale Conosco - Claricash: ${tipoTexto}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 28px;">📧 Nova Mensagem - Fale Conosco</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">FinFlow - Sistema de Controle Financeiro</p>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Claricash - Sistema de Controle Financeiro</p>
           </div>
           
           <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">

@@ -25,11 +25,11 @@ function AuthBanner({ children, title, subtitle }) {
           </div>
           
           <div className="banner-content">
-            <h1 className="banner-title">FinFlow</h1>
+            <h1 className="banner-title">Claricash</h1>
             <h2 className="banner-subtitle">Controle Financeiro Simplificado</h2>
             <p className="banner-description">
               {title === "Fale Conosco" 
-                ? "Sua opinião é muito importante para nós. Entre em contato e ajude-nos a melhorar o FinFlow."
+                ? "Sua opinião é muito importante para nós. Entre em contato e ajude-nos a melhorar o Claricash."
                 : "Gerencie suas receitas e despesas de forma inteligente e eficiente. Tenha controle total sobre suas finanças pessoais."
               }
             </p>

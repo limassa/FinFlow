@@ -85,7 +85,7 @@ export default function ConfiguracoesScreen() {
         // Versão padrão em caso de erro
         setVersao({
           versao_mobile: 'M.1.1.01',
-          versao_nome: 'FinFlow Mobile'
+          versao_nome: 'Claricash Mobile'
         });
       }
 
@@ -572,9 +572,9 @@ export default function ConfiguracoesScreen() {
 
         <View style={styles.footer}>
           {versao && versao.versao_mobile ? (
-            <Text style={styles.footerText}>FinFlow {versao.versao_mobile}</Text>
+            <Text style={styles.footerText}>Claricash {versao.versao_mobile}</Text>
           ) : (
-            <Text style={styles.footerText}>FinFlow v1.0.0</Text>
+            <Text style={styles.footerText}>Claricash v1.0.0</Text>
           )}
           <Text style={styles.footerText}>Liz Softwares</Text>
         </View>

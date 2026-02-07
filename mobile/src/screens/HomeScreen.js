@@ -53,7 +53,7 @@ export default function HomeScreen() {
       // Em caso de erro, usar versão padrão
       setVersao({
         versao_mobile: 'M.1.1.01',
-        versao_nome: 'FinFlow Mobile'
+        versao_nome: 'Claricash Mobile'
       });
     }
   };
@@ -196,7 +196,7 @@ export default function HomeScreen() {
           <Ionicons name="menu" size={28} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>FinFlow</Text>
+          <Text style={styles.headerTitle}>Claricash</Text>
           <Text style={styles.headerSubtitle}>Controle Financeiro</Text>
         </View>
         <View style={styles.menuButton} />

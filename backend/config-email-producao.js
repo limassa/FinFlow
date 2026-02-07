@@ -33,7 +33,7 @@ module.exports = {
   email: {
     from: process.env.EMAIL_FROM || 'noreply@finflow.com',
     replyTo: process.env.EMAIL_REPLY_TO || 'contatoLizSoftware@gmail.com',
-    frontendUrl: process.env.FRONTEND_URL || 'https://finflow.lizsoftware.com.br'
+    frontendUrl: process.env.FRONTEND_URL || 'https://claricash.com.br'
   },
 
   // Configurações de Rate Limiting

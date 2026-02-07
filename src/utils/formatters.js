@@ -41,5 +41,5 @@ export const formatarPeriodo = (dataInicio, dataFim) => {
 
 export const formatarNomeArquivo = (tipo, periodo) => {
   const dataAtual = new Date().toISOString().split('T')[0];
-  return `FinFlow_${tipo}_${periodo}_${dataAtual}.pdf`;
+  return `Claricash_${tipo}_${periodo}_${dataAtual}.pdf`;
 }; 

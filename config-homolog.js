@@ -10,6 +10,6 @@ module.exports = {
   DB_PASSWORD: 'OumtwkgYJuWpNCAxJfLVAecULdKGjMEP',
   EMAIL_PASS: 'xdas ngdw yeao sgou',
   EMAIL_USER: 'contatoLizSoftware@gmail.com',
-  FRONTEND_URL: 'https://finflow.lizsoftware.com.br',
+  FRONTEND_URL: 'https://claricash.com.br',
   PORT: '3001'
 }; 

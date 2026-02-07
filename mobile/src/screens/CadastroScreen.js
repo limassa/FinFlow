@@ -82,7 +82,7 @@ export default function CadastroScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>Criar Conta</Text>
-          <Text style={styles.subtitle}>Cadastre-se no FinFlow</Text>
+          <Text style={styles.subtitle}>Cadastre-se no Claricash</Text>
 
           <TextInput
             style={styles.input}

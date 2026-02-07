@@ -22,7 +22,7 @@ function PrivacyPolicy() {
           <div className="privacy-title-section">
             <FaShieldAlt className="privacy-icon" />
             <h1>Política de Privacidade</h1>
-            <p className="privacy-subtitle">FinFlow - Controle Financeiro Simplificado</p>
+            <p className="privacy-subtitle">Claricash - Controle Financeiro Simplificado</p>
           </div>
         </div>
 
@@ -34,7 +34,7 @@ function PrivacyPolicy() {
             </div>
 
             <p className="privacy-intro">
-              Esta Política de Privacidade descreve como o <strong>FinFlow</strong> coleta, 
+              Esta Política de Privacidade descreve como o <strong>Claricash</strong> coleta, 
               usa e protege suas informações pessoais quando você utiliza nosso aplicativo 
               e serviços.
             </p>
@@ -44,7 +44,7 @@ function PrivacyPolicy() {
                 <FaLock /> 1. Informações que Coletamos
               </h2>
               <p>
-                O FinFlow coleta apenas as informações necessárias para fornecer nossos serviços:
+                O Claricash coleta apenas as informações necessárias para fornecer nossos serviços:
               </p>
               <ul>
                 <li>
@@ -163,7 +163,7 @@ function PrivacyPolicy() {
                 <FaShieldAlt /> 7. Dados de Menores de Idade
               </h2>
               <p>
-                O FinFlow não é direcionado a menores de 13 anos. Não coletamos intencionalmente 
+                O Claricash não é direcionado a menores de 13 anos. Não coletamos intencionalmente 
                 informações de crianças. Se você é pai ou responsável e acredita que seu filho 
                 forneceu informações, entre em contato conosco imediatamente.
               </p>
@@ -203,7 +203,7 @@ function PrivacyPolicy() {
 
             <div className="privacy-footer">
               <p>
-                Ao usar o FinFlow, você concorda com os termos desta Política de Privacidade. 
+                Ao usar o Claricash, você concorda com os termos desta Política de Privacidade. 
                 Se não concordar, por favor, não utilize nossos serviços.
               </p>
             </div>

@@ -15,4 +15,4 @@ services:
       - key: EMAIL_PASS
         sync: false
       - key: FRONTEND_URL
-        value: https://finflow.lizsoftware.com.br 
+        value: https://claricash.com.br 

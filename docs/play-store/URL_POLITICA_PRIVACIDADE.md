@@ -1,4 +1,4 @@
-# 🔗 URL da Política de Privacidade - FinFlow
+# 🔗 URL da Política de Privacidade - Claricash
 
 ## ✅ Página Criada e Publicada
 
@@ -9,7 +9,7 @@ A página de Política de Privacidade foi criada e está disponível no site.
 ## 📍 URL para o Play Store
 
 ```
-https://finflow.lizsoftware.com.br/privacy-policy
+https://claricash.com.br/privacy-policy
 ```
 
 ---
@@ -27,7 +27,7 @@ https://finflow.lizsoftware.com.br/privacy-policy
 ## 📝 Como Usar no Play Store
 
 1. Vá em **"Política do app"** → **"Definir Política de Privacidade"**
-2. Cole a URL: `https://finflow.lizsoftware.com.br/privacy-policy`
+2. Cole a URL: `https://claricash.com.br/privacy-policy`
 3. Clique em **Salvar**
 
 ---
@@ -36,7 +36,7 @@ https://finflow.lizsoftware.com.br/privacy-policy
 
 Você pode testar a URL antes de adicionar no Play Store:
 
-1. Acesse: https://finflow.lizsoftware.com.br/privacy-policy
+1. Acesse: https://claricash.com.br/privacy-policy
 2. Verifique se a página carrega corretamente
 3. Leia o conteúdo para confirmar que está adequado
 

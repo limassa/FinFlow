@@ -16,7 +16,7 @@ class RelatorioPDF {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Relatório de Receitas - FinFlow</title>
+        <title>Relatório de Receitas - Claricash</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -81,7 +81,7 @@ class RelatorioPDF {
       </head>
       <body>
         <div class="header">
-          <h1>FinFlow</h1>
+          <h1>Claricash</h1>
           <h2>Relatório de Receitas</h2>
           <div class="info">
             Período: ${periodo}<br>
@@ -131,7 +131,7 @@ class RelatorioPDF {
       </html>
     `;
 
-    return this.createPDFWindow(html, `FinFlow_Receitas_${periodo}.html`);
+    return this.createPDFWindow(html, `Claricash_Receitas_${periodo}.html`);
   }
 
   // Gerar relatório de despesas
@@ -141,7 +141,7 @@ class RelatorioPDF {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Relatório de Despesas - FinFlow</title>
+        <title>Relatório de Despesas - Claricash</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -206,7 +206,7 @@ class RelatorioPDF {
       </head>
       <body>
         <div class="header">
-          <h1>FinFlow</h1>
+          <h1>Claricash</h1>
           <h2>Relatório de Despesas</h2>
           <div class="info">
             Período: ${periodo}<br>
@@ -258,7 +258,7 @@ class RelatorioPDF {
       </html>
     `;
 
-    return this.createPDFWindow(html, `FinFlow_Despesas_${periodo}.html`);
+    return this.createPDFWindow(html, `Claricash_Despesas_${periodo}.html`);
   }
 
   // Gerar relatório consolidado
@@ -272,7 +272,7 @@ class RelatorioPDF {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Relatório Consolidado - FinFlow</title>
+        <title>Relatório Consolidado - Claricash</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -349,7 +349,7 @@ class RelatorioPDF {
       </head>
       <body>
         <div class="header">
-          <h1>FinFlow</h1>
+          <h1>Claricash</h1>
           <h2>Relatório Consolidado</h2>
           <div class="info">
             Período: ${periodo}<br>
@@ -436,7 +436,7 @@ class RelatorioPDF {
       </html>
     `;
 
-    return this.createPDFWindow(html, `FinFlow_Consolidado_${periodo}.html`);
+    return this.createPDFWindow(html, `Claricash_Consolidado_${periodo}.html`);
   }
 
   // Gerar relatório por categoria
@@ -466,7 +466,7 @@ class RelatorioPDF {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Relatório por Categoria - FinFlow</title>
+        <title>Relatório por Categoria - Claricash</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -525,7 +525,7 @@ class RelatorioPDF {
       </head>
       <body>
         <div class="header">
-          <h1>FinFlow</h1>
+          <h1>Claricash</h1>
           <h2>Relatório por Categoria</h2>
           <div class="info">
             Período: ${periodo}<br>
@@ -592,7 +592,7 @@ class RelatorioPDF {
       </html>
     `;
 
-    return this.createPDFWindow(html, `FinFlow_Categoria_${periodo}.html`);
+    return this.createPDFWindow(html, `Claricash_Categoria_${periodo}.html`);
   }
 
   // Criar janela para exibir o relatório

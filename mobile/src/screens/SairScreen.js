@@ -28,7 +28,7 @@ export default function SairScreen() {
         <Ionicons name="log-out-outline" size={64} color={colors.error} style={styles.icon} />
         <Text style={styles.title}>Sair da conta</Text>
         <Text style={styles.subtitle}>
-          Você será desconectado do FinFlow. Para acessar novamente, faça login.
+          Você será desconectado do Claricash. Para acessar novamente, faça login.
         </Text>
         <TouchableOpacity style={styles.button} onPress={handleSair}>
           <Ionicons name="log-out-outline" size={24} color="#fff" />

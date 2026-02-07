@@ -12,13 +12,13 @@ function Header() {
         <div className="logo-container">
           <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="finflowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id="claricashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" style={{stopColor: '#667eea', stopOpacity: 1}} />
                 <stop offset="100%" style={{stopColor: '#764ba2', stopOpacity: 1}} />
               </linearGradient>
             </defs>
           
-            <circle cx="20" cy="20" r="18" fill="url(#finflowGradient)" stroke="none"/>
+            <circle cx="20" cy="20" r="18" fill="url(#claricashGradient)" stroke="none"/>
             
             {/* Símbolo de fluxo financeiro */}
             <path d="M12 15 L20 12 L28 15 L20 18 Z" fill="white" opacity="0.9"/>
@@ -30,7 +30,7 @@ function Header() {
           </svg>
           
           <div className="logo-text">
-            <h1 className="app-title">FinFlow</h1>
+            <h1 className="app-title">Claricash</h1>
             <span className="company-name">Liz Softwares</span>
           </div>
         </div>

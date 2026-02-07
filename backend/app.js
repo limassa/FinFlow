@@ -142,7 +142,7 @@ app.get('/api/versao', async (req, res) => {
           success: true,
           versao: {
             versao_numero: '1.0.1',
-            versao_nome: 'FinFlow',
+            versao_nome: 'Claricash',
             versao_data: new Date().toISOString(),
             versao_descricao: 'Versão de desenvolvimento',
             versao_status: 'ATIVA',
@@ -163,7 +163,7 @@ app.get('/api/versao', async (req, res) => {
         success: true,
         versao: {
           versao_numero: '1.0.1',
-          versao_nome: 'FinFlow',
+          versao_nome: 'Claricash',
           versao_data: new Date().toISOString(),
           versao_descricao: 'Versão de desenvolvimento',
           versao_status: 'ATIVA',
@@ -178,7 +178,7 @@ app.get('/api/versao', async (req, res) => {
       success: true,
       versao: {
         versao_numero: '1.0.1',
-        versao_nome: 'FinFlow',
+        versao_nome: 'Claricash',
         versao_data: new Date().toISOString(),
         versao_descricao: 'Versão de desenvolvimento',
         versao_status: 'ATIVA',
@@ -232,7 +232,7 @@ app.get('/api/versao/mobile', async (req, res) => {
           success: true,
           versao: {
             versao_mobile: 'M.1.1.01',
-            versao_nome: 'FinFlow Mobile',
+            versao_nome: 'Claricash Mobile',
             versao_data: new Date().toISOString(),
             versao_descricao: 'Versão de desenvolvimento',
             versao_status: 'ATIVA',
@@ -253,7 +253,7 @@ app.get('/api/versao/mobile', async (req, res) => {
         success: true,
         versao: {
           versao_mobile: 'M.1.1.01',
-          versao_nome: 'FinFlow Mobile',
+          versao_nome: 'Claricash Mobile',
           versao_data: new Date().toISOString(),
           versao_descricao: 'Versão de desenvolvimento',
           versao_status: 'ATIVA',
@@ -267,7 +267,7 @@ app.get('/api/versao/mobile', async (req, res) => {
       success: true,
       versao: {
         versao_mobile: 'M.1.1.01',
-        versao_nome: 'FinFlow Mobile',
+        versao_nome: 'Claricash Mobile',
         versao_data: new Date().toISOString(),
         versao_descricao: 'Versão de desenvolvimento',
         versao_status: 'ATIVA',
@@ -1372,7 +1372,7 @@ app.get('/api/email/teste', async (req, res) => {
         email: 'teste@finflow.com',
         telefone: '(00) 00000-0000',
         tipo: 'teste',
-        mensagem: 'Este é um email de teste do sistema FinFlow para verificar a configuração.'
+        mensagem: 'Este é um email de teste do sistema Claricash para verificar a configuração.'
       });
       
       return res.json({

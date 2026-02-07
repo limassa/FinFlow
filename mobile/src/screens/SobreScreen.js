@@ -23,12 +23,12 @@ export default function SobreScreen() {
   }, [navigation]);
   
   const handleEmailPress = () => {
-    Linking.openURL('mailto:contato@lizsoftwares.com.br?subject=Contato FinFlow');
+    Linking.openURL('mailto:contato@lizsoftwares.com.br?subject=Contato Claricash');
   };
 
   const handleWhatsAppPress = () => {
     const phoneNumber = '5571981512769'; // (71) 98151-2769
-    const message = 'Olá! Gostaria de entrar em contato sobre o FinFlow.';
+    const message = 'Olá! Gostaria de entrar em contato sobre o Claricash.';
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     
     Linking.canOpenURL(url).then((supported) => {
@@ -46,7 +46,7 @@ export default function SobreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Descrição</Text>
           <Text style={styles.sectionText}>
-            O FinFlow é um sistema completo de controle financeiro pessoal desenvolvido pela Liz Softwares. 
+            O Claricash é um sistema completo de controle financeiro pessoal desenvolvido pela Liz Softwares. 
             Gerencie suas receitas, despesas, contas e tenha controle total sobre suas finanças.
           </Text>
         </View>

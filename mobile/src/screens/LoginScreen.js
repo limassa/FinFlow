@@ -58,7 +58,7 @@ export default function LoginScreen({ navigation }) {
             <Path d="M 16 50 L 40 64 L 64 50 L 40 36 Z" fill="white" opacity="0.7" />
             <Path d="M 40 16 L 40 64" stroke="white" strokeWidth="4" fill="none" opacity="0.8" />
           </Svg>
-          <Text style={styles.logoTitle}>FinFlow</Text>
+          <Text style={styles.logoTitle}>Claricash</Text>
           <Text style={styles.logoSubtitle}>Controle Financeiro</Text>
         </View>
 

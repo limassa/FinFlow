@@ -324,7 +324,7 @@ function CalculadoraJuros() {
             {loading ? 'Calculando...' : 'Calcular'}
           </button>
 
-          <div className="form-divider">
+          <div className="form-divider calculadora-divider">
             <br />
             <span>ou</span>
           </div>

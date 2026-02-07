@@ -71,7 +71,7 @@ function Cadastro() {
   return (
     <AuthBanner 
       title="Crie sua conta"
-      subtitle="Junte-se ao FinFlow e comece a controlar suas finanças"
+      subtitle="Junte-se ao Claricash e comece a controlar suas finanças"
     >
       <form onSubmit={handleCadastro} className="auth-form">
         <div className="form-group">
