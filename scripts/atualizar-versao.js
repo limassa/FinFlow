@@ -14,11 +14,15 @@ function getBranchName() {
 
 const branchName = getBranchName();
 
-// Em produção, exige RAILWAY_DB_PASSWORD (não usar senha do banco local no Railway)
+// Em produção: usa DATABASE_PUBLIC_URL (backend/config.env) ou RAILWAY_DB_*
+const productionUrl = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
 const productionPassword = process.env.RAILWAY_DB_PASSWORD;
 
 function createPool() {
   if (branchName === 'production') {
+    if (productionUrl) {
+      return new Pool({ connectionString: productionUrl });
+    }
     if (!productionPassword) {
       return null; // atualizarVersao() trata: skip com mensagem
     }
@@ -58,7 +62,7 @@ function incrementarPatch(versaoNumero) {
 async function atualizarVersao() {
   const pool = createPool();
   if (branchName === 'production' && !pool) {
-    console.log('⚠️ Branch production: defina RAILWAY_DB_PASSWORD no backend/config.env para atualizar a versão no banco ao commitar.');
+    console.log('⚠️ Branch production: defina DATABASE_PUBLIC_URL ou RAILWAY_DB_PASSWORD no backend/config.env para atualizar a versão no banco ao commitar.');
     console.log('   (Commit concluído; versão não foi incrementada na tabela.)');
     return null;
   }
@@ -110,7 +114,7 @@ async function atualizarVersao() {
     const descricao = commitMessage || `Commit ${commitHash || 'manual'} - ${branchName}`;
     const ambiente = (branchName || process.env.NODE_ENV || 'development').toUpperCase();
 
-    // 3. Desativar versões anteriores (uma ATIVA por ambiente)
+    // 3. Desativar versões anteriores (apenas para schema com versao_status/versao_ambiente)
     try {
       await pool.query(
         "UPDATE versao_sistema SET versao_status = 'INATIVA' WHERE versao_ambiente = $1",
@@ -125,22 +129,42 @@ async function atualizarVersao() {
       } catch (_) {}
     }
 
-    // 4. Inserir nova versão (versao_numero + versao_mobile para web e app)
+    // 4. Inserir nova versão (Railway: versao_plataforma, versao_numero, versao_descricao, etc.)
+    let inserted = false;
     try {
       await pool.query(
         `INSERT INTO versao_sistema 
-         (versao_numero, versao_nome, versao_data, versao_descricao, versao_status, versao_ambiente, versao_mobile) 
-         VALUES ($1, $2, $3, $4, 'ATIVA', $5, $1)`,
-        [versionNumber, versionName, commitDate, descricao, ambiente]
+         (versao_plataforma, versao_numero, versao_descricao, versao_commit_hash, versao_data_lancamento, versao_ativo, versao_obrigatorio_atualizar) 
+         VALUES ('web', $1, $2, $3, NOW(), true, false)`,
+        [versionNumber, descricao, commitHash]
       );
-    } catch (e) {
-      await pool.query(
-        `INSERT INTO "Versao_Sistema" 
-         ("Versao_Numero", "Versao_Nome", "Versao_Data", "Versao_Descricao", "Versao_Status", "Versao_Ambiente", "Versao_Mobile") 
-         VALUES ($1, $2, $3, $4, 'ATIVA', $5, $1)`,
-        [versionNumber, versionName, commitDate, descricao, ambiente]
-      );
+      inserted = true;
+    } catch (eRailway) {
+      // Schema alternativo: versao_nome, versao_data, versao_status, versao_ambiente
+      try {
+        await pool.query(
+          `INSERT INTO versao_sistema 
+           (versao_numero, versao_nome, versao_data, versao_descricao, versao_status, versao_ambiente, versao_mobile) 
+           VALUES ($1, $2, $3::date, $4, 'ATIVA', $5, $1)`,
+          [versionNumber, versionName, commitDate, descricao, ambiente]
+        );
+        inserted = true;
+      } catch (e1) {
+        try {
+          await pool.query(
+            `INSERT INTO versao_sistema 
+             (versao_numero, versao_nome, versao_data, versao_descricao, versao_status, versao_ambiente) 
+             VALUES ($1, $2, $3::date, $4, 'ATIVA', $5)`,
+            [versionNumber, versionName, commitDate, descricao, ambiente]
+          );
+          inserted = true;
+        } catch (e2) {
+          console.error('   Detalhe:', eRailway.message);
+          throw e2;
+        }
+      }
     }
+    if (!inserted) throw new Error('Nenhum INSERT executado');
 
     console.log('✅ Versão atualizada com sucesso!');
     console.log(`   Versão: ${ultimaVersao} → ${versionNumber}`);
