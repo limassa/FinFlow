@@ -1,4 +1,4 @@
-// Configuração de Email para Produção - FinFlow
+// Configuração de Email para Produção - Claricash
 // Desenvolvido por: Liz Softwares
 
 module.exports = {
@@ -31,7 +31,7 @@ module.exports = {
 
   // Configurações de Email
   email: {
-    from: process.env.EMAIL_FROM || 'noreply@finflow.com',
+    from: process.env.EMAIL_FROM || 'noreply@claricash.com.br',
     replyTo: process.env.EMAIL_REPLY_TO || 'contatoLizSoftware@gmail.com',
     frontendUrl: process.env.FRONTEND_URL || 'https://claricash.com.br'
   },

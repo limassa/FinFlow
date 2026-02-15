@@ -273,7 +273,7 @@ class EmailService {
     try {
       const msg = {
         to: mailOptions.to,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@claricash.com.br',
         subject: mailOptions.subject,
         html: mailOptions.html
       };
@@ -385,7 +385,7 @@ class EmailService {
     }
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@finflow.com',
+      from: process.env.EMAIL_USER || 'noreply@claricash.com.br',
       to: user.email,
       subject: 'Bem-vindo ao Claricash! 🎉',
       html: `
@@ -521,7 +521,7 @@ class EmailService {
       return true;
     }
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@finflow.com',
+      from: process.env.EMAIL_USER || 'noreply@claricash.com.br',
       to: user.email,
       subject: `🔒 Alerta de Segurança - Claricash: ${evento}`,
       html: `
@@ -559,7 +559,7 @@ class EmailService {
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@finflow.com',
+      from: process.env.EMAIL_USER || 'noreply@claricash.com.br',
       to: user.email,
       subject: 'Redefinição de Senha - Claricash',
       html: `
@@ -677,7 +677,7 @@ class EmailService {
     });
 
     const mailOptions = {
-      from: process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+      from: process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@claricash.com.br',
       to: user.email,
       subject: `🔔 Lembretes de Vencimento - Claricash`,
       html: `
@@ -813,7 +813,7 @@ class EmailService {
 
     const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || 'contato@lizsoftware.com.br';
     const mailOptions = {
-      from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@finflow.com',
+      from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@claricash.com.br',
       to: supportEmail,
       subject: `📧 Fale Conosco - Claricash: ${tipoTexto}`,
       html: `

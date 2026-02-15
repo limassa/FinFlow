@@ -106,7 +106,7 @@ async function atualizarVersao() {
       commitDate = execSync('git log -1 --pretty=format:"%ad" --date=short').toString().trim();
     } catch (_) {}
 
-    const versionName = 'FinFlow';
+    const versionName = 'Claricash';
     const descricao = commitMessage || `Commit ${commitHash || 'manual'} - ${branchName}`;
     const ambiente = (branchName || process.env.NODE_ENV || 'development').toUpperCase();
 

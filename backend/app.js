@@ -1183,7 +1183,7 @@ app.post('/api/lembretes/teste-whatsapp', async (req, res) => {
     // Verificar conexão com Evolution API antes de enviar
     console.log('🔍 Verificando conexão com Evolution API...');
     console.log(`   URL: ${process.env.EVOLUTION_API_URL || 'http://localhost:8080'}`);
-    console.log(`   Instância: ${process.env.EVOLUTION_INSTANCE_NAME || 'finflow'}`);
+    console.log(`   Instância: ${process.env.EVOLUTION_INSTANCE_NAME || 'claricash'}`);
     console.log(`   API Key configurada: ${!!process.env.EVOLUTION_API_KEY}`);
     
     const isConnected = await whatsappService.checkConnection();
@@ -1193,7 +1193,7 @@ app.post('/api/lembretes/teste-whatsapp', async (req, res) => {
         error: 'Instância do WhatsApp não está conectada',
         details: 'Verifique se a Evolution API está rodando e se a instância está conectada (QR Code escaneado)',
         url: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
-        instance: process.env.EVOLUTION_INSTANCE_NAME || 'finflow'
+        instance: process.env.EVOLUTION_INSTANCE_NAME || 'claricash'
       });
     }
     
@@ -1237,7 +1237,7 @@ app.post('/api/lembretes/teste-whatsapp', async (req, res) => {
           error: 'Erro ao enviar WhatsApp de teste',
           details: 'O envio falhou. Verifique os logs do backend para mais detalhes.',
           url: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
-          instance: process.env.EVOLUTION_INSTANCE_NAME || 'finflow',
+          instance: process.env.EVOLUTION_INSTANCE_NAME || 'claricash',
           phoneNumber: phoneNumber
         });
       }
@@ -1252,7 +1252,7 @@ app.post('/api/lembretes/teste-whatsapp', async (req, res) => {
         error: 'Erro ao enviar WhatsApp de teste',
         details: sendError.message || 'Erro desconhecido',
         url: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
-        instance: process.env.EVOLUTION_INSTANCE_NAME || 'finflow',
+        instance: process.env.EVOLUTION_INSTANCE_NAME || 'claricash',
         phoneNumber: phoneNumber
       });
     }
@@ -1369,7 +1369,7 @@ app.get('/api/email/teste', async (req, res) => {
       console.log('📧 Testando envio de email...');
       const emailTeste = await emailService.sendContactFormEmail({
         nome: 'Teste Sistema',
-        email: 'teste@finflow.com',
+        email: 'teste@claricash.com.br',
         telefone: '(00) 00000-0000',
         tipo: 'teste',
         mensagem: 'Este é um email de teste do sistema Claricash para verificar a configuração.'
@@ -1467,7 +1467,7 @@ const PORT = process.env.PORT || 3001;
 // Esta rota pode ser chamada periodicamente por um serviço externo
 app.post('/api/lembretes/webhook', async (req, res) => {
   // Verificar token de segurança (opcional, mas recomendado)
-  const webhookToken = process.env.WEBHOOK_TOKEN || 'finflow-webhook-secret';
+  const webhookToken = process.env.WEBHOOK_TOKEN || 'claricash-webhook-secret';
   const providedToken = req.headers['x-webhook-token'] || req.body.token;
   
   if (providedToken !== webhookToken) {

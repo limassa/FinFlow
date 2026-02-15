@@ -1,6 +1,6 @@
 # Versão automática do sistema
 
-A versão do FinFlow (web e app) é obtida **sempre da tabela `versao_sistema`** no banco de dados. Toda vez que há um **commit**, um novo registro é inserido na tabela, incrementando a versão (ex: 1.0.1 → 1.0.2).
+A versão do Claricash (web e app) é obtida **sempre da tabela `versao_sistema`** no banco de dados. Toda vez que há um **commit**, um novo registro é inserido na tabela, incrementando a versão (ex: 1.0.1 → 1.0.2).
 
 ## Como funciona
 

@@ -57,13 +57,13 @@ async function incrementarVersao() {
     try {
       await pool.query(`
         INSERT INTO versao_sistema (versao_numero, versao_nome, versao_descricao, versao_status, versao_ambiente, versao_mobile)
-        VALUES ($1, 'FinFlow', $2, 'ATIVA', $3, $1)
+        VALUES ($1, 'Claricash', $2, 'ATIVA', $3, $1)
       `, [novaVersao, descricaoFinal, ambiente]);
     } catch (insertErr) {
       try {
         await pool.query(`
           INSERT INTO "Versao_Sistema" ("Versao_Numero", "Versao_Nome", "Versao_Descricao", "Versao_Status", "Versao_Ambiente", "Versao_Mobile")
-          VALUES ($1, 'FinFlow', $2, 'ATIVA', $3, $1)
+          VALUES ($1, 'Claricash', $2, 'ATIVA', $3, $1)
         `, [novaVersao, descricaoFinal, ambiente]);
       } catch (insertErr2) {
         console.error('❌ Erro ao inserir versão:', insertErr2.message);

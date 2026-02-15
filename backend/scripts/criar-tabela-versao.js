@@ -13,7 +13,7 @@ async function criarTabelaVersao() {
       CREATE TABLE IF NOT EXISTS versao_sistema (
         versao_id SERIAL PRIMARY KEY,
         versao_numero VARCHAR(20) NOT NULL,
-        versao_nome VARCHAR(100) NOT NULL DEFAULT 'FinFlow',
+        versao_nome VARCHAR(100) NOT NULL DEFAULT 'Claricash',
         versao_data TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         versao_descricao TEXT,
         versao_status VARCHAR(20) NOT NULL DEFAULT 'ATIVA',
@@ -28,7 +28,7 @@ async function criarTabelaVersao() {
       console.log('📝 Inserindo versão inicial 1.0.0...');
       await pool.query(`
         INSERT INTO versao_sistema (versao_numero, versao_nome, versao_descricao, versao_status, versao_ambiente, versao_mobile)
-        VALUES ('1.0.0', 'FinFlow', 'Versão inicial', 'ATIVA', $1, '1.0.0')
+        VALUES ('1.0.0', 'Claricash', 'Versão inicial', 'ATIVA', $1, '1.0.0')
       `, [process.env.NODE_ENV || 'development']);
       console.log('✅ Versão inicial 1.0.0 inserida.\n');
     }

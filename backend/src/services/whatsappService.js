@@ -10,7 +10,7 @@ class WhatsAppService {
     // URL da Evolution API (configure no config.env)
     this.baseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
     // Nome da instância (configure no config.env)
-    this.instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'finflow';
+    this.instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'claricash';
     // Token de autenticação (configure no config.env)
     this.apiKey = process.env.EVOLUTION_API_KEY || '';
   }

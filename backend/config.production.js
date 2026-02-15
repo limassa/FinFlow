@@ -1,4 +1,4 @@
-// Configurações de Produção - FinFlow
+// Configurações de Produção - Claricash
 // Desenvolvido por: Liz Softwares
 
 module.exports = {
@@ -27,7 +27,7 @@ module.exports = {
     service: process.env.EMAIL_SERVICE || 'gmail',
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
-    from: process.env.EMAIL_FROM || 'noreply@finflow.com',
+    from: process.env.EMAIL_FROM || 'noreply@claricash.com.br',
     frontendUrl: process.env.FRONTEND_URL || 'https://claricash.com.br'
   },
 
