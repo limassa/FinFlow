@@ -183,6 +183,11 @@
   overflow-x: hidden;
 }
 
+/* Google AdSense */
+.ad-container { text-align: center; margin: 12px 0; min-height: 50px; }
+.ad-header { margin: 0 0 8px 0; }
+.ad-footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; }
+
 .minimal-form {
   display: flex;
   gap: 8px;
