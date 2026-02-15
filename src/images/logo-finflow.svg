@@ -26,7 +26,7 @@
   <!-- Nome do sistema -->
   <g transform="translate(60, 12)">
     <text x="0" y="18" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="url(#textGradient)">
-      FinFlow
+      Claricash
     </text>
     <text x="0" y="35" font-family="'Segoe UI', Arial, sans-serif" font-size="10" font-weight="400" fill="#666">
       by Liz Softwares

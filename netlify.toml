@@ -8,6 +8,14 @@
   NODE_VERSION = "18"
   NPM_VERSION = "8"
 
+# Redirecionar finflow.lizsoftware.com.br → claricash.com.br (301)
+[[redirects]]
+  from = "/*"
+  to = "https://claricash.com.br/:splat"
+  status = 301
+  force = true
+  conditions = {Host = ["finflow.lizsoftware.com.br"]}
+
 # Redirecionar rotas da API para o Railway
 [[redirects]]
   from = "/api/*"

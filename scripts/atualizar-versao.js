@@ -14,21 +14,23 @@ function getBranchName() {
 
 const branchName = getBranchName();
 
-let pool;
-if (branchName === 'production') {
-  // Usar configuração do Railway para produção
-  console.log('🚀 Usando configuração do Railway para produção...');
-  pool = new Pool({
-    host: process.env.RAILWAY_DB_HOST || 'interchange.proxy.rlwy.net',
-    port: process.env.RAILWAY_DB_PORT || '50880',
-    database: process.env.RAILWAY_DB_NAME || 'railway',
-    user: process.env.RAILWAY_DB_USER || 'postgres',
-    password: process.env.RAILWAY_DB_PASSWORD || process.env.DB_PASSWORD,
-  });
-} else {
-  // Usar configuração local para outras branches
-  console.log('🏠 Usando configuração local...');
-  pool = new Pool({
+// Em produção, exige RAILWAY_DB_PASSWORD (não usar senha do banco local no Railway)
+const productionPassword = process.env.RAILWAY_DB_PASSWORD;
+
+function createPool() {
+  if (branchName === 'production') {
+    if (!productionPassword) {
+      return null; // atualizarVersao() trata: skip com mensagem
+    }
+    return new Pool({
+      host: process.env.RAILWAY_DB_HOST || 'interchange.proxy.rlwy.net',
+      port: process.env.RAILWAY_DB_PORT || '50880',
+      database: process.env.RAILWAY_DB_NAME || 'railway',
+      user: process.env.RAILWAY_DB_USER || 'postgres',
+      password: productionPassword,
+    });
+  }
+  return new Pool({
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5433,
     database: process.env.DB_NAME || 'FinFlowTeste',
@@ -54,6 +56,17 @@ function incrementarPatch(versaoNumero) {
 }
 
 async function atualizarVersao() {
+  const pool = createPool();
+  if (branchName === 'production' && !pool) {
+    console.log('⚠️ Branch production: defina RAILWAY_DB_PASSWORD no backend/config.env para atualizar a versão no banco ao commitar.');
+    console.log('   (Commit concluído; versão não foi incrementada na tabela.)');
+    return null;
+  }
+  if (branchName === 'production') {
+    console.log('🚀 Usando configuração do Railway para produção...');
+  } else {
+    console.log('🏠 Usando configuração local...');
+  }
   try {
     console.log('🔄 Atualizando tabela de versão...');
 

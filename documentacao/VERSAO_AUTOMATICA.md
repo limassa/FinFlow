@@ -44,7 +44,14 @@ Ou seja, **web e app sempre mostram a versão que está na tabela** (última ver
 
 3. **Banco de dados**  
    - Em branches normais: o script usa as variáveis de ambiente do backend (ex: `backend/config.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`).  
-   - Na branch `production`: pode usar variáveis específicas (ex: `RAILWAY_DB_*`) para apontar ao banco de produção.
+   - Na branch `production`: **é obrigatório** definir `RAILWAY_DB_PASSWORD` no `backend/config.env` para o hook atualizar a versão no banco do Railway. Se não estiver definido, o hook apenas exibe um aviso e o commit segue normalmente (versão não é incrementada na tabela).
+
+   Exemplo no `backend/config.env` (apenas na sua máquina; o arquivo está no `.gitignore`):
+
+   ```env
+   RAILWAY_DB_PASSWORD=sua_senha_do_banco_railway
+   # Opcional: RAILWAY_DB_HOST, RAILWAY_DB_PORT, RAILWAY_DB_NAME, RAILWAY_DB_USER
+   ```
 
 Se o banco não estiver acessível no momento do commit, o hook não quebra o commit (ele trata o erro e termina com sucesso).
 

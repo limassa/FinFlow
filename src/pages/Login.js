@@ -168,17 +168,15 @@ function Login() {
           Criar nova conta
         </button>
 
-        {/* Botão da Calculadora */}
-        <div className="calculadora-section">
-          <button
-            type="button"
-            className="calculadora-button"
-            onClick={handleCalculadora}
-          >
-            <FaCalculator />
-            Calculadora de Juros Compostos
-          </button>
-        </div>
+        {/* Botão da Calculadora - mesmo tamanho dos botões de login */}
+        <button
+          type="button"
+          className="form-button secondary"
+          onClick={handleCalculadora}
+        >
+          <FaCalculator style={{ marginRight: 8 }} />
+          Calculadora de Juros Compostos
+        </button>
 
         {/* Botão de Ajuda */}
         <div className="help-section">
