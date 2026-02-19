@@ -1546,10 +1546,44 @@
   z-index: 2;
 }
 
-.banner-logo img {
+.banner-logo img.banner-logo-img {
   display: block;
-  max-width: 180px;
-  height: auto;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* Desenvolvido por - no banner de login */
+.banner-developed-by {
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+  font-size: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.banner-developed-by:hover {
+  color: white;
+}
+
+.banner-developed-logo-wrap {
+  background: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.banner-developed-logo {
+  height: 32px;
+  width: auto;
+  display: block;
 }
 
 .banner-content {

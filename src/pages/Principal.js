@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaPlus, FaMinus, FaChartPie, FaCog } from 'react-icons/fa';
-// Logo da empresa (arquivo em public/logo_nova.png)
-const logoNova = process.env.PUBLIC_URL + '/logo_nova.png';
+// Logo da empresa (public/logo_nova.png) - URL segura para produção
+const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';

@@ -1,8 +1,8 @@
 import React from 'react';
 import '../App.css';
 
-// Logo da empresa (mesmo arquivo da home - public/logo_nova.png)
-const logoNova = process.env.PUBLIC_URL + '/logo_nova.png';
+// Logo da empresa (public/logo_nova.png) - URL segura para produção
+const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
 
 function AuthBanner({ children, title, subtitle }) {
   return (
@@ -10,7 +10,7 @@ function AuthBanner({ children, title, subtitle }) {
       <div className="auth-banner">
         <div className="banner-left">
           <div className="banner-logo">
-            <img src={logoNova} alt="Claricash" />
+            <img src={logoNova} alt="Claricash" className="banner-logo-img" />
           </div>
           
           <div className="banner-content">
@@ -57,6 +57,20 @@ function AuthBanner({ children, title, subtitle }) {
               )}
             </div>
           </div>
+
+          {/* Desenvolvido por - mesmo padrão da home */}
+          <a
+            href="https://lizsoftware.com.br"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="banner-developed-by"
+            title="Liz Software"
+          >
+            <span>Desenvolvido por</span>
+            <div className="banner-developed-logo-wrap">
+              <img src={logoNova} alt="Liz Software" className="banner-developed-logo" />
+            </div>
+          </a>
         </div>
         
         <div className="banner-right">
