@@ -23,6 +23,7 @@ import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
 import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
+import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 
 const tiposDespesa = [
   'Alimentação',
@@ -175,13 +176,72 @@ export default function DespesaScreen() {
       };
 
       if (editId) {
+        const despesaEditando = despesas.find(d => d.despesa_id === editId);
+        if (despesaEditando && despesaEhRecorrente(despesaEditando)) {
+          Alert.alert(
+            'Replicar alterações?',
+            'Replicar para os itens não pagos da série?',
+            [
+              { text: 'Não, apenas este', onPress: async () => { await salvarDespesaEdit(despesaData); } },
+              { text: 'Sim, replicar', onPress: async () => { await salvarDespesaEditReplicar(despesaData); } }
+            ]
+          );
+          setSubmitting(false);
+          return;
+        }
         await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, despesaData);
         Alert.alert('Sucesso', 'Despesa atualizada com sucesso');
+        resetForm();
+        fetchDespesas();
       } else {
         await axios.post(API_ENDPOINTS.DESPESAS, despesaData);
         Alert.alert('Sucesso', recorrente ? 'Despesas recorrentes criadas com sucesso!' : 'Despesa adicionada com sucesso');
       }
 
+      resetForm();
+      fetchDespesas();
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao salvar despesa');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const salvarDespesaEdit = async (despesaData) => {
+    try {
+      await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, despesaData);
+      Alert.alert('Sucesso', 'Despesa atualizada');
+      resetForm();
+      fetchDespesas();
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao salvar despesa');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const salvarDespesaEditReplicar = async (despesaData) => {
+    try {
+      await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, despesaData);
+      const despesaEditando = despesas.find(d => d.despesa_id === editId);
+      const nomeBase = extrairNomeBaseRecorrente(despesaEditando?.despesa_descricao || '');
+      const outrosNaoPagos = despesas.filter(d =>
+        d.despesa_id !== editId && !d.despesa_pago &&
+        extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
+        (d.despesa_tipo || '') === (despesaData.tipo || '')
+      );
+      for (const d of outrosNaoPagos) {
+        await axios.put(`${API_ENDPOINTS.DESPESAS}/${d.despesa_id}`, {
+          descricao: d.despesa_descricao,
+          valor: despesaData.valor,
+          data: d.despesa_data,
+          dataVencimento: d.despesa_dtvencimento || despesaData.dataVencimento,
+          tipo: despesaData.tipo,
+          pago: d.despesa_pago,
+          conta_id: despesaData.conta_id || d.conta_id
+        });
+      }
+      Alert.alert('Sucesso', outrosNaoPagos.length > 0 ? `${outrosNaoPagos.length} item(ns) também atualizado(s)` : 'Despesa atualizada');
       resetForm();
       fetchDespesas();
     } catch (err) {
@@ -217,28 +277,53 @@ export default function DespesaScreen() {
     setShowForm(true);
   };
 
-  const handleDelete = (id) => {
-    Alert.alert(
-      'Confirmar',
-      'Deseja realmente excluir esta despesa?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
-              setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-              fetchDespesas();
-              Alert.alert('Sucesso', 'Despesa excluída com sucesso');
-            } catch (err) {
-              Alert.alert('Erro', 'Erro ao excluir despesa');
-            }
-          }
-        }
-      ]
+  const getItensDoGrupo = (despesaRef) => {
+    if (!despesaRef) return [];
+    const nomeBase = extrairNomeBaseRecorrente(despesaRef.despesa_descricao || '');
+    return despesas.filter(d =>
+      extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
+      (d.despesa_tipo || '') === (despesaRef.despesa_tipo || '')
     );
+  };
+
+  const executarExclusoes = async (ids) => {
+    if (ids.length === 0) return;
+    setDeletingInProgress(true);
+    try {
+      for (const id of ids) {
+        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
+      }
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+      fetchDespesas();
+      Alert.alert('Sucesso', ids.length === 1 ? 'Despesa excluída' : `${ids.length} despesa(s) excluída(s)`);
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao excluir despesas');
+    } finally {
+      setDeletingInProgress(false);
+    }
+  };
+
+  const handleDelete = (id) => {
+    const despesa = despesas.find(d => d.despesa_id === id);
+    if (!despesa) return;
+    if (despesaEhRecorrente(despesa)) {
+      const itensGrupo = getItensDoGrupo(despesa);
+      const nomeBase = extrairNomeBaseRecorrente(despesa.despesa_descricao);
+      Alert.alert(
+        'Excluir despesa recorrente',
+        `"${nomeBase}" - O que deseja excluir?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'SIM (Somente em aberto)', onPress: () => executarExclusoes(itensGrupo.filter(d => !d.despesa_pago).map(d => d.despesa_id)) },
+          { text: 'Todas (do grupo)', style: 'destructive', onPress: () => executarExclusoes(itensGrupo.map(d => d.despesa_id)) }
+        ]
+      );
+    } else {
+      Alert.alert('Confirmar', 'Deseja realmente excluir esta despesa?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: () => executarExclusoes([id]) }
+      ]);
+    }
   };
 
   const toggleSelect = (id) => {
@@ -261,32 +346,24 @@ export default function DespesaScreen() {
   const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    Alert.alert(
-      'Confirmar',
-      `Deseja realmente excluir ${qtd} despesa(s) selecionada(s)?`,
-      [
+    const itensSelecionados = [...selectedIds].map(id => despesas.find(d => d.despesa_id === id)).filter(Boolean);
+    const temRecorrente = itensSelecionados.some(d => despesaEhRecorrente(d));
+    if (temRecorrente) {
+      Alert.alert(
+        'Excluir despesas',
+        `${qtd} selecionada(s) - O que deseja excluir?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'SIM (Somente em aberto)', onPress: async () => { await executarExclusoes(itensSelecionados.filter(d => !d.despesa_pago).map(d => d.despesa_id)); setSelectedIds(new Set()); } },
+          { text: 'Todas (do grupo)', style: 'destructive', onPress: async () => { await executarExclusoes([...selectedIds]); setSelectedIds(new Set()); } }
+        ]
+      );
+    } else {
+      Alert.alert('Confirmar', `Excluir ${qtd} despesa(s)?`, [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingInProgress(true);
-            try {
-              for (const id of selectedIds) {
-                await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
-              }
-              setSelectedIds(new Set());
-              fetchDespesas();
-              Alert.alert('Sucesso', `${qtd} despesa(s) excluída(s) com sucesso`);
-            } catch (err) {
-              Alert.alert('Erro', 'Erro ao excluir despesas');
-            } finally {
-              setDeletingInProgress(false);
-            }
-          }
-        }
-      ]
-    );
+        { text: 'Excluir', style: 'destructive', onPress: async () => { await executarExclusoes([...selectedIds]); setSelectedIds(new Set()); } }
+      ]);
+    }
   };
 
   const despesasFiltradas = React.useMemo(() => {
@@ -299,54 +376,46 @@ export default function DespesaScreen() {
     const grupos = {};
     despesasFiltradas.forEach(d => {
       const tipoKey = d.despesa_tipo || 'Sem tipo';
-      if (!grupos[tipoKey]) grupos[tipoKey] = [];
-      grupos[tipoKey].push(d);
+      const nomeBase = extrairNomeBaseRecorrente(d.despesa_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(d);
     });
     const ordem = [...tiposDespesa];
     const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
     const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
     return ordemFinal.map(tipo => {
-      const itens = grupos[tipo];
-      const ordenados = [...itens].sort((a, b) => {
-        const dataA = (a.despesa_data || '').split('T')[0];
-        const dataB = (b.despesa_data || '').split('T')[0];
-        return dataA.localeCompare(dataB);
-      });
-      return { tipo, itens: ordenados };
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.despesa_data || '').split('T')[0];
+          const dataB = (b.despesa_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
     });
   }, [despesasFiltradas]);
 
-  const handleDeleteGroup = (tipoGrupo, itens) => {
+  const handleDeleteGroup = (labelGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
     Alert.alert(
-      'Confirmar',
-      `Excluir todas as ${qtd} despesa(s) do tipo "${tipoGrupo}"? Esta ação pode ser desfeita.`,
+      'Excluir despesas',
+      `"${labelGrupo}" - O que deseja excluir?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingInProgress(true);
-            try {
-              for (const d of itens) {
-                await axios.delete(`${API_ENDPOINTS.DESPESAS}/${d.despesa_id}`);
-              }
-              setSelectedIds(prev => {
-                const next = new Set(prev);
-                itens.forEach(d => next.delete(d.despesa_id));
-                return next;
-              });
-              fetchDespesas();
-              Alert.alert('Sucesso', `${qtd} despesa(s) excluída(s) com sucesso`);
-            } catch (err) {
-              Alert.alert('Erro', 'Erro ao excluir despesas');
-            } finally {
-              setDeletingInProgress(false);
-            }
-          }
-        }
+        { text: 'SIM (Somente em aberto)', onPress: async () => {
+          const emAberto = itens.filter(d => !d.despesa_pago);
+          if (emAberto.length === 0) { Alert.alert('Info', 'Nenhuma em aberto neste grupo'); return; }
+          await executarExclusoes(emAberto.map(d => d.despesa_id));
+          setSelectedIds(prev => { const n = new Set(prev); emAberto.forEach(d => n.delete(d.despesa_id)); return n; });
+        }},
+        { text: 'Todas (do grupo)', style: 'destructive', onPress: async () => {
+          await executarExclusoes(itens.map(d => d.despesa_id));
+          setSelectedIds(prev => { const n = new Set(prev); itens.forEach(d => n.delete(d.despesa_id)); return n; });
+        }}
       ]
     );
   };
@@ -613,28 +682,36 @@ export default function DespesaScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-              {despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => (
+              {despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => (
                 <View key={tipoGrupo}>
-                  <View style={styles.groupHeader}>
-                    <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
-                    <View style={styles.groupHeaderActions}>
-                      <TouchableOpacity
-                        style={styles.groupEditButton}
-                        onPress={() => itens.length > 0 && handleEdit(itens[0])}
-                      >
-                        <Ionicons name="create" size={18} color={colors.primary} />
-                        <Text style={styles.groupEditText}>Editar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.groupDeleteButton}
-                        onPress={() => handleDeleteGroup(tipoGrupo, itens)}
-                      >
-                        <Ionicons name="trash" size={18} color={colors.error} />
-                        <Text style={styles.groupDeleteText}>Excluir grupo ({itens.length})</Text>
-                      </TouchableOpacity>
+                  <View style={[styles.groupHeader, styles.groupHeaderNivel1]}>
+                    <View style={styles.groupHeaderTitleRow}>
+                      <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
+                      <Text style={styles.groupCount}>({subgrupos.reduce((s, sg) => s + sg.itens.length, 0)})</Text>
                     </View>
                   </View>
-                  {itens.map(despesa => {
+                  {subgrupos.map(({ nomeBase, itens }) => (
+                    <View key={`${tipoGrupo}|${nomeBase}`}>
+                      <View style={[styles.groupHeader, styles.groupHeaderSubnivel]}>
+                        <Text style={styles.groupHeaderText}>{nomeBase}</Text>
+                        <View style={styles.groupHeaderActions}>
+                          <TouchableOpacity
+                            style={styles.groupEditButton}
+                            onPress={() => itens.length > 0 && handleEdit(itens[0])}
+                          >
+                            <Ionicons name="create" size={18} color={colors.primary} />
+                            <Text style={styles.groupEditText}>Editar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.groupDeleteButton}
+                            onPress={() => handleDeleteGroup(nomeBase, itens)}
+                          >
+                            <Ionicons name="trash" size={18} color={colors.error} />
+                            <Text style={styles.groupDeleteText}>Excluir ({itens.length})</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      {itens.map(despesa => {
                     const conta = contas.find(c => c.conta_id === despesa.conta_id);
                     const isSelected = selectedIds.has(despesa.despesa_id);
                     return (
@@ -714,6 +791,8 @@ export default function DespesaScreen() {
                       </View>
                     );
                   })}
+                    </View>
+                  ))}
                 </View>
               ))}
             </>
@@ -1093,6 +1172,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  groupHeaderNivel1: {
+    backgroundColor: '#e8f4fd',
+  },
+  groupHeaderSubnivel: {
+    backgroundColor: '#f5f9fc',
+    paddingLeft: 20,
+  },
+  groupHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  groupCount: {
+    fontSize: 13,
+    opacity: 0.85,
+    marginLeft: 6,
   },
   groupHeader: {
     flexDirection: 'row',

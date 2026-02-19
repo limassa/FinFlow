@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { getIconForTipo } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
+import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
+import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
+import ConfirmacaoEdicaoRecorrente from '../components/ConfirmacaoEdicaoRecorrente';
 import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import axios from 'axios';
@@ -60,6 +63,8 @@ function Despesa() {
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
   const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [modalExclusao, setModalExclusao] = useState(null);
+  const [modalEditarRecorrente, setModalEditarRecorrente] = useState(null);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -202,20 +207,55 @@ function Despesa() {
     setEditId(despesa.despesa_id);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Deseja realmente excluir esta despesa? Esta ação pode ser desfeita.')) {
-      try {
-        console.log('🗑️ Tentando deletar despesa ID:', id);
-        const response = await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
-        console.log('✅ Despesa deletada com sucesso:', response.status);
-        setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-        fetchDespesas();
-        alert('Despesa excluída com sucesso!');
-      } catch (err) {
-        console.error('❌ Erro ao deletar despesa:', err);
-        const errorMessage = err.response?.data?.error || err.message || 'Erro desconhecido';
-        alert(`Erro ao deletar despesa: ${errorMessage}`);
+  const getItensDoGrupo = (despesaRef) => {
+    if (!despesaRef) return [];
+    const nomeBase = extrairNomeBaseRecorrente(despesaRef.despesa_descricao || '');
+    return despesas.filter(d => 
+      extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
+      (d.despesa_tipo || '') === (despesaRef.despesa_tipo || '')
+    );
+  };
+
+  const handleDelete = (id) => {
+    const despesa = despesas.find(d => d.despesa_id === id);
+    if (!despesa) return;
+    if (despesaEhRecorrente(despesa)) {
+      const itensGrupo = getItensDoGrupo(despesa);
+      setModalExclusao({
+        mensagem: `Excluir despesa recorrente "${extrairNomeBaseRecorrente(despesa.despesa_descricao)}"?`,
+        onSim: async () => {
+          setModalExclusao(null);
+          const itensEmAberto = itensGrupo.filter(d => !d.despesa_pago);
+          await executarExclusoes(itensEmAberto.map(d => d.despesa_id));
+        },
+        onTodas: async () => {
+          setModalExclusao(null);
+          await executarExclusoes(itensGrupo.map(d => d.despesa_id));
+        },
+        onCancelar: () => setModalExclusao(null)
+      });
+    } else {
+      if (window.confirm('Deseja realmente excluir esta despesa? Esta ação pode ser desfeita.')) {
+        executarExclusoes([id]);
       }
+    }
+  };
+
+  const executarExclusoes = async (ids) => {
+    if (ids.length === 0) return;
+    setDeletingInProgress(true);
+    try {
+      for (const id of ids) {
+        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
+      }
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+      fetchDespesas();
+      alert(ids.length === 1 ? 'Despesa excluída com sucesso!' : `${ids.length} despesa(s) excluída(s) com sucesso!`);
+    } catch (err) {
+      console.error('Erro ao excluir despesas:', err);
+      alert(err.response?.data?.error || err.message || 'Erro ao excluir despesas.');
+    } finally {
+      setDeletingInProgress(false);
     }
   };
 
@@ -236,33 +276,32 @@ function Despesa() {
     }
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    const somenteEmAberto = window.confirm(
-      `Excluir ${qtd} despesa(s) selecionada(s).\n\n` +
-      `OK = Excluir SOMENTE as em aberto (não pagas)\n` +
-      `Cancelar = Excluir TODAS as selecionadas (incluindo pagas)`
-    );
-    setDeletingInProgress(true);
-    try {
-      const idsParaExcluir = somenteEmAberto
-        ? [...selectedIds].filter(id => {
-            const d = despesas.find(x => x.despesa_id === id);
-            return d && !d.despesa_pago;
-          })
-        : [...selectedIds];
-      for (const id of idsParaExcluir) {
-        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
+    const itensSelecionados = [...selectedIds].map(id => despesas.find(d => d.despesa_id === id)).filter(Boolean);
+    const temRecorrente = itensSelecionados.some(d => despesaEhRecorrente(d));
+    if (temRecorrente) {
+      setModalExclusao({
+        mensagem: `Excluir ${qtd} despesa(s) selecionada(s)?`,
+        onSim: async () => {
+          setModalExclusao(null);
+          const idsEmAberto = itensSelecionados.filter(d => !d.despesa_pago).map(d => d.despesa_id);
+          await executarExclusoes(idsEmAberto);
+          setSelectedIds(new Set());
+        },
+        onTodas: async () => {
+          setModalExclusao(null);
+          await executarExclusoes([...selectedIds]);
+          setSelectedIds(new Set());
+        },
+        onCancelar: () => setModalExclusao(null)
+      });
+    } else {
+      if (window.confirm(`Excluir ${qtd} despesa(s) selecionada(s)?`)) {
+        executarExclusoes([...selectedIds]);
+        setSelectedIds(new Set());
       }
-      setSelectedIds(new Set());
-      fetchDespesas();
-      alert(`${idsParaExcluir.length} despesa(s) excluída(s) com sucesso!`);
-    } catch (err) {
-      console.error('Erro ao excluir despesas:', err);
-      alert(err.response?.data?.error || 'Erro ao excluir despesas. Tente novamente.');
-    } finally {
-      setDeletingInProgress(false);
     }
   };
 
@@ -276,20 +315,25 @@ function Despesa() {
     const grupos = {};
     despesasFiltradas.forEach(d => {
       const tipoKey = d.despesa_tipo || 'Sem tipo';
-      if (!grupos[tipoKey]) grupos[tipoKey] = [];
-      grupos[tipoKey].push(d);
+      const nomeBase = extrairNomeBaseRecorrente(d.despesa_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(d);
     });
     const ordem = [...tiposDespesa];
     const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
     const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
     return ordemFinal.map(tipo => {
-      const itens = grupos[tipo];
-      const ordenados = [...itens].sort((a, b) => {
-        const dataA = (a.despesa_data || '').split('T')[0];
-        const dataB = (b.despesa_data || '').split('T')[0];
-        return dataA.localeCompare(dataB);
-      });
-      return { tipo, itens: ordenados };
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
+          const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
     });
   }, [despesasFiltradas, tiposDespesa]);
 
@@ -301,36 +345,37 @@ function Despesa() {
     });
   }, [despesasFiltradas]);
 
-  const handleDeleteGroup = async (tipoGrupo, itens) => {
+  const handleDeleteGroup = (tipoGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
-    const somenteEmAberto = window.confirm(
-      `Excluir despesas do tipo "${tipoGrupo}".\n\n` +
-      `OK = Excluir SOMENTE as em aberto (não pagas)\n` +
-      `Cancelar = Excluir TODAS (incluindo pagas)`
-    );
-    const itensParaExcluir = somenteEmAberto ? itens.filter(d => !d.despesa_pago) : itens;
-    if (itensParaExcluir.length === 0 && somenteEmAberto) {
-      alert('Nenhuma despesa em aberto neste grupo.');
-      return;
-    }
-    setDeletingInProgress(true);
-    try {
-      for (const d of itensParaExcluir) {
-        await axios.delete(`${API_ENDPOINTS.DESPESAS}/${d.despesa_id}`);
-      }
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        itensParaExcluir.forEach(d => next.delete(d.despesa_id));
-        return next;
-      });
-      fetchDespesas();
-      alert(`${itensParaExcluir.length} despesa(s) excluída(s) com sucesso!`);
-    } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir despesas. Tente novamente.');
-    } finally {
-      setDeletingInProgress(false);
-    }
+    const nomeGrupo = itens[0] ? extrairNomeBaseRecorrente(itens[0].despesa_descricao || '') : tipoGrupo;
+    setModalExclusao({
+      mensagem: `Excluir despesas do grupo "${nomeGrupo}" (${tipoGrupo})?`,
+      onSim: async () => {
+        setModalExclusao(null);
+        const itensEmAberto = itens.filter(d => !d.despesa_pago);
+        if (itensEmAberto.length === 0) {
+          alert('Nenhuma despesa em aberto neste grupo.');
+          return;
+        }
+        await executarExclusoes(itensEmAberto.map(d => d.despesa_id));
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          itensEmAberto.forEach(d => next.delete(d.despesa_id));
+          return next;
+        });
+      },
+      onTodas: async () => {
+        setModalExclusao(null);
+        await executarExclusoes(itens.map(d => d.despesa_id));
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          itens.forEach(d => next.delete(d.despesa_id));
+          return next;
+        });
+      },
+      onCancelar: () => setModalExclusao(null)
+    });
   };
 
   const handleTogglePago = async (despesa) => {
@@ -346,39 +391,104 @@ function Despesa() {
     }
   };
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = (e) => {
     e.preventDefault();
     if (!descricao || !valor || !data || !tipo) {
       alert('Preencha todos os campos obrigatórios');
       return;
     }
     if (submitting) return;
+    const despesaEditando = despesas.find(d => d.despesa_id === editId);
+    const payload = { descricao, valor, data, dataVencimento, tipo, pago, conta_id: contaId || null };
+    if (despesaEditando && despesaEhRecorrente(despesaEditando)) {
+      setModalEditarRecorrente({
+        mensagem: 'Replicar alterações para os itens não pagos da série?',
+        payload,
+        onSim: () => aplicarUpdateComReplicacao(payload, true),
+        onNao: () => aplicarUpdateComReplicacao(payload, false),
+        onCancelar: () => setModalEditarRecorrente(null)
+      });
+    } else {
+      aplicarUpdateSimples(payload);
+    }
+  };
+
+  const aplicarUpdateSimples = async (payload) => {
     setSubmitting(true);
     try {
-      await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, { 
-        descricao, 
-        valor, 
-        data, 
-        dataVencimento,
-        tipo,
-        pago: pago,
-        conta_id: contaId || null
+      await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, {
+        ...payload,
+        pago: payload.pago,
+        conta_id: payload.conta_id
       });
-      setDescricao('');
-      setValor('');
-      setData('');
-      setDataVencimento('');
-      setTipo('');
-      setPago(false);
-      setContaId('');
-      setEditId(null);
-      fetchDespesas();
+      finalizarEdicao();
       alert('Despesa atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar despesa');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const aplicarUpdateComReplicacao = async (payload, replicar) => {
+    setModalEditarRecorrente(null);
+    setSubmitting(true);
+    try {
+      await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, {
+        descricao: payload.descricao,
+        valor: payload.valor,
+        data: payload.data,
+        dataVencimento: payload.dataVencimento,
+        tipo: payload.tipo,
+        pago: payload.pago,
+        conta_id: payload.conta_id
+      });
+      if (replicar) {
+        const despesaEditando = despesas.find(d => d.despesa_id === editId);
+        const nomeBase = extrairNomeBaseRecorrente(despesaEditando?.despesa_descricao || '');
+        const outrosNaoPagos = despesas.filter(d =>
+          d.despesa_id !== editId &&
+          !d.despesa_pago &&
+          extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
+          (d.despesa_tipo || '') === (payload.tipo || '')
+        );
+        for (const d of outrosNaoPagos) {
+          await axios.put(`${API_ENDPOINTS.DESPESAS}/${d.despesa_id}`, {
+            descricao: d.despesa_descricao,
+            valor: payload.valor,
+            data: d.despesa_data,
+            dataVencimento: d.despesa_dtvencimento || payload.dataVencimento,
+            tipo: payload.tipo,
+            pago: d.despesa_pago,
+            conta_id: payload.conta_id || d.conta_id
+          });
+        }
+        if (outrosNaoPagos.length > 0) {
+          alert(`Despesa atualizada. ${outrosNaoPagos.length} item(ns) não pagos da série também foram atualizados.`);
+        } else {
+          alert('Despesa atualizada com sucesso');
+        }
+      } else {
+        alert('Despesa atualizada com sucesso');
+      }
+      finalizarEdicao();
+    } catch (err) {
+      alert('Erro ao atualizar despesa');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const finalizarEdicao = () => {
+    setDescricao('');
+    setValor('');
+    setData('');
+    setDataVencimento('');
+    setTipo('');
+    setPago(false);
+    setContaId('');
+    setEditId(null);
+    fetchDespesas();
   };
 
   const handleCancel = () => {
@@ -490,6 +600,22 @@ function Despesa() {
 
   return (
     <div className="receita-container">
+      {modalExclusao && (
+        <ConfirmacaoExclusao
+          mensagem={modalExclusao.mensagem}
+          onSim={modalExclusao.onSim}
+          onTodas={modalExclusao.onTodas}
+          onCancelar={modalExclusao.onCancelar}
+        />
+      )}
+      {modalEditarRecorrente && (
+        <ConfirmacaoEdicaoRecorrente
+          mensagem={modalEditarRecorrente.mensagem}
+          onSim={modalEditarRecorrente.onSim}
+          onNao={modalEditarRecorrente.onNao}
+          onCancelar={modalEditarRecorrente.onCancelar}
+        />
+      )}
       <div className="receita-header">
         <div className="header-content">
           <h2>Despesas</h2>
@@ -822,53 +948,80 @@ function Despesa() {
               <div className="grid-cell">Pago</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {exibirAgrupado ? despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
-              const colapsado = gruposColapsados.has(tipoGrupo);
-              const toggleGrupo = () => {
+            {exibirAgrupado ? despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
+              const tipoKey = `tipo:${tipoGrupo}`;
+              const tipoColapsado = gruposColapsados.has(tipoKey);
+              const toggleTipo = () => {
                 setGruposColapsados(prev => {
                   const next = new Set(prev);
-                  if (next.has(tipoGrupo)) next.delete(tipoGrupo);
-                  else next.add(tipoGrupo);
+                  if (next.has(tipoKey)) next.delete(tipoKey);
+                  else next.add(tipoKey);
                   return next;
                 });
               };
+              const totalTipo = subgrupos.reduce((s, sg) => s + sg.itens.length, 0);
+              const IconTipo = getIconForTipo(tipoGrupo, 'despesa');
               return (
-              <React.Fragment key={tipoGrupo}>
-                <div 
-                  className={`grid-group-header ${colapsado ? 'colapsado' : ''}`}
-                  onClick={toggleGrupo}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(); } }}
-                >
-                  <span className="grid-group-header-title">
-                    {colapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
-                    {(() => {
-                      const Icon = getIconForTipo(tipoGrupo, 'despesa');
-                      return <><Icon className="category-icon" /> {tipoGrupo}</>;
-                    })()}
-                    <span className="group-count">({itens.length})</span>
-                  </span>
-                  <span className="grid-group-header-actions">
-                    <button
-                      type="button"
-                      className="btn-edit btn-edit-group"
-                      onClick={(e) => { e.stopPropagation(); if (itens.length > 0) handleEdit(itens[0]); }}
-                      title={`Editar despesa do grupo ${tipoGrupo}`}
-                    >
-                      <FaEdit /> Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-delete btn-delete-group"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
-                      title={`Excluir todas as despesas do tipo ${tipoGrupo}`}
-                    >
-                      <FaTrash /> Excluir grupo ({itens.length})
-                    </button>
-                  </span>
-                </div>
-                {!colapsado && itens.map(despesa => {
+                <div key={tipoKey} className="grid-grupo-tipo">
+                  <div
+                    className={`grid-group-header grid-group-header-nivel1 ${tipoColapsado ? 'colapsado' : ''}`}
+                    onClick={toggleTipo}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTipo(); } }}
+                  >
+                    <span className="grid-group-header-title">
+                      {tipoColapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
+                      <IconTipo className="category-icon" /> {tipoGrupo}
+                      <span className="group-count">({totalTipo})</span>
+                    </span>
+                  </div>
+                  {!tipoColapsado && subgrupos.map(({ nomeBase, itens }) => {
+                    const grupoKey = `${tipoGrupo}|${nomeBase}`;
+                    const colapsado = gruposColapsados.has(grupoKey);
+                    const toggleSub = () => {
+                      setGruposColapsados(prev => {
+                        const next = new Set(prev);
+                        if (next.has(grupoKey)) next.delete(grupoKey);
+                        else next.add(grupoKey);
+                        return next;
+                      });
+                    };
+                    const labelSubgrupo = nomeBase;
+                    return (
+                      <React.Fragment key={grupoKey}>
+                        <div
+                          className={`grid-group-header grid-group-header-subnivel ${colapsado ? 'colapsado' : ''}`}
+                          onClick={toggleSub}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSub(); } }}
+                        >
+                          <span className="grid-group-header-title">
+                            {colapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
+                            {labelSubgrupo}
+                            <span className="group-count">({itens.length})</span>
+                          </span>
+                          <span className="grid-group-header-actions">
+                            <button
+                              type="button"
+                              className="btn-edit btn-edit-group"
+                              onClick={(e) => { e.stopPropagation(); if (itens.length > 0) handleEdit(itens[0]); }}
+                              title={`Editar despesa do grupo ${labelSubgrupo}`}
+                            >
+                              <FaEdit /> Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-delete btn-delete-group"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteGroup(labelSubgrupo, itens); }}
+                              title={`Excluir despesas do grupo ${labelSubgrupo}`}
+                            >
+                              <FaTrash /> Excluir grupo ({itens.length})
+                            </button>
+                          </span>
+                        </div>
+                        {!colapsado && itens.map(despesa => {
                   const conta = contas.find(c => c.Conta_Id === despesa.Conta_id || c.conta_id === despesa.conta_id);
                   return (
                     <div key={despesa.despesa_id} className="grid-row">
@@ -934,7 +1087,10 @@ function Despesa() {
                     </div>
                   );
                 })}
-              </React.Fragment>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
               );
             }) : despesasOrdenadasPorVencimento.map(despesa => {
               const conta = contas.find(c => c.Conta_Id === despesa.Conta_id || c.conta_id === despesa.conta_id);

@@ -23,6 +23,7 @@ import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
 import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
+import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
 
 const tiposReceita = ['Salário', 'Venda', 'Presente', 'Investimento', 'Aluguel', 'Outros'];
 
@@ -141,13 +142,71 @@ export default function ReceitaScreen() {
       };
 
       if (editId) {
+        const receitaEditando = receitas.find(r => r.receita_id === editId);
+        if (receitaEditando && receitaEhRecorrente(receitaEditando)) {
+          Alert.alert(
+            'Replicar alterações?',
+            'Replicar para os itens não recebidos da série?',
+            [
+              { text: 'Não, apenas este', onPress: () => salvarReceitaEdit(receitaData) },
+              { text: 'Sim, replicar', onPress: () => salvarReceitaEditReplicar(receitaData) }
+            ]
+          );
+          setSubmitting(false);
+          return;
+        }
         await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, receitaData);
         Alert.alert('Sucesso', 'Receita atualizada com sucesso');
+        resetForm();
+        fetchReceitas();
       } else {
         await axios.post(API_ENDPOINTS.RECEITAS, receitaData);
         Alert.alert('Sucesso', recorrente ? 'Receitas recorrentes criadas com sucesso!' : 'Receita adicionada com sucesso');
       }
 
+      resetForm();
+      fetchReceitas();
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao salvar receita');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const salvarReceitaEdit = async (receitaData) => {
+    try {
+      await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, receitaData);
+      Alert.alert('Sucesso', 'Receita atualizada');
+      resetForm();
+      fetchReceitas();
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao salvar receita');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const salvarReceitaEditReplicar = async (receitaData) => {
+    try {
+      await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, receitaData);
+      const receitaEditando = receitas.find(r => r.receita_id === editId);
+      const nomeBase = extrairNomeBaseRecorrente(receitaEditando?.receita_descricao || '');
+      const outrosNaoRecebidos = receitas.filter(r =>
+        r.receita_id !== editId && !r.receita_recebido &&
+        extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
+        (r.receita_tipo || '') === (receitaData.tipo || '')
+      );
+      for (const r of outrosNaoRecebidos) {
+        await axios.put(`${API_ENDPOINTS.RECEITAS}/${r.receita_id}`, {
+          descricao: r.receita_descricao,
+          valor: receitaData.valor,
+          data: r.receita_data,
+          tipo: receitaData.tipo,
+          recebido: r.receita_recebido,
+          conta_id: receitaData.conta_id || r.conta_id
+        });
+      }
+      Alert.alert('Sucesso', outrosNaoRecebidos.length > 0 ? `${outrosNaoRecebidos.length} item(ns) também atualizado(s)` : 'Receita atualizada');
       resetForm();
       fetchReceitas();
     } catch (err) {
@@ -181,28 +240,53 @@ export default function ReceitaScreen() {
     setShowForm(true);
   };
 
-  const handleDelete = (id) => {
-    Alert.alert(
-      'Confirmar',
-      'Deseja realmente excluir esta receita?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
-              setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-              fetchReceitas();
-              Alert.alert('Sucesso', 'Receita excluída com sucesso');
-            } catch (err) {
-              Alert.alert('Erro', 'Erro ao excluir receita');
-            }
-          }
-        }
-      ]
+  const getItensDoGrupo = (receitaRef) => {
+    if (!receitaRef) return [];
+    const nomeBase = extrairNomeBaseRecorrente(receitaRef.receita_descricao || '');
+    return receitas.filter(r =>
+      extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
+      (r.receita_tipo || '') === (receitaRef.receita_tipo || '')
     );
+  };
+
+  const executarExclusoes = async (ids) => {
+    if (ids.length === 0) return;
+    setDeletingInProgress(true);
+    try {
+      for (const id of ids) {
+        await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
+      }
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+      fetchReceitas();
+      Alert.alert('Sucesso', ids.length === 1 ? 'Receita excluída' : `${ids.length} receita(s) excluída(s)`);
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao excluir receitas');
+    } finally {
+      setDeletingInProgress(false);
+    }
+  };
+
+  const handleDelete = (id) => {
+    const receita = receitas.find(r => r.receita_id === id);
+    if (!receita) return;
+    if (receitaEhRecorrente(receita)) {
+      const itensGrupo = getItensDoGrupo(receita);
+      const nomeBase = extrairNomeBaseRecorrente(receita.receita_descricao);
+      Alert.alert(
+        'Excluir receita recorrente',
+        `"${nomeBase}" - O que deseja excluir?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'SIM (Somente em aberto)', onPress: () => executarExclusoes(itensGrupo.filter(r => !r.receita_recebido).map(r => r.receita_id)) },
+          { text: 'Todas (do grupo)', style: 'destructive', onPress: () => executarExclusoes(itensGrupo.map(r => r.receita_id)) }
+        ]
+      );
+    } else {
+      Alert.alert('Confirmar', 'Deseja realmente excluir esta receita?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: () => executarExclusoes([id]) }
+      ]);
+    }
   };
 
   const toggleSelect = (id) => {
@@ -225,32 +309,24 @@ export default function ReceitaScreen() {
   const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    Alert.alert(
-      'Confirmar',
-      `Deseja realmente excluir ${qtd} receita(s) selecionada(s)?`,
-      [
+    const itensSelecionados = [...selectedIds].map(id => receitas.find(r => r.receita_id === id)).filter(Boolean);
+    const temRecorrente = itensSelecionados.some(r => receitaEhRecorrente(r));
+    if (temRecorrente) {
+      Alert.alert(
+        'Excluir receitas',
+        `${qtd} selecionada(s) - O que deseja excluir?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'SIM (Somente em aberto)', onPress: async () => { await executarExclusoes(itensSelecionados.filter(r => !r.receita_recebido).map(r => r.receita_id)); setSelectedIds(new Set()); } },
+          { text: 'Todas (do grupo)', style: 'destructive', onPress: async () => { await executarExclusoes([...selectedIds]); setSelectedIds(new Set()); } }
+        ]
+      );
+    } else {
+      Alert.alert('Confirmar', `Excluir ${qtd} receita(s)?`, [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingInProgress(true);
-            try {
-              for (const id of selectedIds) {
-                await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
-              }
-              setSelectedIds(new Set());
-              fetchReceitas();
-              Alert.alert('Sucesso', `${qtd} receita(s) excluída(s) com sucesso`);
-            } catch (err) {
-              Alert.alert('Erro', 'Erro ao excluir receitas');
-            } finally {
-              setDeletingInProgress(false);
-            }
-          }
-        }
-      ]
-    );
+        { text: 'Excluir', style: 'destructive', onPress: async () => { await executarExclusoes([...selectedIds]); setSelectedIds(new Set()); } }
+      ]);
+    }
   };
 
   const receitasFiltradas = React.useMemo(() => {
@@ -263,54 +339,46 @@ export default function ReceitaScreen() {
     const grupos = {};
     receitasFiltradas.forEach(r => {
       const tipoKey = r.receita_tipo || 'Sem tipo';
-      if (!grupos[tipoKey]) grupos[tipoKey] = [];
-      grupos[tipoKey].push(r);
+      const nomeBase = extrairNomeBaseRecorrente(r.receita_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(r);
     });
     const ordem = [...tiposReceita];
     const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
     const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
     return ordemFinal.map(tipo => {
-      const itens = grupos[tipo];
-      const ordenados = [...itens].sort((a, b) => {
-        const dataA = (a.receita_data || '').split('T')[0];
-        const dataB = (b.receita_data || '').split('T')[0];
-        return dataA.localeCompare(dataB);
-      });
-      return { tipo, itens: ordenados };
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.receita_data || '').split('T')[0];
+          const dataB = (b.receita_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
     });
   }, [receitasFiltradas]);
 
-  const handleDeleteGroup = (tipoGrupo, itens) => {
+  const handleDeleteGroup = (labelGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
     Alert.alert(
-      'Confirmar',
-      `Excluir todas as ${qtd} receita(s) do tipo "${tipoGrupo}"? Esta ação pode ser desfeita.`,
+      'Excluir receitas',
+      `"${labelGrupo}" - O que deseja excluir?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingInProgress(true);
-            try {
-              for (const r of itens) {
-                await axios.delete(`${API_ENDPOINTS.RECEITAS}/${r.receita_id}`);
-              }
-              setSelectedIds(prev => {
-                const next = new Set(prev);
-                itens.forEach(r => next.delete(r.receita_id));
-                return next;
-              });
-              fetchReceitas();
-              Alert.alert('Sucesso', `${qtd} receita(s) excluída(s) com sucesso`);
-            } catch (err) {
-              Alert.alert('Erro', 'Erro ao excluir receitas');
-            } finally {
-              setDeletingInProgress(false);
-            }
-          }
-        }
+        { text: 'SIM (Somente em aberto)', onPress: async () => {
+          const naoRecebidas = itens.filter(r => !r.receita_recebido);
+          if (naoRecebidas.length === 0) { Alert.alert('Info', 'Nenhuma não recebida neste grupo'); return; }
+          await executarExclusoes(naoRecebidas.map(r => r.receita_id));
+          setSelectedIds(prev => { const n = new Set(prev); naoRecebidas.forEach(r => n.delete(r.receita_id)); return n; });
+        }},
+        { text: 'Todas (do grupo)', style: 'destructive', onPress: async () => {
+          await executarExclusoes(itens.map(r => r.receita_id));
+          setSelectedIds(prev => { const n = new Set(prev); itens.forEach(r => n.delete(r.receita_id)); return n; });
+        }}
       ]
     );
   };
@@ -556,6 +624,8 @@ export default function ReceitaScreen() {
                       </View>
                     );
                   })}
+                    </View>
+                  ))}
                 </View>
               ))}
             </>
@@ -830,6 +900,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  groupHeaderNivel1: {
+    backgroundColor: '#e8f4fd',
+  },
+  groupHeaderSubnivel: {
+    backgroundColor: '#f5f9fc',
+    paddingLeft: 20,
+  },
+  groupHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  groupCount: {
+    fontSize: 13,
+    opacity: 0.85,
+    marginLeft: 6,
   },
   groupHeader: {
     flexDirection: 'row',

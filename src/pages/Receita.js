@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { getIconForTipo } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
+import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
+import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
+import ConfirmacaoEdicaoRecorrente from '../components/ConfirmacaoEdicaoRecorrente';
 import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import axios from 'axios';
@@ -51,6 +54,8 @@ function Receita() {
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
   const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [modalExclusao, setModalExclusao] = useState(null);
+  const [modalEditarRecorrente, setModalEditarRecorrente] = useState(null);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -176,37 +181,90 @@ function Receita() {
     setEditId(receita.receita_id);
   };
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = (e) => {
     e.preventDefault();
     if (!descricao || !valor || !data || !tipo) {
       alert('Preencha todos os campos');
       return;
     }
     if (submitting) return;
+    const receitaEditando = receitas.find(r => r.receita_id === editId);
+    const payload = { descricao, valor, data, tipo, recebido, conta_id: contaId || null };
+    if (receitaEditando && receitaEhRecorrente(receitaEditando)) {
+      setModalEditarRecorrente({
+        mensagem: 'Replicar alterações para os itens não recebidos da série?',
+        payload,
+        onSim: () => aplicarUpdateComReplicacao(payload, true),
+        onNao: () => aplicarUpdateComReplicacao(payload, false),
+        onCancelar: () => setModalEditarRecorrente(null)
+      });
+    } else {
+      aplicarUpdateSimples(payload);
+    }
+  };
+
+  const aplicarUpdateSimples = async (payload) => {
     setSubmitting(true);
     try {
-      await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, {
-        descricao,
-        valor,
-        data,
-        tipo,
-        recebido,
-        conta_id: contaId || null
-      });
-      setDescricao('');
-      setValor('');
-      setData('');
-      setTipo('');
-      setRecebido(false);
-      setContaId('');
-      setEditId(null);
-      fetchReceitas();
+      await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, payload);
+      finalizarEdicao();
       alert('Receita atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar receita');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const aplicarUpdateComReplicacao = async (payload, replicar) => {
+    setModalEditarRecorrente(null);
+    setSubmitting(true);
+    try {
+      await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, payload);
+      if (replicar) {
+        const receitaEditando = receitas.find(r => r.receita_id === editId);
+        const nomeBase = extrairNomeBaseRecorrente(receitaEditando?.receita_descricao || '');
+        const outrosNaoRecebidos = receitas.filter(r =>
+          r.receita_id !== editId &&
+          !r.receita_recebido &&
+          extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
+          (r.receita_tipo || '') === (payload.tipo || '')
+        );
+        for (const r of outrosNaoRecebidos) {
+          await axios.put(`${API_ENDPOINTS.RECEITAS}/${r.receita_id}`, {
+            descricao: r.receita_descricao,
+            valor: payload.valor,
+            data: r.receita_data,
+            tipo: payload.tipo,
+            recebido: r.receita_recebido,
+            conta_id: payload.conta_id || r.conta_id
+          });
+        }
+        if (outrosNaoRecebidos.length > 0) {
+          alert(`Receita atualizada. ${outrosNaoRecebidos.length} item(ns) não recebidos da série também foram atualizados.`);
+        } else {
+          alert('Receita atualizada com sucesso');
+        }
+      } else {
+        alert('Receita atualizada com sucesso');
+      }
+      finalizarEdicao();
+    } catch (err) {
+      alert('Erro ao atualizar receita');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const finalizarEdicao = () => {
+    setDescricao('');
+    setValor('');
+    setData('');
+    setTipo('');
+    setRecebido(false);
+    setContaId('');
+    setEditId(null);
+    fetchReceitas();
   };
   const handleTogglePago = async (receita) => {
     try {
@@ -231,14 +289,53 @@ function Receita() {
     setEditId(null);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Deseja realmente excluir esta receita? Esta ação pode ser desfeita.')) {
-      try {
+  const getItensDoGrupo = (receitaRef) => {
+    if (!receitaRef) return [];
+    const nomeBase = extrairNomeBaseRecorrente(receitaRef.receita_descricao || '');
+    return receitas.filter(r =>
+      extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
+      (r.receita_tipo || '') === (receitaRef.receita_tipo || '')
+    );
+  };
+
+  const executarExclusoes = async (ids) => {
+    if (ids.length === 0) return;
+    setDeletingInProgress(true);
+    try {
+      for (const id of ids) {
         await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
-        setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-        fetchReceitas();
-      } catch (err) {
-        alert('Erro ao deletar receita');
+      }
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+      fetchReceitas();
+      alert(ids.length === 1 ? 'Receita excluída com sucesso!' : `${ids.length} receita(s) excluída(s) com sucesso!`);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Erro ao excluir receitas.');
+    } finally {
+      setDeletingInProgress(false);
+    }
+  };
+
+  const handleDelete = (id) => {
+    const receita = receitas.find(r => r.receita_id === id);
+    if (!receita) return;
+    if (receitaEhRecorrente(receita)) {
+      const itensGrupo = getItensDoGrupo(receita);
+      setModalExclusao({
+        mensagem: `Excluir receita recorrente "${extrairNomeBaseRecorrente(receita.receita_descricao)}"?`,
+        onSim: async () => {
+          setModalExclusao(null);
+          const itensNaoRecebidos = itensGrupo.filter(r => !r.receita_recebido);
+          await executarExclusoes(itensNaoRecebidos.map(r => r.receita_id));
+        },
+        onTodas: async () => {
+          setModalExclusao(null);
+          await executarExclusoes(itensGrupo.map(r => r.receita_id));
+        },
+        onCancelar: () => setModalExclusao(null)
+      });
+    } else {
+      if (window.confirm('Deseja realmente excluir esta receita? Esta ação pode ser desfeita.')) {
+        executarExclusoes([id]);
       }
     }
   };
@@ -266,32 +363,32 @@ function Receita() {
     }
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    const somenteNaoRecebidas = window.confirm(
-      `Excluir ${qtd} receita(s) selecionada(s).\n\n` +
-      `OK = Excluir SOMENTE as não recebidas\n` +
-      `Cancelar = Excluir TODAS as selecionadas (incluindo recebidas)`
-    );
-    setDeletingInProgress(true);
-    try {
-      const idsParaExcluir = somenteNaoRecebidas
-        ? [...selectedIds].filter(id => {
-            const r = receitas.find(x => x.receita_id === id);
-            return r && !r.receita_recebido;
-          })
-        : [...selectedIds];
-      for (const id of idsParaExcluir) {
-        await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
+    const itensSelecionados = [...selectedIds].map(id => receitas.find(r => r.receita_id === id)).filter(Boolean);
+    const temRecorrente = itensSelecionados.some(r => receitaEhRecorrente(r));
+    if (temRecorrente) {
+      setModalExclusao({
+        mensagem: `Excluir ${qtd} receita(s) selecionada(s)?`,
+        onSim: async () => {
+          setModalExclusao(null);
+          const idsNaoRecebidos = itensSelecionados.filter(r => !r.receita_recebido).map(r => r.receita_id);
+          await executarExclusoes(idsNaoRecebidos);
+          setSelectedIds(new Set());
+        },
+        onTodas: async () => {
+          setModalExclusao(null);
+          await executarExclusoes([...selectedIds]);
+          setSelectedIds(new Set());
+        },
+        onCancelar: () => setModalExclusao(null)
+      });
+    } else {
+      if (window.confirm(`Excluir ${qtd} receita(s) selecionada(s)?`)) {
+        executarExclusoes([...selectedIds]);
+        setSelectedIds(new Set());
       }
-      setSelectedIds(new Set());
-      fetchReceitas();
-      alert(`${idsParaExcluir.length} receita(s) excluída(s) com sucesso!`);
-    } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir receitas. Tente novamente.');
-    } finally {
-      setDeletingInProgress(false);
     }
   };
 
@@ -299,20 +396,25 @@ function Receita() {
     const grupos = {};
     receitasFiltradas.forEach(r => {
       const tipoKey = r.receita_tipo || 'Sem tipo';
-      if (!grupos[tipoKey]) grupos[tipoKey] = [];
-      grupos[tipoKey].push(r);
+      const nomeBase = extrairNomeBaseRecorrente(r.receita_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(r);
     });
     const ordem = [...tiposReceita];
     const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
     const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
     return ordemFinal.map(tipo => {
-      const itens = grupos[tipo];
-      const ordenados = [...itens].sort((a, b) => {
-        const dataA = (a.receita_data || '').split('T')[0];
-        const dataB = (b.receita_data || '').split('T')[0];
-        return dataA.localeCompare(dataB);
-      });
-      return { tipo, itens: ordenados };
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.receita_data || '').split('T')[0];
+          const dataB = (b.receita_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
     });
   }, [receitasFiltradas, tiposReceita]);
 
@@ -324,36 +426,37 @@ function Receita() {
     });
   }, [receitasFiltradas]);
 
-  const handleDeleteGroup = async (tipoGrupo, itens) => {
+  const handleDeleteGroup = (tipoGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
-    const somenteNaoRecebidas = window.confirm(
-      `Excluir receitas do tipo "${tipoGrupo}".\n\n` +
-      `OK = Excluir SOMENTE as não recebidas\n` +
-      `Cancelar = Excluir TODAS (incluindo recebidas)`
-    );
-    const itensParaExcluir = somenteNaoRecebidas ? itens.filter(r => !r.receita_recebido) : itens;
-    if (itensParaExcluir.length === 0 && somenteNaoRecebidas) {
-      alert('Nenhuma receita não recebida neste grupo.');
-      return;
-    }
-    setDeletingInProgress(true);
-    try {
-      for (const r of itensParaExcluir) {
-        await axios.delete(`${API_ENDPOINTS.RECEITAS}/${r.receita_id}`);
-      }
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        itensParaExcluir.forEach(r => next.delete(r.receita_id));
-        return next;
-      });
-      fetchReceitas();
-      alert(`${itensParaExcluir.length} receita(s) excluída(s) com sucesso!`);
-    } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir receitas. Tente novamente.');
-    } finally {
-      setDeletingInProgress(false);
-    }
+    const nomeGrupo = itens[0] ? extrairNomeBaseRecorrente(itens[0].receita_descricao || '') : tipoGrupo;
+    setModalExclusao({
+      mensagem: `Excluir receitas do grupo "${nomeGrupo}" (${tipoGrupo})?`,
+      onSim: async () => {
+        setModalExclusao(null);
+        const itensNaoRecebidos = itens.filter(r => !r.receita_recebido);
+        if (itensNaoRecebidos.length === 0) {
+          alert('Nenhuma receita não recebida neste grupo.');
+          return;
+        }
+        await executarExclusoes(itensNaoRecebidos.map(r => r.receita_id));
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          itensNaoRecebidos.forEach(r => next.delete(r.receita_id));
+          return next;
+        });
+      },
+      onTodas: async () => {
+        setModalExclusao(null);
+        await executarExclusoes(itens.map(r => r.receita_id));
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          itens.forEach(r => next.delete(r.receita_id));
+          return next;
+        });
+      },
+      onCancelar: () => setModalExclusao(null)
+    });
   };
 
 
@@ -383,6 +486,22 @@ function Receita() {
 
   return (
     <div className="receita-container">
+      {modalExclusao && (
+        <ConfirmacaoExclusao
+          mensagem={modalExclusao.mensagem}
+          onSim={modalExclusao.onSim}
+          onTodas={modalExclusao.onTodas}
+          onCancelar={modalExclusao.onCancelar}
+        />
+      )}
+      {modalEditarRecorrente && (
+        <ConfirmacaoEdicaoRecorrente
+          mensagem={modalEditarRecorrente.mensagem}
+          onSim={modalEditarRecorrente.onSim}
+          onNao={modalEditarRecorrente.onNao}
+          onCancelar={modalEditarRecorrente.onCancelar}
+        />
+      )}
       <div className="receita-header">
         <div className="header-content">
           <h2>Receitas</h2>
@@ -622,53 +741,80 @@ function Receita() {
               <div className="grid-cell">Recebido</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {exibirAgrupado ? receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
-                const colapsado = gruposColapsados.has(tipoGrupo);
-                const toggleGrupo = () => {
-                  setGruposColapsados(prev => {
-                    const next = new Set(prev);
-                    if (next.has(tipoGrupo)) next.delete(tipoGrupo);
-                    else next.add(tipoGrupo);
-                    return next;
-                  });
-                };
-                return (
-              <React.Fragment key={tipoGrupo}>
-                <div 
-                  className={`grid-group-header ${colapsado ? 'colapsado' : ''}`}
-                  onClick={toggleGrupo}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(); } }}
-                >
-                  <span className="grid-group-header-title">
-                    {colapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
-                    {(() => {
-                      const Icon = getIconForTipo(tipoGrupo, 'receita');
-                      return <><Icon className="category-icon" /> {tipoGrupo}</>;
-                    })()}
-                    <span className="group-count">({itens.length})</span>
-                  </span>
-                  <span className="grid-group-header-actions">
-                    <button
-                      type="button"
-                      className="btn-edit btn-edit-group"
-                      onClick={(e) => { e.stopPropagation(); if (itens.length > 0) handleEdit(itens[0]); }}
-                      title={`Editar receita do grupo ${tipoGrupo}`}
-                    >
-                      <FaEdit /> Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-delete btn-delete-group"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
-                      title={`Excluir todas as receitas do tipo ${tipoGrupo}`}
-                    >
-                      <FaTrash /> Excluir grupo ({itens.length})
-                    </button>
-                  </span>
-                </div>
-                {!colapsado && itens.map(receita => {
+            {exibirAgrupado ? receitasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
+              const tipoKey = `tipo:${tipoGrupo}`;
+              const tipoColapsado = gruposColapsados.has(tipoKey);
+              const toggleTipo = () => {
+                setGruposColapsados(prev => {
+                  const next = new Set(prev);
+                  if (next.has(tipoKey)) next.delete(tipoKey);
+                  else next.add(tipoKey);
+                  return next;
+                });
+              };
+              const totalTipo = subgrupos.reduce((s, sg) => s + sg.itens.length, 0);
+              const IconTipo = getIconForTipo(tipoGrupo, 'receita');
+              return (
+                <div key={tipoKey} className="grid-grupo-tipo">
+                  <div
+                    className={`grid-group-header grid-group-header-nivel1 ${tipoColapsado ? 'colapsado' : ''}`}
+                    onClick={toggleTipo}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTipo(); } }}
+                  >
+                    <span className="grid-group-header-title">
+                      {tipoColapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
+                      <IconTipo className="category-icon" /> {tipoGrupo}
+                      <span className="group-count">({totalTipo})</span>
+                    </span>
+                  </div>
+                  {!tipoColapsado && subgrupos.map(({ nomeBase, itens }) => {
+                    const grupoKey = `${tipoGrupo}|${nomeBase}`;
+                    const colapsado = gruposColapsados.has(grupoKey);
+                    const toggleSub = () => {
+                      setGruposColapsados(prev => {
+                        const next = new Set(prev);
+                        if (next.has(grupoKey)) next.delete(grupoKey);
+                        else next.add(grupoKey);
+                        return next;
+                      });
+                    };
+                    const labelSubgrupo = nomeBase;
+                    return (
+                      <React.Fragment key={grupoKey}>
+                        <div
+                          className={`grid-group-header grid-group-header-subnivel ${colapsado ? 'colapsado' : ''}`}
+                          onClick={toggleSub}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSub(); } }}
+                        >
+                          <span className="grid-group-header-title">
+                            {colapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
+                            {labelSubgrupo}
+                            <span className="group-count">({itens.length})</span>
+                          </span>
+                          <span className="grid-group-header-actions">
+                            <button
+                              type="button"
+                              className="btn-edit btn-edit-group"
+                              onClick={(e) => { e.stopPropagation(); if (itens.length > 0) handleEdit(itens[0]); }}
+                              title={`Editar receita do grupo ${labelSubgrupo}`}
+                            >
+                              <FaEdit /> Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-delete btn-delete-group"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
+                              title={`Excluir todas as receitas do grupo ${labelSubgrupo}`}
+                            >
+                              <FaTrash /> Excluir grupo ({itens.length})
+                            </button>
+                          </span>
+                        </div>
+                        {!colapsado && itens.map(receita => {
                   const conta = contas.find(c => c.conta_id === receita.conta_id || c.Conta_id === receita.Conta_id);
                   return (
                     <div key={receita.receita_id} className="grid-row">
@@ -746,8 +892,11 @@ function Receita() {
                     </div>
                   );
                 })}
-              </React.Fragment>
-            );
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              );
             }) : receitasOrdenadasPorData.map(receita => {
               const conta = contas.find(c => c.conta_id === receita.conta_id || c.Conta_id === receita.Conta_id);
               return (
