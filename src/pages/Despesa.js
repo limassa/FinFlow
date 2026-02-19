@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { getIconForTipo } from '../utils/categoryIcons';
+import SelectWithIcons from '../components/SelectWithIcons';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -46,12 +48,15 @@ function Despesa() {
     'Investimento',
     'Educação',
     'Lazer',
-    'Presentes'
+    'Presentes',
+    'Telefonia',
+    'Pet Shop'
   ];        
   const [tipo, setTipo] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
+  const [gruposColapsados, setGruposColapsados] = useState(new Set());
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -476,43 +481,12 @@ function Despesa() {
           </div>
           <div className="stat-card stat-card-previsao">
             <span className="stat-label">Previsão</span>
-            <span className="stat-value">{formatarValor(despesasFiltradas.reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0))}</span>
+            <span className="stat-value">{formatarValor(despesasFiltradas.filter(d => !d.despesa_pago).reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0))}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Quantidade</span>
             <span className="stat-value">{despesasFiltradas.length}</span>
           </div>
-        </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="filtro-container filtro-row">
-        <div className="filtro-group">
-          <FaFilter className="filtro-icon" />
-          <select 
-            value={mesFiltro} 
-            onChange={(e) => setMesFiltro(e.target.value)}
-            className="filtro-select"
-          >
-            <option value="">Todos os meses</option>
-            {opcoesMeses.map(opcao => (
-              <option key={opcao.value} value={opcao.value}>
-                {opcao.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="filtro-group">
-          <label className="filtro-label">Status:</label>
-          <select 
-            value={filtroPago} 
-            onChange={(e) => setFiltroPago(e.target.value)}
-            className="filtro-select"
-          >
-            <option value="todos">Todos</option>
-            <option value="pago">Pago</option>
-            <option value="nao_pago">Não pago</option>
-          </select>
         </div>
       </div>
 
@@ -565,12 +539,14 @@ function Despesa() {
           <div className="form-row">
             <div className="form-group">
               <label>Tipo:</label>
-              <select value={tipo} onChange={e => setTipo(e.target.value)} required>
-                <option value="">Selecione</option>
-                    {tiposDespesa.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
-                ))}
-              </select>
+              <SelectWithIcons
+                options={tiposDespesa}
+                value={tipo}
+                onChange={setTipo}
+                categoria="despesa"
+                placeholder="Selecione"
+                required
+              />
             </div>
             <div className="form-group">
               <label>Conta:</label>
@@ -662,12 +638,13 @@ function Despesa() {
           <>
             <div className="metas-form">
               <div className="metas-inputs">
-                <select value={metaCategoria} onChange={e => setMetaCategoria(e.target.value)}>
-                  <option value="">Selecione a categoria</option>
-                  {tiposDespesa.map(tipo => (
-                    <option key={tipo} value={tipo}>{tipo}</option>
-                  ))}
-                </select>
+                <SelectWithIcons
+                  options={tiposDespesa}
+                  value={metaCategoria}
+                  onChange={setMetaCategoria}
+                  categoria="despesa"
+                  placeholder="Selecione a categoria"
+                />
                 <input
                   type="number"
                   step="0.1"
@@ -707,7 +684,10 @@ function Despesa() {
                   
                   return (
                     <div key={meta.meta_id} className={`metas-grid-row ${status}`}>
-                      <div>{meta.categoria}</div>
+                      <div>{(() => {
+                    const Icon = getIconForTipo(meta.categoria, 'despesa');
+                    return <><Icon className="category-icon" /> {meta.categoria}</>;
+                  })()}</div>
                       <div>{metaPercentual.toFixed(1)}%</div>
                       <div>{formatarValor(gastoAtual)} ({percentualAtual.toFixed(1)}%)</div>
                       <div>
@@ -735,7 +715,38 @@ function Despesa() {
 
       {/* Grid de Despesas */}
       <div className="grid-container">
-        <h3>Lista de Despesas</h3>
+        <div className="grid-header-row">
+          <h3>Lista de Despesas</h3>
+          <div className="filtro-container filtro-row filtro-above-grid">
+            <div className="filtro-group">
+              <FaFilter className="filtro-icon" />
+              <select 
+                value={mesFiltro} 
+                onChange={(e) => setMesFiltro(e.target.value)}
+                className="filtro-select"
+              >
+                <option value="">Todos os meses</option>
+                {opcoesMeses.map(opcao => (
+                  <option key={opcao.value} value={opcao.value}>
+                    {opcao.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="filtro-group">
+              <label className="filtro-label">Status:</label>
+              <select 
+                value={filtroPago} 
+                onChange={(e) => setFiltroPago(e.target.value)}
+                className="filtro-select"
+              >
+                <option value="todos">Todos</option>
+                <option value="pago">Pago</option>
+                <option value="nao_pago">Não pago</option>
+              </select>
+            </div>
+          </div>
+        </div>
         {selectedIds.size > 0 && (
           <div className="bulk-actions">
             <span className="bulk-count">{selectedIds.size} selecionada(s)</span>
@@ -773,20 +784,43 @@ function Despesa() {
               <div className="grid-cell">Pago</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => (
+            {despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
+              const colapsado = gruposColapsados.has(tipoGrupo);
+              const toggleGrupo = () => {
+                setGruposColapsados(prev => {
+                  const next = new Set(prev);
+                  if (next.has(tipoGrupo)) next.delete(tipoGrupo);
+                  else next.add(tipoGrupo);
+                  return next;
+                });
+              };
+              return (
               <React.Fragment key={tipoGrupo}>
-                <div className="grid-group-header">
-                  <span>{tipoGrupo}</span>
+                <div 
+                  className={`grid-group-header ${colapsado ? 'colapsado' : ''}`}
+                  onClick={toggleGrupo}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(); } }}
+                >
+                  <span className="grid-group-header-title">
+                    {colapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
+                    {(() => {
+                      const Icon = getIconForTipo(tipoGrupo, 'despesa');
+                      return <><Icon className="category-icon" /> {tipoGrupo}</>;
+                    })()}
+                    <span className="group-count">({itens.length})</span>
+                  </span>
                   <button
                     type="button"
                     className="btn-delete btn-delete-group"
-                    onClick={() => handleDeleteGroup(tipoGrupo, itens)}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
                     title={`Excluir todas as despesas do tipo ${tipoGrupo}`}
                   >
                     <FaTrash /> Excluir grupo ({itens.length})
                   </button>
                 </div>
-                {itens.map(despesa => {
+                {!colapsado && itens.map(despesa => {
                   const conta = contas.find(c => c.Conta_Id === despesa.Conta_id || c.conta_id === despesa.conta_id);
                   return (
                     <div key={despesa.despesa_id} className="grid-row">
@@ -802,7 +836,12 @@ function Despesa() {
                       <div className="grid-cell valor">{formatarValor(despesa.despesa_valor)}</div>
                       <div className="grid-cell">{formatarData(despesa.despesa_data)}</div>
                       <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
-                      <div className="grid-cell">{despesa.despesa_tipo}</div>
+                      <div className="grid-cell grid-cell-tipo">
+                        {(() => {
+                          const Icon = getIconForTipo(despesa.despesa_tipo, 'despesa');
+                          return <><Icon className="category-icon" /> {despesa.despesa_tipo}</>;
+                        })()}
+                      </div>
                       <div className="grid-cell">{conta ? (conta.conta_nome || conta.Conta_Nome) : '-'}</div>
                       <div className="grid-cell">
                         <input
@@ -832,7 +871,8 @@ function Despesa() {
                   );
                 })}
               </React.Fragment>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

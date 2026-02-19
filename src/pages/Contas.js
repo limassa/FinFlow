@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaWallet, FaHome } from 'react-icons/fa';
+import { getIconForTipo } from '../utils/categoryIcons';
+import { getBancoById } from '../utils/banks';
+import SelectWithIcons from '../components/SelectWithIcons';
+import BankSelector from '../components/BankSelector';
 import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -12,6 +16,7 @@ function Contas() {
   const [contas, setContas] = useState([]);
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
+  const [banco, setBanco] = useState('');
   const [saldo, setSaldo] = useState('');
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,16 +69,20 @@ function Contas() {
       return;
     }
     
+    const payload = { 
+      nome, 
+      tipo,
+      banco: (banco && String(banco).trim()) ? String(banco).trim() : null,
+      saldo: parseCurrencyToNumber(saldo) || 0,
+      incrementarSaldoTotal: true,
+      usuario_id: userId
+    };
+    console.log('[Contas] POST payload:', payload);
     try {
-      await axios.post(API_ENDPOINTS.CONTAS, { 
-        nome, 
-        tipo,
-        saldo: parseCurrencyToNumber(saldo) || 0,
-        incrementarSaldoTotal: true,
-        usuario_id: userId
-      });
+      await axios.post(API_ENDPOINTS.CONTAS, payload);
       setNome('');
       setTipo('');
+      setBanco('');
       setSaldo('');
       await fetchContas(); // Recarregar contas
       alert('Conta adicionada com sucesso');
@@ -85,6 +94,7 @@ function Contas() {
   const handleEdit = (conta) => {
     setNome(conta.conta_nome);
     setTipo(conta.conta_tipo);
+    setBanco(conta.conta_banco || conta.Conta_Banco || '');
     const saldoNum = parseFloat(conta.conta_saldo || 0);
     setSaldo(formatCurrency(Math.round(saldoNum * 100).toString()));
     setEditId(conta.conta_id);
@@ -97,12 +107,15 @@ function Contas() {
       return;
     }
     
+    const payload = { 
+      nome, 
+      tipo,
+      banco: (banco && String(banco).trim()) ? String(banco).trim() : null,
+      saldo: parseCurrencyToNumber(saldo) || 0
+    };
+    console.log('[Contas] PUT payload:', payload);
     try {
-      await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { 
-        nome, 
-        tipo,
-        saldo: parseCurrencyToNumber(saldo) || 0
-      });
+      await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, payload);
       setNome('');
       setTipo('');
       setSaldo('');
@@ -117,6 +130,7 @@ function Contas() {
   const handleCancel = () => {
     setNome('');
     setTipo('');
+    setBanco('');
     setSaldo('');
     setEditId(null);
   };
@@ -170,6 +184,15 @@ function Contas() {
         <form onSubmit={editId ? handleUpdate : handleSubmit} className="receita-form">
           <div className="form-row">
             <div className="form-group">
+              <label>Banco:</label>
+              <BankSelector
+                key={editId ? `edit-${editId}` : 'new'}
+                value={banco}
+                onChange={setBanco}
+                placeholder="Selecione o banco"
+              />
+            </div>
+            <div className="form-group">
               <label>Nome da Conta:</label>
               <input
                 type="text"
@@ -181,12 +204,14 @@ function Contas() {
             </div>
             <div className="form-group">
               <label>Tipo:</label>
-              <select value={tipo} onChange={e => setTipo(e.target.value)} required>
-                <option value="">Selecione</option>
-                {tiposConta.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
-                ))}
-              </select>
+              <SelectWithIcons
+                options={tiposConta}
+                value={tipo}
+                onChange={setTipo}
+                categoria="conta"
+                placeholder="Selecione"
+                required
+              />
             </div>
           </div>
           <div className="form-row">
@@ -245,8 +270,26 @@ function Contas() {
               console.log('Conta individual:', conta);
               return (
                 <div key={conta.conta_id} className="grid-row">
+                  <div className="grid-cell">
+                    {(() => {
+                      const bancoId = conta.conta_banco || conta.Conta_Banco;
+                      const b = bancoId ? getBancoById(bancoId) : null;
+                      return b ? (
+                        <span className="bank-badge bank-badge-inline" style={{ backgroundColor: b.cor }} title={b.nome}>
+                          {b.abbr}
+                        </span>
+                      ) : (
+                        <span className="bank-badge bank-badge-inline" style={{ backgroundColor: '#64748b' }}>--</span>
+                      );
+                    })()}
+                  </div>
                   <div className="grid-cell">{conta.conta_nome}</div>
-                  <div className="grid-cell">{conta.conta_tipo}</div>
+                  <div className="grid-cell grid-cell-tipo">
+                    {(() => {
+                      const Icon = getIconForTipo(conta.conta_tipo, 'conta');
+                      return <><Icon className="category-icon" /> {conta.conta_tipo}</>;
+                    })()}
+                  </div>
                   <div className="grid-cell valor">{formatarValor(conta.conta_saldo || 0)}</div>
                   <div className="grid-cell acoes">
                     <button 

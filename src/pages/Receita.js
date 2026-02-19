@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { getIconForTipo } from '../utils/categoryIcons';
+import SelectWithIcons from '../components/SelectWithIcons';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -45,6 +47,7 @@ function Receita() {
   const [proximasParcelas, setProximasParcelas] = useState(12);
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
+  const [gruposColapsados, setGruposColapsados] = useState(new Set());
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -371,43 +374,12 @@ function Receita() {
           </div>
           <div className="stat-card stat-card-previsao">
             <span className="stat-label">Previsão</span>
-            <span className="stat-value">{formatarValor(receitasFiltradas.reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0))}</span>
+            <span className="stat-value">{formatarValor(receitasFiltradas.filter(r => !r.receita_recebido).reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0))}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Quantidade</span>
             <span className="stat-value">{receitasFiltradas.length}</span>
           </div>
-        </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="filtro-container filtro-row">
-        <div className="filtro-group">
-          <FaFilter className="filtro-icon" />
-          <select 
-            value={mesFiltro} 
-            onChange={(e) => setMesFiltro(e.target.value)}
-            className="filtro-select"
-          >
-            <option value="">Todos os meses</option>
-            {opcoesMeses.map(opcao => (
-              <option key={opcao.value} value={opcao.value}>
-                {opcao.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="filtro-group">
-          <label className="filtro-label">Status:</label>
-          <select 
-            value={filtroRecebido} 
-            onChange={(e) => setFiltroRecebido(e.target.value)}
-            className="filtro-select"
-          >
-            <option value="todos">Todos</option>
-            <option value="recebido">Recebido</option>
-            <option value="nao_recebido">Não recebido</option>
-          </select>
         </div>
       </div>
 
@@ -450,12 +422,14 @@ function Receita() {
             </div>
             <div className="form-group">
               <label>Tipo:</label>
-              <select value={tipo} onChange={e => setTipo(e.target.value)} required>
-                <option value="">Selecione</option>
-                {tiposReceita.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
-                ))}
-              </select>
+              <SelectWithIcons
+                options={tiposReceita}
+                value={tipo}
+                onChange={setTipo}
+                categoria="receita"
+                placeholder="Selecione"
+                required
+              />
             </div>
             
 
@@ -542,7 +516,38 @@ function Receita() {
 
       {/* Grid de Receitas */}
       <div className="grid-container">
-        <h3>Lista de Receitas</h3>
+        <div className="grid-header-row">
+          <h3>Lista de Receitas</h3>
+          <div className="filtro-container filtro-row filtro-above-grid">
+            <div className="filtro-group">
+              <FaFilter className="filtro-icon" />
+              <select 
+                value={mesFiltro} 
+                onChange={(e) => setMesFiltro(e.target.value)}
+                className="filtro-select"
+              >
+                <option value="">Todos os meses</option>
+                {opcoesMeses.map(opcao => (
+                  <option key={opcao.value} value={opcao.value}>
+                    {opcao.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="filtro-group">
+              <label className="filtro-label">Status:</label>
+              <select 
+                value={filtroRecebido} 
+                onChange={(e) => setFiltroRecebido(e.target.value)}
+                className="filtro-select"
+              >
+                <option value="todos">Todos</option>
+                <option value="recebido">Recebido</option>
+                <option value="nao_recebido">Não recebido</option>
+              </select>
+            </div>
+          </div>
+        </div>
         {selectedIds.size > 0 && (
           <div className="bulk-actions">
             <span className="bulk-count">{selectedIds.size} selecionada(s)</span>
@@ -579,20 +584,43 @@ function Receita() {
               <div className="grid-cell">Recebido</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => (
+            {receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
+                const colapsado = gruposColapsados.has(tipoGrupo);
+                const toggleGrupo = () => {
+                  setGruposColapsados(prev => {
+                    const next = new Set(prev);
+                    if (next.has(tipoGrupo)) next.delete(tipoGrupo);
+                    else next.add(tipoGrupo);
+                    return next;
+                  });
+                };
+                return (
               <React.Fragment key={tipoGrupo}>
-                <div className="grid-group-header">
-                  <span>{tipoGrupo}</span>
+                <div 
+                  className={`grid-group-header ${colapsado ? 'colapsado' : ''}`}
+                  onClick={toggleGrupo}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(); } }}
+                >
+                  <span className="grid-group-header-title">
+                    {colapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
+                    {(() => {
+                      const Icon = getIconForTipo(tipoGrupo, 'receita');
+                      return <><Icon className="category-icon" /> {tipoGrupo}</>;
+                    })()}
+                    <span className="group-count">({itens.length})</span>
+                  </span>
                   <button
                     type="button"
                     className="btn-delete btn-delete-group"
-                    onClick={() => handleDeleteGroup(tipoGrupo, itens)}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
                     title={`Excluir todas as receitas do tipo ${tipoGrupo}`}
                   >
                     <FaTrash /> Excluir grupo ({itens.length})
                   </button>
                 </div>
-                {itens.map(receita => {
+                {!colapsado && itens.map(receita => {
                   const conta = contas.find(c => c.conta_id === receita.conta_id || c.Conta_id === receita.Conta_id);
                   return (
                     <div key={receita.receita_id} className="grid-row">
@@ -607,7 +635,12 @@ function Receita() {
                       <div className="grid-cell">{receita.receita_descricao}</div>
                       <div className="grid-cell valor">{formatarValor(receita.receita_valor)}</div>
                       <div className="grid-cell">{formatarData(receita.receita_data)}</div>
-                      <div className="grid-cell">{receita.receita_tipo}</div>
+                      <div className="grid-cell grid-cell-tipo">
+                      {(() => {
+                        const Icon = getIconForTipo(receita.receita_tipo, 'receita');
+                        return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
+                      })()}
+                    </div>
                       <div className="grid-cell">{conta ? (conta.conta_nome || conta.Conta_Nome) : '-'}</div>
                       <div className="grid-cell">
                         <input
@@ -650,7 +683,8 @@ function Receita() {
                   );
                 })}
               </React.Fragment>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

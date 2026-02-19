@@ -684,9 +684,11 @@ app.get('/api/contas', async (req, res) => {
 });
 
 app.post('/api/contas', async (req, res) => {
-  const { nome, tipo, saldo, incrementarSaldoTotal, usuario_id } = req.body;
+  const { nome, tipo, saldo, incrementarSaldoTotal, usuario_id, banco } = req.body;
+  const bancoVal = (banco !== undefined && banco !== null && String(banco).trim() !== '') ? String(banco).trim() : null;
+  console.log('[contas POST] banco recebido:', JSON.stringify(banco), '-> bancoVal:', JSON.stringify(bancoVal));
   try {
-    const conta = await userRepository.createConta({ nome, tipo, saldo, incrementarSaldoTotal, usuario_id });
+    const conta = await userRepository.createConta({ nome, tipo, saldo, incrementarSaldoTotal, usuario_id, banco: bancoVal });
     res.status(201).json(conta);
   } catch (err) {
     console.error('Erro ao criar conta:', err);
@@ -696,9 +698,11 @@ app.post('/api/contas', async (req, res) => {
 
 app.put('/api/contas/:id', async (req, res) => {
   const { id } = req.params;
-  const { nome, tipo, saldo } = req.body;
+  const { nome, tipo, saldo, banco } = req.body;
+  const bancoVal = (banco !== undefined && banco !== null && String(banco).trim() !== '') ? String(banco).trim() : null;
+  console.log('=== CONTAS PUT === id:', id, 'banco:', banco, 'bancoVal:', bancoVal);
   try {
-    const conta = await userRepository.updateConta(id, { nome, tipo, saldo });
+    const conta = await userRepository.updateConta(id, { nome, tipo, saldo, banco: bancoVal });
     res.json(conta);
   } catch (err) {
     console.error('Erro ao atualizar conta:', err);

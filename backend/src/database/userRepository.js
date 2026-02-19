@@ -339,20 +339,38 @@ const userRepository = {
     return result.rows;
   },
 
-  async createConta({ nome, tipo, saldo, incrementarSaldoTotal = true, usuario_id }) {
-    // Tentar com aspas duplas primeiro (case-sensitive)
+  async createConta({ nome, tipo, saldo, incrementarSaldoTotal = true, usuario_id, banco }) {
+    const bancoVal = (banco && String(banco).trim()) ? String(banco).trim() : null;
     let result;
+    // Tentar conta (lowercase) primeiro - schema mais comum
     try {
       result = await pool.query(
-        'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id") VALUES ($1, $2, $3, $4) RETURNING *',
-        [nome, tipo, saldo || 0, usuario_id]
+        'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id, conta_banco) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [nome, tipo, saldo || 0, usuario_id, bancoVal]
       );
     } catch (err) {
-      // Se falhar, tentar sem aspas (minúscula)
-      result = await pool.query(
-        'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *',
-        [nome, tipo, saldo || 0, usuario_id]
-      );
+      if (err.message && err.message.includes('conta_banco')) {
+        result = await pool.query(
+          'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *',
+          [nome, tipo, saldo || 0, usuario_id]
+        );
+      } else {
+        try {
+          result = await pool.query(
+            'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id", "Conta_Banco") VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [nome, tipo, saldo || 0, usuario_id, bancoVal]
+          );
+        } catch (err2) {
+          if (err2.message && (err2.message.includes('Conta_Banco') || err2.message.includes('does not exist'))) {
+            result = await pool.query(
+              'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id") VALUES ($1, $2, $3, $4) RETURNING *',
+              [nome, tipo, saldo || 0, usuario_id]
+            );
+          } else {
+            throw err2;
+          }
+        }
+      }
     }
     
     // Nota: Funcionalidade de saldo total removida pois a coluna não existe na tabela Usuario
@@ -364,20 +382,40 @@ const userRepository = {
     return result.rows[0];
   },
 
-  async updateConta(id, { nome, tipo, saldo }) {
-    // Tentar com aspas duplas primeiro (case-sensitive)
+  async updateConta(id, { nome, tipo, saldo, banco }) {
+    const bancoVal = (banco !== undefined && banco !== null && String(banco).trim()) ? String(banco).trim() : null;
+    console.log('[updateConta] id:', id, 'banco param:', banco, 'bancoVal:', bancoVal);
     let result;
     try {
       result = await pool.query(
-        'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3 WHERE "Conta_Id" = $4 RETURNING *',
-        [nome, tipo, saldo || 0, id]
+        'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3, conta_banco = $4 WHERE conta_id = $5 RETURNING *',
+        [nome, tipo, saldo || 0, bancoVal, id]
       );
+      console.log('[updateConta] UPDATE conta OK, row conta_banco:', result.rows[0]?.conta_banco);
     } catch (err) {
-      // Se falhar, tentar sem aspas (minúscula)
-      result = await pool.query(
-        'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3 WHERE conta_id = $4 RETURNING *',
-        [nome, tipo, saldo || 0, id]
-      );
+      console.log('[updateConta] err:', err.message);
+      if (err.message && err.message.includes('conta_banco')) {
+        result = await pool.query(
+          'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3 WHERE conta_id = $4 RETURNING *',
+          [nome, tipo, saldo || 0, id]
+        );
+      } else {
+        try {
+          result = await pool.query(
+            'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3, "Conta_Banco" = $4 WHERE "Conta_Id" = $5 RETURNING *',
+            [nome, tipo, saldo || 0, bancoVal, id]
+          );
+        } catch (err2) {
+          if (err2.message && (err2.message.includes('Conta_Banco') || err2.message.includes('does not exist'))) {
+            result = await pool.query(
+              'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3 WHERE "Conta_Id" = $4 RETURNING *',
+              [nome, tipo, saldo || 0, id]
+            );
+          } else {
+            throw err2;
+          }
+        }
+      }
     }
     return result.rows[0];
   },
