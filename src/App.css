@@ -1513,10 +1513,10 @@
 .banner-left {
   background: linear-gradient(135deg, #4a67af 0%, #2d199c 100%);
   color: white;
-  padding: 60px 40px;
+  padding: 100px 40px 60px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   text-align: center;
   flex: 1;
@@ -1555,8 +1555,8 @@
 
 /* Desenvolvido por - no banner de login */
 .banner-developed-by {
-  margin-top: auto;
-  padding-top: 24px;
+  margin-top: 72px;
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1601,14 +1601,14 @@
 .banner-subtitle {
   font-size: 20px;
   font-weight: 400;
-  margin: 0 0 30px 0;
+  margin: 0 0 16px 0;
   opacity: 0.9;
 }
 
 .banner-description {
   font-size: 16px;
   line-height: 1.6;
-  margin: 0 0 40px 0;
+  margin: 0 0 20px 0;
   opacity: 0.8;
   max-width: 300px;
 }
@@ -1617,8 +1617,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 40px;
+  gap: 12px;
+  margin-bottom: 0;
 }
 
 .feature-item {

@@ -54,7 +54,7 @@ function AuthBanner({ children, title, subtitle }) {
             </div>
           </div>
 
-          {/* Desenvolvido por - mesmo padrão da home */}
+          {/* Desenvolvido por - embaixo */}
           <a
             href="https://lizsoftware.com.br"
             target="_blank"
