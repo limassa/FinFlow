@@ -1,0 +1,3 @@
+# AdSense - claricash.com.br
+# Linha fornecida pelo Google para verificação e exibição de anúncios
+google.com, ca-pub-5034102059523026, DIRECT, f08c47fec0942fa0
