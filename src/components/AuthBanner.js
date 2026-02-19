@@ -9,10 +9,6 @@ function AuthBanner({ children, title, subtitle }) {
     <div className="auth-container">
       <div className="auth-banner">
         <div className="banner-left">
-          <div className="banner-logo">
-            <img src={logoNova} alt="Claricash" className="banner-logo-img" />
-          </div>
-          
           <div className="banner-content">
             <h1 className="banner-title">Claricash</h1>
             <h2 className="banner-subtitle">Controle Financeiro Simplificado</h2>
