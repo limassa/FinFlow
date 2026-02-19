@@ -1,27 +1,16 @@
 import React from 'react';
 import '../App.css';
 
+// Logo da empresa (mesmo arquivo da home - public/logo_nova.png)
+const logoNova = process.env.PUBLIC_URL + '/logo_nova.png';
+
 function AuthBanner({ children, title, subtitle }) {
   return (
     <div className="auth-container">
       <div className="auth-banner">
         <div className="banner-left">
           <div className="banner-logo">
-            <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="bannerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{stopColor: '#4a67af', stopOpacity: 1}} />
-                  <stop offset="100%" style={{stopColor: '#2d199c', stopOpacity: 1}} />
-                </linearGradient>
-              </defs>
-              
-              <circle cx="40" cy="40" r="36" fill="url(#bannerGradient)" stroke="none"/>
-              
-              <path d="M 16 30 L 40 16 L 64 30 L 40 44 Z" fill="white" opacity="0.9"/>
-              <path d="M 16 50 L 40 64 L 64 50 L 40 36 Z" fill="white" opacity="0.7"/>
-              
-              <path d="M 40 16 L 40 64" stroke="white" strokeWidth="4" fill="none" opacity="0.8"/>
-            </svg>
+            <img src={logoNova} alt="Claricash" />
           </div>
           
           <div className="banner-content">
