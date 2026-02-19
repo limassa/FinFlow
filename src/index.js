@@ -14,6 +14,7 @@ import Calendario from './pages/Calendario';
 import Layout from './pages/Layout';
 import Dashboard from './pages/Dashboard';
 import Configuracoes from './pages/Configuracoes';
+import Sobre from './pages/Sobre';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import DetalhesGrafico from './pages/DetalhesGrafico';
@@ -46,6 +47,7 @@ root.render(
           <Route path="principal" element={<Principal />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="configuracoes" element={<Configuracoes />} />
+          <Route path="sobre" element={<Sobre />} />
           <Route path="receita" element={<Receita />} />
           <Route path="despesa" element={<Despesa />} />
           <Route path="contas" element={<Contas />} />

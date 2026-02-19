@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaPlus, FaMinus, FaChartPie, FaCog } from 'react-icons/fa';
-import logoLizModern from '../images/logo-liz-modern.svg';
+// Logo da empresa (arquivo em public/logo_nova.png)
+const logoNova = process.env.PUBLIC_URL + '/logo_nova.png';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -286,7 +287,7 @@ function Principal() {
       >
         <span>Desenvolvido por</span>
         <div className="principal-developed-logo-wrap">
-          <img src={logoLizModern} alt="Liz Software" className="principal-developed-logo" />
+          <img src={logoNova} alt="Liz Software" className="principal-developed-logo" />
         </div>
       </a>
     </div>

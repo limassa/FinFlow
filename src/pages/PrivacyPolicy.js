@@ -8,7 +8,12 @@ function PrivacyPolicy() {
   const navigate = useNavigate();
 
   const handleVoltar = () => {
-    navigate(-1);
+    // Se veio de dentro do app (mesma aba), volta. Senão vai para principal.
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/layout/principal');
+    }
   };
 
   return (

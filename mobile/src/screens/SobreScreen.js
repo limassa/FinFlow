@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -79,6 +80,9 @@ export default function SobreScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Desenvolvido por</Text>
+          <View style={styles.logoWrap}>
+            <Image source={require('../../assets/logo_nova.png')} style={styles.logoNova} resizeMode="contain" />
+          </View>
           <Text style={styles.companyName}>Liz Software</Text>
           <Text style={styles.sectionText}>
             Soluções em software personalizadas para sua empresa.
@@ -160,6 +164,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginLeft: 10,
+  },
+  logoWrap: {
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  logoNova: {
+    width: 160,
+    height: 56,
   },
   companyName: {
     fontSize: 20,

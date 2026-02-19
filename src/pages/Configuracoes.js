@@ -80,6 +80,15 @@ function Configuracoes() {
           telefone: perfil.telefone || ''
         }));
       }
+
+      // Carregar preferências de privacidade do localStorage
+      try {
+        const saved = localStorage.getItem(`claricash_privacidade_${userId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setPrivacidadeConfig(prev => ({ ...prev, ...parsed }));
+        }
+      } catch (_) { /* ignorar falha ao ler localStorage */ }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
     } finally {
@@ -120,6 +129,19 @@ function Configuracoes() {
       console.error('Erro ao atualizar perfil:', error);
       alert('Erro ao atualizar perfil');
     }
+  };
+
+  const salvarPrivacidadeLocal = (novoConfig) => {
+    if (user?.id) {
+      try {
+        localStorage.setItem(`claricash_privacidade_${user.id}`, JSON.stringify(novoConfig));
+      } catch (_) { /* ignorar falha ao salvar no localStorage */ }
+    }
+  };
+
+  const handleSalvarPrivacidade = () => {
+    salvarPrivacidadeLocal(privacidadeConfig);
+    alert('Preferências de privacidade salvas!');
   };
 
   const handleSalvarLembretes = async () => {
@@ -422,12 +444,22 @@ function Configuracoes() {
             <div className="config-section">
               <h3>Privacidade e Dados</h3>
               <div className="config-form">
+                <div className="form-group" style={{ marginBottom: 16 }}>
+                  <button type="button" className="link-button" onClick={() => navigate('/privacy-policy')} style={{ fontSize: 16, color: 'var(--primary, #4a67af)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FaShieldAlt /> Política de Privacidade
+                  </button>
+                  <p style={{ marginTop: 4, fontSize: 14, color: '#666' }}>Leia nossa política de privacidade (sempre disponível no sistema).</p>
+                </div>
                 <div className="form-group">
                   <label>
                     <input
                       type="checkbox"
                       checked={privacidadeConfig.dadosAnonimos}
-                      onChange={(e) => setPrivacidadeConfig({...privacidadeConfig, dadosAnonimos: e.target.checked})}
+                      onChange={(e) => {
+                        const next = { ...privacidadeConfig, dadosAnonimos: e.target.checked };
+                        setPrivacidadeConfig(next);
+                        salvarPrivacidadeLocal(next);
+                      }}
                     />
                     Compartilhar dados anônimos para melhorias
                   </label>
@@ -438,7 +470,11 @@ function Configuracoes() {
                     <input
                       type="checkbox"
                       checked={privacidadeConfig.analytics}
-                      onChange={(e) => setPrivacidadeConfig({...privacidadeConfig, analytics: e.target.checked})}
+                      onChange={(e) => {
+                        const next = { ...privacidadeConfig, analytics: e.target.checked };
+                        setPrivacidadeConfig(next);
+                        salvarPrivacidadeLocal(next);
+                      }}
                     />
                     Permitir analytics
                   </label>
@@ -449,17 +485,21 @@ function Configuracoes() {
                     <input
                       type="checkbox"
                       checked={privacidadeConfig.marketing}
-                      onChange={(e) => setPrivacidadeConfig({...privacidadeConfig, marketing: e.target.checked})}
+                      onChange={(e) => {
+                        const next = { ...privacidadeConfig, marketing: e.target.checked };
+                        setPrivacidadeConfig(next);
+                        salvarPrivacidadeLocal(next);
+                      }}
                     />
                     Receber emails de marketing
                   </label>
                 </div>
 
-                <div className="form-actions">
-                  <button onClick={handleExportarDados} className="btn-exportar">
-                    <FaDownload /> Exportar Meus Dados
-                  </button>
-                  
+                <button onClick={handleSalvarPrivacidade} className="btn-salvar">
+                  <FaSave /> Salvar preferências
+                </button>
+
+                <div className="form-actions" style={{ marginTop: 24 }}>
                   <button onClick={handleExcluirConta} className="btn-excluir">
                     <FaTrash /> Excluir Conta
                   </button>

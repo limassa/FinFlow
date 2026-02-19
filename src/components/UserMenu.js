@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaBell, FaBellSlash, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
+import { FaUser, FaBell, FaBellSlash, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -97,21 +97,31 @@ function UserMenu() {
             <span>{user.nome}</span>
           </div>
 
-          <div className="menu-item" onClick={toggleLembretes}>
+          <div className="menu-item" onClick={() => { setIsOpen(false); toggleLembretes(); }}>
             {lembretesAtivos ? <FaBell /> : <FaBellSlash />}
             <span>
               {lembretesAtivos ? 'Desativar Lembretes' : 'Ativar Lembretes'}
             </span>
           </div>
 
-                      <div className="menu-item" onClick={() => navigate('/layout/configuracoes')}>
+          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/configuracoes'); }}>
             <FaCog />
             <span>Configurações</span>
           </div>
 
+          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/sobre'); }}>
+            <FaInfoCircle />
+            <span>Sobre</span>
+          </div>
+
+          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/privacy-policy'); }}>
+            <FaShieldAlt />
+            <span>Política de Privacidade</span>
+          </div>
+
           <div className="menu-divider"></div>
 
-          <div className="menu-item logout" onClick={handleLogout}>
+          <div className="menu-item logout" onClick={() => { setIsOpen(false); handleLogout(); }}>
             <FaSignOutAlt />
             <span>Sair</span>
           </div>
