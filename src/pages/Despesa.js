@@ -59,6 +59,7 @@ function Despesa() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
+  const [exibirAgrupado, setExibirAgrupado] = useState(true);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -238,17 +239,25 @@ function Despesa() {
   const handleDeleteSelected = async () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    if (!window.confirm(`Deseja realmente excluir ${qtd} despesa(s) selecionada(s)? Esta ação pode ser desfeita.`)) {
-      return;
-    }
+    const somenteEmAberto = window.confirm(
+      `Excluir ${qtd} despesa(s) selecionada(s).\n\n` +
+      `OK = Excluir SOMENTE as em aberto (não pagas)\n` +
+      `Cancelar = Excluir TODAS as selecionadas (incluindo pagas)`
+    );
     setDeletingInProgress(true);
     try {
-      for (const id of selectedIds) {
+      const idsParaExcluir = somenteEmAberto
+        ? [...selectedIds].filter(id => {
+            const d = despesas.find(x => x.despesa_id === id);
+            return d && !d.despesa_pago;
+          })
+        : [...selectedIds];
+      for (const id of idsParaExcluir) {
         await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
       }
       setSelectedIds(new Set());
       fetchDespesas();
-      alert(`${qtd} despesa(s) excluída(s) com sucesso!`);
+      alert(`${idsParaExcluir.length} despesa(s) excluída(s) com sucesso!`);
     } catch (err) {
       console.error('Erro ao excluir despesas:', err);
       alert(err.response?.data?.error || 'Erro ao excluir despesas. Tente novamente.');
@@ -284,22 +293,39 @@ function Despesa() {
     });
   }, [despesasFiltradas, tiposDespesa]);
 
+  const despesasOrdenadasPorVencimento = React.useMemo(() => {
+    return [...despesasFiltradas].sort((a, b) => {
+      const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
+      const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [despesasFiltradas]);
+
   const handleDeleteGroup = async (tipoGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
-    if (!window.confirm(`Excluir todas as ${qtd} despesa(s) do tipo "${tipoGrupo}"? Esta ação pode ser desfeita.`)) return;
+    const somenteEmAberto = window.confirm(
+      `Excluir despesas do tipo "${tipoGrupo}".\n\n` +
+      `OK = Excluir SOMENTE as em aberto (não pagas)\n` +
+      `Cancelar = Excluir TODAS (incluindo pagas)`
+    );
+    const itensParaExcluir = somenteEmAberto ? itens.filter(d => !d.despesa_pago) : itens;
+    if (itensParaExcluir.length === 0 && somenteEmAberto) {
+      alert('Nenhuma despesa em aberto neste grupo.');
+      return;
+    }
     setDeletingInProgress(true);
     try {
-      for (const d of itens) {
+      for (const d of itensParaExcluir) {
         await axios.delete(`${API_ENDPOINTS.DESPESAS}/${d.despesa_id}`);
       }
       setSelectedIds(prev => {
         const next = new Set(prev);
-        itens.forEach(d => next.delete(d.despesa_id));
+        itensParaExcluir.forEach(d => next.delete(d.despesa_id));
         return next;
       });
       fetchDespesas();
-      alert(`${qtd} despesa(s) excluída(s) com sucesso!`);
+      alert(`${itensParaExcluir.length} despesa(s) excluída(s) com sucesso!`);
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao excluir despesas. Tente novamente.');
     } finally {
@@ -747,6 +773,16 @@ function Despesa() {
                 <option value="nao_pago">Não pago</option>
               </select>
             </div>
+            <div className="filtro-group">
+              <label className="filtro-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={exibirAgrupado}
+                  onChange={(e) => setExibirAgrupado(e.target.checked)}
+                />
+                Agrupar por tipo
+              </label>
+            </div>
           </div>
         </div>
         {selectedIds.size > 0 && (
@@ -786,7 +822,7 @@ function Despesa() {
               <div className="grid-cell">Pago</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
+            {exibirAgrupado ? despesasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
               const colapsado = gruposColapsados.has(tipoGrupo);
               const toggleGrupo = () => {
                 setGruposColapsados(prev => {
@@ -899,6 +935,71 @@ function Despesa() {
                   );
                 })}
               </React.Fragment>
+              );
+            }) : despesasOrdenadasPorVencimento.map(despesa => {
+              const conta = contas.find(c => c.Conta_Id === despesa.Conta_id || c.conta_id === despesa.conta_id);
+              return (
+                <div key={despesa.despesa_id} className="grid-row">
+                  <div className="grid-cell grid-cell-check">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(despesa.despesa_id)}
+                      onChange={() => toggleSelect(despesa.despesa_id)}
+                      title="Selecionar para excluir"
+                    />
+                  </div>
+                  <div className="grid-cell">{despesa.despesa_descricao}</div>
+                  <div className="grid-cell valor">{formatarValor(despesa.despesa_valor)}</div>
+                  <div className="grid-cell">{formatarData(despesa.despesa_data)}</div>
+                  <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
+                  <div className="grid-cell grid-cell-tipo">
+                    {(() => {
+                      const Icon = getIconForTipo(despesa.despesa_tipo, 'despesa');
+                      return <><Icon className="category-icon" /> {despesa.despesa_tipo}</>;
+                    })()}
+                  </div>
+                  <div className="grid-cell grid-cell-conta">
+                    {conta ? (
+                      <>
+                        {(() => {
+                          const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                          return (
+                            <span className="conta-com-badge">
+                              <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                                {b.abbr}
+                              </span>
+                              {conta.conta_nome || conta.Conta_Nome}
+                            </span>
+                          );
+                        })()}
+                      </>
+                    ) : '-'}
+                  </div>
+                  <div className="grid-cell">
+                    <input
+                      type="checkbox"
+                      checked={despesa.despesa_pago || false}
+                      onChange={() => handleTogglePago(despesa)}
+                      title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
+                    />
+                  </div>
+                  <div className="grid-cell acoes">
+                    <button 
+                      onClick={() => handleEdit(despesa)}
+                      className="btn-edit"
+                      title="Editar"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(despesa.despesa_id)}
+                      className="btn-delete"
+                      title="Excluir"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>

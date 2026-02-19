@@ -433,6 +433,16 @@
   white-space: nowrap;
 }
 
+.filtro-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+}
+
 /* Barra de "processando exclusão" (fixa embaixo) */
 .processing-delete-bar {
   position: fixed;

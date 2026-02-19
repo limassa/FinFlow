@@ -50,6 +50,7 @@ function Receita() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
+  const [exibirAgrupado, setExibirAgrupado] = useState(true);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -268,17 +269,25 @@ function Receita() {
   const handleDeleteSelected = async () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    if (!window.confirm(`Deseja realmente excluir ${qtd} receita(s) selecionada(s)? Esta ação pode ser desfeita.`)) {
-      return;
-    }
+    const somenteNaoRecebidas = window.confirm(
+      `Excluir ${qtd} receita(s) selecionada(s).\n\n` +
+      `OK = Excluir SOMENTE as não recebidas\n` +
+      `Cancelar = Excluir TODAS as selecionadas (incluindo recebidas)`
+    );
     setDeletingInProgress(true);
     try {
-      for (const id of selectedIds) {
+      const idsParaExcluir = somenteNaoRecebidas
+        ? [...selectedIds].filter(id => {
+            const r = receitas.find(x => x.receita_id === id);
+            return r && !r.receita_recebido;
+          })
+        : [...selectedIds];
+      for (const id of idsParaExcluir) {
         await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
       }
       setSelectedIds(new Set());
       fetchReceitas();
-      alert(`${qtd} receita(s) excluída(s) com sucesso!`);
+      alert(`${idsParaExcluir.length} receita(s) excluída(s) com sucesso!`);
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao excluir receitas. Tente novamente.');
     } finally {
@@ -307,22 +316,39 @@ function Receita() {
     });
   }, [receitasFiltradas, tiposReceita]);
 
+  const receitasOrdenadasPorData = React.useMemo(() => {
+    return [...receitasFiltradas].sort((a, b) => {
+      const dataA = (a.receita_data || '').split('T')[0];
+      const dataB = (b.receita_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [receitasFiltradas]);
+
   const handleDeleteGroup = async (tipoGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
-    if (!window.confirm(`Excluir todas as ${qtd} receita(s) do tipo "${tipoGrupo}"? Esta ação pode ser desfeita.`)) return;
+    const somenteNaoRecebidas = window.confirm(
+      `Excluir receitas do tipo "${tipoGrupo}".\n\n` +
+      `OK = Excluir SOMENTE as não recebidas\n` +
+      `Cancelar = Excluir TODAS (incluindo recebidas)`
+    );
+    const itensParaExcluir = somenteNaoRecebidas ? itens.filter(r => !r.receita_recebido) : itens;
+    if (itensParaExcluir.length === 0 && somenteNaoRecebidas) {
+      alert('Nenhuma receita não recebida neste grupo.');
+      return;
+    }
     setDeletingInProgress(true);
     try {
-      for (const r of itens) {
+      for (const r of itensParaExcluir) {
         await axios.delete(`${API_ENDPOINTS.RECEITAS}/${r.receita_id}`);
       }
       setSelectedIds(prev => {
         const next = new Set(prev);
-        itens.forEach(r => next.delete(r.receita_id));
+        itensParaExcluir.forEach(r => next.delete(r.receita_id));
         return next;
       });
       fetchReceitas();
-      alert(`${qtd} receita(s) excluída(s) com sucesso!`);
+      alert(`${itensParaExcluir.length} receita(s) excluída(s) com sucesso!`);
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao excluir receitas. Tente novamente.');
     } finally {
@@ -548,6 +574,16 @@ function Receita() {
                 <option value="nao_recebido">Não recebido</option>
               </select>
             </div>
+            <div className="filtro-group">
+              <label className="filtro-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={exibirAgrupado}
+                  onChange={(e) => setExibirAgrupado(e.target.checked)}
+                />
+                Agrupar por tipo
+              </label>
+            </div>
           </div>
         </div>
         {selectedIds.size > 0 && (
@@ -586,7 +622,7 @@ function Receita() {
               <div className="grid-cell">Recebido</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
+            {exibirAgrupado ? receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => {
                 const colapsado = gruposColapsados.has(tipoGrupo);
                 const toggleGrupo = () => {
                   setGruposColapsados(prev => {
@@ -712,6 +748,62 @@ function Receita() {
                 })}
               </React.Fragment>
             );
+            }) : receitasOrdenadasPorData.map(receita => {
+              const conta = contas.find(c => c.conta_id === receita.conta_id || c.Conta_id === receita.Conta_id);
+              return (
+                <div key={receita.receita_id} className="grid-row">
+                  <div className="grid-cell grid-cell-check">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(receita.receita_id)}
+                      onChange={() => toggleSelect(receita.receita_id)}
+                      title="Selecionar para excluir"
+                    />
+                  </div>
+                  <div className="grid-cell">{receita.receita_descricao}</div>
+                  <div className="grid-cell valor">{formatarValor(receita.receita_valor)}</div>
+                  <div className="grid-cell">{formatarData(receita.receita_data)}</div>
+                  <div className="grid-cell grid-cell-tipo">
+                    {(() => {
+                      const Icon = getIconForTipo(receita.receita_tipo, 'receita');
+                      return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
+                    })()}
+                  </div>
+                  <div className="grid-cell grid-cell-conta">
+                    {conta ? (
+                      <>
+                        {(() => {
+                          const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                          return (
+                            <span className="conta-com-badge">
+                              <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                                {b.abbr}
+                              </span>
+                              {conta.conta_nome || conta.Conta_Nome}
+                            </span>
+                          );
+                        })()}
+                      </>
+                    ) : '-'}
+                  </div>
+                  <div className="grid-cell">
+                    <input
+                      type="checkbox"
+                      checked={receita.receita_recebido || false}
+                      onChange={() => handleTogglePago(receita)}
+                      title={receita.receita_recebido ? "Marcar como não recebido" : "Marcar como recebido"}
+                    />
+                  </div>
+                  <div className="grid-cell acoes">
+                    <button onClick={() => handleEdit(receita)} className="btn-edit" title="Editar">
+                      <FaEdit />
+                    </button>
+                    <button onClick={() => handleDelete(receita.receita_id)} className="btn-delete" title="Excluir">
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
+              );
             })}
           </div>
         )}
