@@ -23,7 +23,7 @@ export default function SobreScreen() {
   }, [navigation]);
   
   const handleEmailPress = () => {
-    Linking.openURL('mailto:contato@lizsoftwares.com.br?subject=Contato Claricash');
+    Linking.openURL('mailto:contatolizsoftware@gmail.com?subject=Contato Claricash');
   };
 
   const handleWhatsAppPress = () => {
@@ -46,7 +46,7 @@ export default function SobreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Descrição</Text>
           <Text style={styles.sectionText}>
-            O Claricash é um sistema completo de controle financeiro pessoal desenvolvido pela Liz Softwares. 
+            O Claricash é um sistema completo de controle financeiro pessoal desenvolvido pela Liz Software. 
             Gerencie suas receitas, despesas, contas e tenha controle total sobre suas finanças.
           </Text>
         </View>
@@ -79,7 +79,7 @@ export default function SobreScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Desenvolvido por</Text>
-          <Text style={styles.companyName}>Liz Softwares</Text>
+          <Text style={styles.companyName}>Liz Software</Text>
           <Text style={styles.sectionText}>
             Soluções em software personalizadas para sua empresa.
           </Text>
@@ -100,7 +100,7 @@ export default function SobreScreen() {
             <Ionicons name="mail" size={24} color={colors.primary} />
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Email</Text>
-              <Text style={styles.contactValue}>contato@lizsoftwares.com.br</Text>
+              <Text style={styles.contactValue}>contatolizsoftware@gmail.com</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -118,7 +118,7 @@ export default function SobreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Direitos Reservados</Text>
           <Text style={styles.copyright}>
-            © 2026 Liz Softwares. Todos os direitos reservados.
+            © 2026 Liz Software. Todos os direitos reservados.
           </Text>
         </View>
       </View>

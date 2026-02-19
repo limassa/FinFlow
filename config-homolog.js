@@ -9,7 +9,7 @@ module.exports = {
   DB_USER: 'postgres',
   DB_PASSWORD: 'OumtwkgYJuWpNCAxJfLVAecULdKGjMEP',
   EMAIL_PASS: 'xdas ngdw yeao sgou',
-  EMAIL_USER: 'contatoLizSoftware@gmail.com',
+  EMAIL_USER: 'contatolizsoftware@gmail.com',
   FRONTEND_URL: 'https://claricash.com.br',
   PORT: '3001'
 }; 

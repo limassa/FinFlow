@@ -1,5 +1,6 @@
 import React from 'react';
 import '../App.css';
+import logoLizModern from '../images/logo-liz-modern.svg';
 
 function AuthBanner({ children, title, subtitle }) {
   return (
@@ -68,10 +69,18 @@ function AuthBanner({ children, title, subtitle }) {
               )}
             </div>
             
-            <div className="banner-company">
+            <a 
+              href="https://lizsoftware.com.br" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="banner-company"
+              title="Liz Software"
+            >
               <span>Desenvolvido por</span>
-              <strong>Liz Softwares</strong>
-            </div>
+              <div className="banner-company-logo-wrap">
+                <img src={logoLizModern} alt="Liz Software" className="banner-company-logo" />
+              </div>
+            </a>
           </div>
         </div>
         

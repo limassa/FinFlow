@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaPlus, FaMinus, FaChartPie, FaCog } from 'react-icons/fa';
+import logoLizModern from '../images/logo-liz-modern.svg';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -274,6 +275,20 @@ function Principal() {
         receitas={receitas}
         despesas={despesas}
       />
+
+      {/* Desenvolvido por - Liz Software */}
+      <a 
+        href="https://lizsoftware.com.br" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="principal-developed-by"
+        title="Liz Software"
+      >
+        <span>Desenvolvido por</span>
+        <div className="principal-developed-logo-wrap">
+          <img src={logoLizModern} alt="Liz Software" className="principal-developed-logo" />
+        </div>
+      </a>
     </div>
   );
 }

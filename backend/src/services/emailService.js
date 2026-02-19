@@ -49,7 +49,7 @@ class EmailService {
         config: {
           service: 'gmail',
           auth: {
-            user: process.env.EMAIL_USER || 'contato@lizsoftware.com.br',
+            user: process.env.EMAIL_USER || 'contatolizsoftware@gmail.com',
             pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
           },
           connectionTimeout: 60000,
@@ -72,7 +72,7 @@ class EmailService {
           port: 465,
           secure: true,
           auth: {
-            user: process.env.EMAIL_USER || 'contato@lizsoftware.com.br',
+            user: process.env.EMAIL_USER || 'contatolizsoftware@gmail.com',
             pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
           },
           connectionTimeout: 30000,
@@ -90,7 +90,7 @@ class EmailService {
           port: 587,
           secure: false,
           auth: {
-            user: process.env.EMAIL_USER || 'contato@lizsoftware.com.br',
+            user: process.env.EMAIL_USER || 'contatolizsoftware@gmail.com',
             pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
           },
           connectionTimeout: 30000,
@@ -811,7 +811,7 @@ class EmailService {
 
     const tipoTexto = tipoLabels[tipo] || tipo || 'Não especificado';
 
-    const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || 'contato@lizsoftware.com.br';
+    const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || 'contatolizsoftware@gmail.com';
     const mailOptions = {
       from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@claricash.com.br',
       to: supportEmail,
@@ -873,7 +873,7 @@ class EmailService {
             const resultadoSendGrid = await this.sendEmailSendGrid(mailOptions);
             if (resultadoSendGrid) {
               console.log('✅ Email de "Fale Conosco" enviado via SendGrid (fallback)!');
-              console.log(`   📧 Para: contato@lizsoftware.com.br`);
+              console.log(`   📧 Para: contatolizsoftware@gmail.com`);
               console.log(`   📧 De: ${email} (${nome})`);
               return true;
             }
@@ -886,7 +886,7 @@ class EmailService {
             if (this.tipoAtual === 'nodemailer') {
               const info = await this.transporter.sendMail(mailOptions);
               console.log('✅ Email de "Fale Conosco" enviado via Gmail (fallback)!');
-              console.log(`   📧 Para: contato@lizsoftware.com.br`);
+              console.log(`   📧 Para: contatolizsoftware@gmail.com`);
               console.log(`   📧 De: ${email} (${nome})`);
               return true;
             }
@@ -895,7 +895,7 @@ class EmailService {
           return false;
         } else if (resultado) {
           console.log('✅ Email de "Fale Conosco" enviado via Resend!');
-          console.log(`   📧 Para: contato@lizsoftware.com.br`);
+          console.log(`   📧 Para: contatolizsoftware@gmail.com`);
           console.log(`   📧 De: ${email} (${nome})`);
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
@@ -908,7 +908,7 @@ class EmailService {
         const resultado = await this.sendEmailSendGrid(mailOptions);
         if (resultado) {
           console.log('✅ Email de "Fale Conosco" enviado via SendGrid!');
-          console.log(`   📧 Para: contato@lizsoftware.com.br`);
+          console.log(`   📧 Para: contatolizsoftware@gmail.com`);
           console.log(`   📧 De: ${email} (${nome})`);
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
           return true;
@@ -920,7 +920,7 @@ class EmailService {
         // Usar Nodemailer
         const info = await this.transporter.sendMail(mailOptions);
         console.log('✅ Email de "Fale Conosco" enviado via Nodemailer!');
-        console.log(`   📧 Para: contato@lizsoftware.com.br`);
+        console.log(`   📧 Para: contatolizsoftware@gmail.com`);
         console.log(`   📧 De: ${email} (${nome})`);
         console.log(`   📧 Message ID: ${info.messageId}`);
         console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
@@ -971,7 +971,7 @@ class EmailService {
   // Fallback para formulário de contato
   async fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem }) {
     console.log('📧 === FALLBACK EMAIL FALE CONOSCO ===');
-    console.log(`   Para: contato@lizsoftware.com.br`);
+    console.log(`   Para: contatolizsoftware@gmail.com`);
     console.log(`   De: ${email} (${nome})`);
     console.log(`   Telefone: ${telefone || 'Não informado'}`);
     console.log(`   Tipo: ${tipo || 'Não especificado'}`);

@@ -576,7 +576,7 @@ export default function ConfiguracoesScreen() {
           ) : (
             <Text style={styles.footerText}>Claricash v1.0.0</Text>
           )}
-          <Text style={styles.footerText}>Liz Softwares</Text>
+          <Text style={styles.footerText}>Liz Software</Text>
         </View>
       </ScrollView>
     </View>

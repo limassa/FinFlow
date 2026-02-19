@@ -1,5 +1,5 @@
 // Configurações de Produção - Claricash
-// Desenvolvido por: Liz Softwares
+// Desenvolvido por: Liz Software
 
 module.exports = {
   // Configurações do Servidor

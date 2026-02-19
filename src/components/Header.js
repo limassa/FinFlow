@@ -31,7 +31,7 @@ function Header() {
           
           <div className="logo-text">
             <h1 className="app-title">Claricash</h1>
-            <span className="company-name">Liz Softwares</span>
+            <span className="company-name">Liz Software</span>
           </div>
         </div>
         <div className="user-info">

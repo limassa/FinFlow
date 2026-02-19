@@ -129,7 +129,7 @@ const htmlTemplate = `<!DOCTYPE html>
             // Crédito (canto inferior direito)
             ctx.font = '20px Arial';
             ctx.textAlign = 'right';
-            ctx.fillText('Desenvolvido por Liz Softwares', width - 30, height - 30);
+            ctx.fillText('Desenvolvido por Liz Software', width - 30, height - 30);
             
             // Baixar imagem
             canvas.toBlob(function(blob) {

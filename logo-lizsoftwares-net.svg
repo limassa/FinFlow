@@ -30,9 +30,9 @@
   
   <!-- Text -->
   <g transform="translate(50, 15)">
-    <!-- LizSoftwares -->
+    <!-- Liz Software -->
     <text x="0" y="20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="url(#textGradient)">
-      LizSoftwares
+      Liz Software
     </text>
     
     <!-- .net -->

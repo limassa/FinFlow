@@ -191,12 +191,12 @@ function PrivacyPolicy() {
               <div className="privacy-contact-info">
                 <p>
                   <strong>E-mail:</strong>{' '}
-                  <a href="mailto:contatoLizSoftware@gmail.com" className="privacy-contact-link">
-                    contatoLizSoftware@gmail.com
+                  <a href="mailto:contatolizsoftware@gmail.com" className="privacy-contact-link">
+                    contatolizsoftware@gmail.com
                   </a>
                 </p>
                 <p>
-                  <strong>Desenvolvido por:</strong> Liz Softwares
+                  <strong>Desenvolvido por:</strong> Liz Software
                 </p>
               </div>
             </div>

@@ -1,5 +1,5 @@
 // Configuração de Email para Produção - Claricash
-// Desenvolvido por: Liz Softwares
+// Desenvolvido por: Liz Software
 
 module.exports = {
   // Configurações do Servidor SMTP
@@ -9,7 +9,7 @@ module.exports = {
     port: 587,
     secure: false, // true para 465, false para outras portas
     auth: {
-      user: process.env.EMAIL_USER || 'contatoLizSoftware@gmail.com',
+      user: process.env.EMAIL_USER || 'contatolizsoftware@gmail.com',
       pass: process.env.EMAIL_PASS || 'xdas ngdw yeao sgou'
     },
     // Configurações para resolver problemas de timeout em produção
@@ -32,7 +32,7 @@ module.exports = {
   // Configurações de Email
   email: {
     from: process.env.EMAIL_FROM || 'noreply@claricash.com.br',
-    replyTo: process.env.EMAIL_REPLY_TO || 'contatoLizSoftware@gmail.com',
+    replyTo: process.env.EMAIL_REPLY_TO || 'contatolizsoftware@gmail.com',
     frontendUrl: process.env.FRONTEND_URL || 'https://claricash.com.br'
   },
 
