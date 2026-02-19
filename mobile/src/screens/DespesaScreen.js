@@ -21,6 +21,8 @@ import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
+import AccountSelector from '../components/AccountSelector';
+import { getBancoById } from '../utils/banks';
 
 const tiposDespesa = [
   'Alimentação',
@@ -126,7 +128,8 @@ export default function DespesaScreen() {
         conta_id: conta.conta_id || conta.Conta_Id || conta.id,
         conta_nome: conta.conta_nome || conta.Conta_Nome || conta.nome,
         conta_tipo: conta.conta_tipo || conta.Conta_Tipo || conta.tipo,
-        conta_saldo: conta.conta_saldo || conta.Conta_Saldo || conta.saldo
+        conta_saldo: conta.conta_saldo || conta.Conta_Saldo || conta.saldo,
+        conta_banco: conta.conta_banco || conta.Conta_Banco
       }));
       setContas(contasNormalizadas);
     } catch (err) {
@@ -614,13 +617,22 @@ export default function DespesaScreen() {
                 <View key={tipoGrupo}>
                   <View style={styles.groupHeader}>
                     <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
-                    <TouchableOpacity
-                      style={styles.groupDeleteButton}
-                      onPress={() => handleDeleteGroup(tipoGrupo, itens)}
-                    >
-                      <Ionicons name="trash" size={18} color={colors.error} />
-                      <Text style={styles.groupDeleteText}>Excluir grupo ({itens.length})</Text>
-                    </TouchableOpacity>
+                    <View style={styles.groupHeaderActions}>
+                      <TouchableOpacity
+                        style={styles.groupEditButton}
+                        onPress={() => itens.length > 0 && handleEdit(itens[0])}
+                      >
+                        <Ionicons name="create" size={18} color={colors.primary} />
+                        <Text style={styles.groupEditText}>Editar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.groupDeleteButton}
+                        onPress={() => handleDeleteGroup(tipoGrupo, itens)}
+                      >
+                        <Ionicons name="trash" size={18} color={colors.error} />
+                        <Text style={styles.groupDeleteText}>Excluir grupo ({itens.length})</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   {itens.map(despesa => {
                     const conta = contas.find(c => c.conta_id === despesa.conta_id);
@@ -661,9 +673,27 @@ export default function DespesaScreen() {
                               <Ionicons name="pricetag" size={14} /> {despesa.despesa_tipo}
                             </Text>
                             {conta && (
-                              <Text style={styles.despesaDetail}>
-                                <Ionicons name="wallet" size={14} /> {conta.conta_nome}
-                              </Text>
+                              <View style={styles.despesaDetail}>
+                                {(() => {
+                                  const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                                  if (b) {
+                                    return (
+                                      <View style={styles.contaBadgeRow}>
+                                        <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
+                                          <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
+                                        </View>
+                                        <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
+                                      </View>
+                                    );
+                                  }
+                                  return (
+                                    <View style={styles.contaBadgeRow}>
+                                      <Ionicons name="wallet" size={14} color={colors.textSecondary} />
+                                      <Text style={styles.despesaDetailText}>{conta.conta_nome}</Text>
+                                    </View>
+                                  );
+                                })()}
+                              </View>
                             )}
                           </View>
                           <View style={styles.despesaActions}>
@@ -754,22 +784,12 @@ export default function DespesaScreen() {
                 placeholder="Selecione o tipo"
               />
 
-              <Text style={styles.label}>Conta</Text>
-              <Select
+              <AccountSelector
                 value={contaId}
-                options={[
-                  { label: 'Nenhuma', value: '' },
-                  ...contas.map(c => {
-                    const cId = c.conta_id || c.Conta_Id || c.id;
-                    const cNome = c.conta_nome || c.Conta_Nome || c.nome || 'Sem nome';
-                    return { 
-                      label: cNome, 
-                      value: cId ? cId.toString() : '' 
-                    };
-                  }).filter(c => c.value !== '')
-                ]}
-                onChange={setContaId}
+                onChange={(id) => setContaId(id ? String(id) : '')}
+                contas={contas}
                 placeholder="Selecione uma conta"
+                label="Conta"
               />
 
               <View style={styles.switchContainer}>
@@ -1090,6 +1110,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  groupHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  groupEditButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  groupEditText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '600',
+  },
   groupDeleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1149,6 +1186,31 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   despesaDetail: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  despesaDetailText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  contaBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  contaBankBadge: {
+    width: 24,
+    height: 20,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contaBankBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  contaNomeText: {
     fontSize: 12,
     color: colors.textSecondary,
   },

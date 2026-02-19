@@ -19,6 +19,8 @@ import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import Select from '../components/Select';
+import BankSelector from '../components/BankSelector';
+import { getBancoById } from '../utils/banks';
 
 const tiposConta = ['Conta Corrente', 'Conta Poupança', 'Carteira', 'Cartão de Crédito', 'Investimentos', 'Outros'];
 
@@ -41,6 +43,7 @@ export default function ContasScreen() {
   // Form fields
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('');
+  const [banco, setBanco] = useState('');
   const [saldo, setSaldo] = useState('');
 
   useEffect(() => {
@@ -81,13 +84,14 @@ export default function ContasScreen() {
       const contaData = {
         nome,
         tipo,
+        banco: (banco && String(banco).trim()) ? String(banco).trim() : null,
         saldo: saldoNum,
         incrementarSaldoTotal: true,
         usuario_id: userId
       };
 
       if (editId) {
-        await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { nome, tipo, saldo: saldoNum });
+        await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { nome, tipo, banco: contaData.banco, saldo: saldoNum });
         Alert.alert('Sucesso', 'Conta atualizada com sucesso');
       } else {
         await axios.post(API_ENDPOINTS.CONTAS, contaData);
@@ -146,6 +150,7 @@ export default function ContasScreen() {
   const resetForm = () => {
     setNome('');
     setTipo('');
+    setBanco('');
     setSaldo('');
     setEditId(null);
     setShowForm(false);
@@ -203,7 +208,17 @@ export default function ContasScreen() {
                 <View key={contaId} style={styles.contaCard}>
                   <View style={styles.contaHeader}>
                     <View style={styles.contaInfo}>
-                      <Text style={styles.contaNome}>{conta.conta_nome || conta.Conta_Nome || conta.nome}</Text>
+                      <View style={styles.contaNomeRow}>
+                        {(() => {
+                          const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                          return b ? (
+                            <View style={[styles.bankBadge, { backgroundColor: b.cor }]}>
+                              <Text style={styles.bankBadgeText}>{b.abbr}</Text>
+                            </View>
+                          ) : null;
+                        })()}
+                        <Text style={styles.contaNome}>{conta.conta_nome || conta.Conta_Nome || conta.nome}</Text>
+                      </View>
                       <Text style={styles.contaTipo}>{conta.conta_tipo || conta.Conta_Tipo || conta.tipo}</Text>
                     </View>
                     <Text style={styles.contaSaldo}>{formatarValor(conta.conta_saldo || conta.Conta_Saldo || conta.saldo || 0)}</Text>
@@ -263,6 +278,13 @@ export default function ContasScreen() {
                 options={tiposConta.map(t => ({ label: t, value: t }))}
                 onChange={setTipo}
                 placeholder="Selecione o tipo de conta"
+              />
+
+              <BankSelector
+                value={banco}
+                onChange={setBanco}
+                placeholder="Selecione o banco"
+                label="Banco"
               />
 
               <Text style={styles.label}>Saldo Inicial</Text>
@@ -385,11 +407,29 @@ const styles = StyleSheet.create({
   contaInfo: {
     flex: 1,
   },
+  contaNomeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  bankBadge: {
+    width: 28,
+    height: 24,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bankBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
   contaNome: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 4,
+    flex: 1,
   },
   contaTipo: {
     fontSize: 14,

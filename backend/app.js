@@ -141,7 +141,7 @@ app.get('/api/versao', async (req, res) => {
         return res.json({
           success: true,
           versao: {
-            versao_numero: '1.0.1',
+            versao_numero: '1.0.2',
             versao_nome: 'Claricash',
             versao_data: new Date().toISOString(),
             versao_descricao: 'Versão de desenvolvimento',
@@ -162,7 +162,7 @@ app.get('/api/versao', async (req, res) => {
       res.json({
         success: true,
         versao: {
-          versao_numero: '1.0.1',
+          versao_numero: '1.0.2',
           versao_nome: 'Claricash',
           versao_data: new Date().toISOString(),
           versao_descricao: 'Versão de desenvolvimento',
@@ -177,7 +177,7 @@ app.get('/api/versao', async (req, res) => {
     res.json({
       success: true,
       versao: {
-        versao_numero: '1.0.1',
+        versao_numero: '1.0.2',
         versao_nome: 'Claricash',
         versao_data: new Date().toISOString(),
         versao_descricao: 'Versão de desenvolvimento',

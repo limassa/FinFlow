@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { getIconForTipo } from '../utils/categoryIcons';
+import { getBancoById } from '../utils/banks';
 import SelectWithIcons from '../components/SelectWithIcons';
+import AccountSelector from '../components/AccountSelector';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -435,12 +437,12 @@ function Receita() {
 
             <div className="form-group">
               <label>Conta (Opcional):</label>
-              <select value={contaId} onChange={e => setContaId(e.target.value)}>
-                <option value="">Selecione uma conta</option>
-                {contas.map(conta => (
-                  <option key={conta.conta_id} value={conta.conta_id}>{conta.conta_nome}</option>
-                ))}
-              </select>
+              <AccountSelector
+                value={contaId}
+                onChange={setContaId}
+                contas={contas}
+                placeholder="Selecione uma conta"
+              />
             </div>
           </div>
           
@@ -611,14 +613,24 @@ function Receita() {
                     })()}
                     <span className="group-count">({itens.length})</span>
                   </span>
-                  <button
-                    type="button"
-                    className="btn-delete btn-delete-group"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
-                    title={`Excluir todas as receitas do tipo ${tipoGrupo}`}
-                  >
-                    <FaTrash /> Excluir grupo ({itens.length})
-                  </button>
+                  <span className="grid-group-header-actions">
+                    <button
+                      type="button"
+                      className="btn-edit btn-edit-group"
+                      onClick={(e) => { e.stopPropagation(); if (itens.length > 0) handleEdit(itens[0]); }}
+                      title={`Editar receita do grupo ${tipoGrupo}`}
+                    >
+                      <FaEdit /> Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-delete btn-delete-group"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tipoGrupo, itens); }}
+                      title={`Excluir todas as receitas do tipo ${tipoGrupo}`}
+                    >
+                      <FaTrash /> Excluir grupo ({itens.length})
+                    </button>
+                  </span>
                 </div>
                 {!colapsado && itens.map(receita => {
                   const conta = contas.find(c => c.conta_id === receita.conta_id || c.Conta_id === receita.Conta_id);
@@ -641,7 +653,23 @@ function Receita() {
                         return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
                       })()}
                     </div>
-                      <div className="grid-cell">{conta ? (conta.conta_nome || conta.Conta_Nome) : '-'}</div>
+                      <div className="grid-cell grid-cell-conta">
+                        {conta ? (
+                          <>
+                            {(() => {
+                              const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                              return (
+                                <span className="conta-com-badge">
+                                  <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                                    {b.abbr}
+                                  </span>
+                                  {conta.conta_nome || conta.Conta_Nome}
+                                </span>
+                              );
+                            })()}
+                          </>
+                        ) : '-'}
+                      </div>
                       <div className="grid-cell">
                         <input
                           type="checkbox"
