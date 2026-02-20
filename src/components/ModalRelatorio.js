@@ -141,8 +141,7 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
         
       case 'consolidado':
       case 'categoria':
-      default:
-        // Criar planilha com abas separadas
+      default: {
         csvContent = 'RECEITAS\n';
         csvContent += 'Data;Descrição;Tipo;Valor;Recebido\n';
         receitasFiltradas.forEach(r => {
@@ -165,6 +164,7 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
         csvContent += `Saldo;${(totalReceitas - totalDespesas).toFixed(2).replace('.', ',')}\n`;
         filename = 'relatorio_consolidado';
         break;
+      }
     }
 
     // Criar e baixar arquivo
