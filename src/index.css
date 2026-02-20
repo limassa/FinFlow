@@ -1,5 +1,6 @@
 /* Design tokens (inspirado no site Liz Software) */
 :root {
+  /* Cores */
   --primary-900: #1e3a5f;
   --primary-700: #2563eb;
   --primary-600: #3b82f6;
@@ -21,16 +22,44 @@
   --radius: 12px;
   --radius-lg: 20px;
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Tipografia padronizada */
+  --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+}
+
+* {
+  font-family: var(--font-family);
+}
+
+html,
+body,
+#root {
+  font-family: var(--font-family);
+  overflow-x: visible;
 }
 
 body {
   margin: 0;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-size: var(--font-size-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--black);
+}
+
+/* Garantir que controles de formulário herdem a fonte */
+input,
+button,
+select,
+textarea,
+label {
+  font-family: inherit;
 }
 
 code {

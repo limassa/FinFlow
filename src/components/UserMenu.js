@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaUser, FaBell, FaBellSlash, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaUser, FaBell, FaBellSlash, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -10,6 +10,9 @@ function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [lembretesAtivos, setLembretesAtivos] = useState(false);
+  const [userFoto, setUserFoto] = useState(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user'));
@@ -18,10 +21,76 @@ function UserMenu() {
       setUser(userData);
       // Buscar configuração de lembretes do usuário
       fetchLembretesConfig(userData.id);
+      // Buscar foto do usuário
+      fetchUserFoto(userData.id);
     } else {
       console.log('UserMenu - Nenhum usuário encontrado no localStorage');
     }
   }, []);
+
+  const fetchUserFoto = async (userId) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.foto) {
+          setUserFoto(data.foto);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar foto do usuário:', error);
+    }
+  };
+
+  const handleFotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem válida.');
+      return;
+    }
+
+    // Validar tamanho (máx 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 2MB.');
+      return;
+    }
+
+    setUploadingFoto(true);
+
+    try {
+      // Converter para base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result;
+        
+        // Enviar para o servidor
+        const response = await fetch(API_ENDPOINTS.USER_FOTO, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, foto: base64 })
+        });
+
+        if (response.ok) {
+          setUserFoto(base64);
+        } else {
+          alert('Erro ao salvar foto.');
+        }
+        setUploadingFoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Erro ao fazer upload da foto:', error);
+      alert('Erro ao fazer upload da foto.');
+      setUploadingFoto(false);
+    }
+  };
 
   const fetchLembretesConfig = async (userId) => {
     try {
@@ -79,12 +148,25 @@ function UserMenu() {
 
   return (
     <div className="user-menu-container">
+      {/* Input de arquivo oculto */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFotoChange}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      
       <button 
         className="user-menu-trigger"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="user-info">
-          <FaUser className="user-icon" />
+          {userFoto ? (
+            <img src={userFoto} alt="Foto" className="user-foto" />
+          ) : (
+            <FaUser className="user-icon" />
+          )}
           <span className="user-name">{user.nome}</span>
           <FaChevronDown className={`chevron ${isOpen ? 'rotated' : ''}`} />
         </div>
@@ -93,7 +175,17 @@ function UserMenu() {
       {isOpen && (
         <div className="user-menu-dropdown">
           <div className="menu-header">
-            <FaUser />
+            <div className="menu-foto-container" onClick={handleFotoClick}>
+              {userFoto ? (
+                <img src={userFoto} alt="Foto" className="menu-user-foto" />
+              ) : (
+                <FaUser className="menu-user-icon" />
+              )}
+              <div className="foto-overlay">
+                <FaCamera />
+              </div>
+              {uploadingFoto && <div className="foto-loading">...</div>}
+            </div>
             <span>{user.nome}</span>
           </div>
 

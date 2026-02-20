@@ -84,7 +84,7 @@ export default function CalendarioScreen() {
           }
           marked[date].dots.push({
             key: `receita-${receita.receita_id}`,
-            color: '#4caf50'
+            color: colors.success
           });
         }
       });
@@ -97,7 +97,7 @@ export default function CalendarioScreen() {
           }
           marked[date].dots.push({
             key: `despesa-${despesa.despesa_id}`,
-            color: '#f44336'
+            color: colors.error
           });
         }
       });
@@ -197,7 +197,7 @@ export default function CalendarioScreen() {
               <Text style={styles.legendText}>Receitas</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#f44336' }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
               <Text style={styles.legendText}>Despesas</Text>
             </View>
           </View>
@@ -345,10 +345,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   receitaIndicator: {
-    backgroundColor: '#4caf50',
+    backgroundColor: colors.success,
   },
   despesaIndicator: {
-    backgroundColor: '#f44336',
+    backgroundColor: colors.error,
   },
   eventContent: {
     flex: 1,
@@ -364,10 +364,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   receitaValue: {
-    color: '#4caf50',
+    color: colors.success,
   },
   despesaValue: {
-    color: '#f44336',
+    color: colors.error,
   },
 });
 

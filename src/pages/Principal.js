@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaPlus, FaMinus, FaChartPie, FaCog } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf } from 'react-icons/fa';
 // Logo da empresa (public/logo_nova.png) - URL segura para produção
 const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
 import axios from 'axios';
@@ -158,116 +158,121 @@ function Principal() {
 
   if (loading) {
     return (
-      <div className="home-container">
-        <div className="loading">Carregando dados...</div>
+      <div className="home-container principal-page">
+        <div className="principal-loading">
+          <div className="principal-loading-spinner" />
+          <span>Carregando dados...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="home-container">
-      {/* Botões de Ação */}
-      <div className="relatorios-header">
-        <div className="header-actions">
-          <button 
-            onClick={() => setShowModalRelatorio(true)}
-            className="btn-relatorio"
-          >
-            <FaFilePdf /> Gerar Relatórios
-          </button>
-        </div>
-      </div>
-
-      <div className="dashboard-cards">
-        <div className="dashboard-card positive"
-                    onClick={() => navigate('/layout/receita')}
-        style={{ cursor: 'pointer' }}
-        title="Receitas"
+    <div className="home-container principal-page">
+      {/* Ações rápidas */}
+      <header className="principal-header">
+        <h1 className="principal-title">Visão Geral</h1>
+        <button
+          onClick={() => setShowModalRelatorio(true)}
+          className="principal-btn-relatorio"
         >
-          <div className="card-icon">
+          <FaFilePdf /> Gerar Relatórios
+        </button>
+      </header>
+
+      {/* Cards principais */}
+      <section className="principal-cards">
+        <article
+          className="principal-card principal-card--receita"
+          onClick={() => navigate('/layout/receita')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/layout/receita')}
+        >
+          <div className="principal-card__icon">
             <FaMoneyBillWave />
           </div>
-          <div className="card-content">
+          <div className="principal-card__content">
             <h3>Total Receitas</h3>
-            <span className="card-value">{formatarValor(totais.totalReceitas)}</span>
-            <span className="card-description">Receitas Recebidas</span>
+            <span className="principal-card__value">{formatarValor(totais.totalReceitas)}</span>
+            <span className="principal-card__desc">Receitas Recebidas</span>
           </div>
-        </div>
+        </article>
 
-        <div className="dashboard-card negative"
-                    onClick={() => navigate('/layout/despesa')}
-        style={{ cursor: 'pointer' }}
-        title="Despesas"
+        <article
+          className="principal-card principal-card--despesa"
+          onClick={() => navigate('/layout/despesa')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/layout/despesa')}
         >
-          <div className="card-icon">
+          <div className="principal-card__icon">
             <FaMoneyCheckAlt />
           </div>
-          <div className="card-content">
+          <div className="principal-card__content">
             <h3>Total Despesas</h3>
-            <span className="card-value">{formatarValor(totais.totalDespesas)}</span>
-            <span className="card-description">Despesas Pagas</span>
+            <span className="principal-card__value">{formatarValor(totais.totalDespesas)}</span>
+            <span className="principal-card__desc">Despesas Pagas</span>
           </div>
-        </div>
+        </article>
 
-        <div className={`dashboard-card ${totais.saldoContas >= 0 ? 'positive' : 'negative'}`}
-        style={{ cursor: 'default' }}
-        title="Saldo Total (Contas + Receitas - Despesas)"
+        <article
+          className={`principal-card principal-card--saldo ${totais.saldoContas >= 0 ? 'positive' : 'negative'}`}
+          title="Saldo Total (Contas + Receitas - Despesas)"
         >
-          <div className="card-icon">
+          <div className="principal-card__icon">
             <FaChartLine />
           </div>
-          <div className="card-content">
+          <div className="principal-card__content">
             <h3>Saldo Total</h3>
-            <span className="card-value">{formatarValor(totais.saldoContas)}</span>
-            <span className="card-description">Saldo Disponível</span>
+            <span className="principal-card__value">{formatarValor(totais.saldoContas)}</span>
+            <span className="principal-card__desc">Saldo Disponível</span>
+          </div>
+        </article>
+      </section>
+
+      {/* Resumo do mês */}
+      <section className="principal-resumo">
+        <h3>Resumo do Mês</h3>
+        <div className="principal-resumo__grid">
+          <div className="principal-resumo__item">
+            <span>Receitas do Mês</span>
+            <span className="principal-resumo__valor positive">{formatarValor(totais.receitasMes)}</span>
+          </div>
+          <div className="principal-resumo__item">
+            <span>Despesas do Mês</span>
+            <span className="principal-resumo__valor negative">{formatarValor(totais.despesasMes)}</span>
+          </div>
+          <div className="principal-resumo__item principal-resumo__item--destaque">
+            <span>Saldo do Mês</span>
+            <span className={`principal-resumo__valor ${(totais.receitasMes - totais.despesasMes) >= 0 ? 'positive' : 'negative'}`}>
+              {formatarValor(totais.receitasMes - totais.despesasMes)}
+            </span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="home-stats">
-        <div className="stat-summary">
-          <h3>Resumo do Mês</h3>
-          <div className="stat-items">
-            <div className="stat-item">
-              <span className="stat-label">Receitas do Mês:</span>
-              <span className="stat-value positive">{formatarValor(totais.receitasMes)}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Despesas do Mês:</span>
-              <span className="stat-value negative">{formatarValor(totais.despesasMes)}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Saldo do Mês:</span>
-              <span className={`stat-value ${(totais.receitasMes - totais.despesasMes) >= 0 ? 'positive' : 'negative'}`}>
-                {formatarValor(totais.receitasMes - totais.despesasMes)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Dashboard de Gráficos */}
-      <div className="dashboard-charts">
-        <div className="charts-header">
+      {/* Gráficos */}
+      <section className="principal-charts">
+        <div className="principal-charts__header">
           <h3>Análise Financeira</h3>
           <p>Visualize seus dados financeiros de forma interativa</p>
         </div>
-        <div className="charts-container">
-          <div className="chart-card">
-            <h4 style={{ textAlign: 'center' }}>Evolução Financeira - Últimos 12 Meses</h4>
-            <div className="chart-content">
+        <div className="principal-charts__grid">
+          <div className="principal-chart-card">
+            <h4>Evolução Financeira - Últimos 12 Meses</h4>
+            <div className="principal-chart-card__content">
               <GraficoEvolucaoMensal />
             </div>
           </div>
-          
-          <div className="chart-card">
-            <h4 style={{ textAlign: 'center' }}>Distribuição por Categoria - Mês Atual</h4>
-            <div className="chart-content">
+          <div className="principal-chart-card">
+            <h4>Distribuição por Categoria - Mês Atual</h4>
+            <div className="principal-chart-card__content">
               <GraficosPizza />
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Modal de Relatórios */}
       <ModalRelatorio 
@@ -277,19 +282,20 @@ function Principal() {
         despesas={despesas}
       />
 
-      {/* Desenvolvido por - Liz Software */}
-      <a 
-        href="https://lizsoftware.com.br" 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className="principal-developed-by"
-        title="Liz Software"
-      >
-        <span>Desenvolvido por</span>
-        <div className="principal-developed-logo-wrap">
-          <img src={logoNova} alt="Liz Software" className="principal-developed-logo" />
-        </div>
-      </a>
+      <footer className="principal-footer">
+        <a
+          href="https://lizsoftware.com.br"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="principal-footer__link"
+          title="Liz Software"
+        >
+          <span>Desenvolvido por</span>
+          <div className="principal-footer__logo">
+            <img src={logoNova} alt="Liz Software" />
+          </div>
+        </a>
+      </footer>
     </div>
   );
 }

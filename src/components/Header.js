@@ -13,8 +13,8 @@ function Header() {
           <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="claricashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{stopColor: '#667eea', stopOpacity: 1}} />
-                <stop offset="100%" style={{stopColor: '#764ba2', stopOpacity: 1}} />
+                <stop offset="0%" style={{stopColor: '#4F46E5', stopOpacity: 1}} />
+                <stop offset="100%" style={{stopColor: '#2563EB', stopOpacity: 1}} />
               </linearGradient>
             </defs>
           

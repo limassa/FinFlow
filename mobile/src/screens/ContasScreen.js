@@ -180,7 +180,7 @@ export default function ContasScreen() {
     <View style={styles.container}>
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Quantidade</Text>
+          <Text style={styles.statLabel}>Qtde</Text>
           <Text style={styles.statValue}>{contas.length}</Text>
         </View>
       </View>
@@ -361,12 +361,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },

@@ -208,7 +208,7 @@ export default function HomeScreen() {
           onPress={() => navigation.navigate('Receita')}
         >
           <View style={styles.cardIcon}>
-            <Ionicons name="add-circle" size={32} color="#4caf50" />
+            <Ionicons name="add-circle" size={32} color={colors.success} />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Total Receitas</Text>
@@ -222,7 +222,7 @@ export default function HomeScreen() {
           onPress={() => navigation.navigate('Despesa')}
         >
           <View style={styles.cardIcon}>
-            <Ionicons name="remove-circle" size={32} color="#f44336" />
+            <Ionicons name="remove-circle" size={32} color={colors.error} />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Total Despesas</Text>
@@ -233,7 +233,7 @@ export default function HomeScreen() {
 
         <View style={[styles.card, totais.saldoContas >= 0 ? styles.cardPositive : styles.cardNegative]}>
           <View style={styles.cardIcon}>
-            <Ionicons name="trending-up" size={32} color={totais.saldoContas >= 0 ? "#4caf50" : "#f44336"} />
+            <Ionicons name="trending-up" size={32} color={totais.saldoContas >= 0 ? colors.success : colors.error} />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Saldo Total</Text>
@@ -359,11 +359,11 @@ const styles = StyleSheet.create({
   },
   cardPositive: {
     borderLeftWidth: 4,
-    borderLeftColor: '#4caf50',
+    borderLeftColor: colors.success,
   },
   cardNegative: {
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
+    borderLeftColor: colors.error,
   },
   cardIcon: {
     marginRight: 16,
@@ -418,10 +418,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   summaryPositive: {
-    color: '#4caf50',
+    color: colors.success,
   },
   summaryNegative: {
-    color: '#f44336',
+    color: colors.error,
   },
   chartsContainer: {
     padding: 16,

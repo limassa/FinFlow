@@ -22,6 +22,9 @@ import CalculadoraJuros from './pages/CalculadoraJuros';
 import CalculadoraRetiradas from './pages/CalculadoraRetiradas';
 import CalculadoraAporteMeta from './pages/CalculadoraAporteMeta';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import CartaoCredito from './pages/CartaoCredito';
+import Orcamento from './pages/Orcamento';
+import Categorias from './pages/Categorias';
 
 import reportWebVitals from './reportWebVitals';
 
@@ -53,6 +56,12 @@ root.render(
           <Route path="contas" element={<Contas />} />
           <Route path="calendario" element={<Calendario />} />
           <Route path="detalhes-grafico" element={<DetalhesGrafico />} />
+          <Route path="calculadora-juros" element={<CalculadoraJuros />} />
+          <Route path="calculadora-retiradas" element={<CalculadoraRetiradas />} />
+          <Route path="calculadora-aporte-meta" element={<CalculadoraAporteMeta />} />
+          <Route path="cartoes" element={<CartaoCredito />} />
+          <Route path="orcamento" element={<Orcamento />} />
+          <Route path="categorias" element={<Categorias />} />
         </Route>
       </Routes>
     </Router>

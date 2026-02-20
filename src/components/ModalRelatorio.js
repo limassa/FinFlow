@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { FaFilePdf, FaDownload, FaTimes } from 'react-icons/fa';
+import { FaFilePdf, FaDownload, FaTimes, FaFileExcel } from 'react-icons/fa';
 import RelatorioPDF from './RelatorioPDF';
 import { formatarNomeArquivo } from '../utils/formatters';
 import '../App.css';
-import { formatarData, normalizarDataInput } from '../utils/formatters';
+import { formatarData, normalizarDataInput, formatarValor } from '../utils/formatters';
 
 function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
   const [tipoRelatorio, setTipoRelatorio] = useState('consolidado');
@@ -95,6 +95,89 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
       doc.save();
     }
     // Não fechar o modal para permitir gerar outros relatórios
+  };
+
+  // Exportar para Excel (CSV)
+  const exportarExcel = () => {
+    if (!dataInicio || !dataFim) {
+      alert('Por favor, selecione as datas de início e fim do período.');
+      return;
+    }
+
+    // Filtrar dados por período
+    const dataInicioObj = new Date(dataInicio);
+    const dataFimObj = new Date(dataFim);
+    dataFimObj.setHours(23, 59, 59, 999);
+    
+    const receitasFiltradas = receitas.filter(receita => {
+      const dataReceita = new Date(receita.receita_data);
+      return dataReceita >= dataInicioObj && dataReceita <= dataFimObj;
+    });
+
+    const despesasFiltradas = despesas.filter(despesa => {
+      const dataDespesa = new Date(despesa.despesa_data);
+      return dataDespesa >= dataInicioObj && dataDespesa <= dataFimObj;
+    });
+
+    let csvContent = '';
+    let filename = '';
+
+    switch (tipoRelatorio) {
+      case 'receitas':
+        csvContent = 'Data;Descrição;Tipo;Valor;Recebido\n';
+        receitasFiltradas.forEach(r => {
+          csvContent += `${formatarData(r.receita_data)};${r.receita_descricao};${r.receita_tipo};${parseFloat(r.receita_valor).toFixed(2).replace('.', ',')};${r.receita_recebido ? 'Sim' : 'Não'}\n`;
+        });
+        filename = 'receitas';
+        break;
+        
+      case 'despesas':
+        csvContent = 'Data;Descrição;Tipo;Valor;Pago;Vencimento\n';
+        despesasFiltradas.forEach(d => {
+          csvContent += `${formatarData(d.despesa_data)};${d.despesa_descricao};${d.despesa_tipo};${parseFloat(d.despesa_valor).toFixed(2).replace('.', ',')};${d.despesa_pago ? 'Sim' : 'Não'};${d.despesa_dtvencimento ? formatarData(d.despesa_dtvencimento) : '-'}\n`;
+        });
+        filename = 'despesas';
+        break;
+        
+      case 'consolidado':
+      case 'categoria':
+      default:
+        // Criar planilha com abas separadas
+        csvContent = 'RECEITAS\n';
+        csvContent += 'Data;Descrição;Tipo;Valor;Recebido\n';
+        receitasFiltradas.forEach(r => {
+          csvContent += `${formatarData(r.receita_data)};${r.receita_descricao};${r.receita_tipo};${parseFloat(r.receita_valor).toFixed(2).replace('.', ',')};${r.receita_recebido ? 'Sim' : 'Não'}\n`;
+        });
+        csvContent += `\nTotal Receitas;;;"${receitasFiltradas.reduce((sum, r) => sum + parseFloat(r.receita_valor), 0).toFixed(2).replace('.', ',')}"\n\n`;
+        
+        csvContent += 'DESPESAS\n';
+        csvContent += 'Data;Descrição;Tipo;Valor;Pago;Vencimento\n';
+        despesasFiltradas.forEach(d => {
+          csvContent += `${formatarData(d.despesa_data)};${d.despesa_descricao};${d.despesa_tipo};${parseFloat(d.despesa_valor).toFixed(2).replace('.', ',')};${d.despesa_pago ? 'Sim' : 'Não'};${d.despesa_dtvencimento ? formatarData(d.despesa_dtvencimento) : '-'}\n`;
+        });
+        csvContent += `\nTotal Despesas;;;"${despesasFiltradas.reduce((sum, d) => sum + parseFloat(d.despesa_valor), 0).toFixed(2).replace('.', ',')}"\n\n`;
+        
+        const totalReceitas = receitasFiltradas.reduce((sum, r) => sum + parseFloat(r.receita_valor), 0);
+        const totalDespesas = despesasFiltradas.reduce((sum, d) => sum + parseFloat(d.despesa_valor), 0);
+        csvContent += `RESUMO\n`;
+        csvContent += `Total Receitas;${totalReceitas.toFixed(2).replace('.', ',')}\n`;
+        csvContent += `Total Despesas;${totalDespesas.toFixed(2).replace('.', ',')}\n`;
+        csvContent += `Saldo;${(totalReceitas - totalDespesas).toFixed(2).replace('.', ',')}\n`;
+        filename = 'relatorio_consolidado';
+        break;
+    }
+
+    // Criar e baixar arquivo
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${dataInicio}_${dataFim}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -248,12 +331,20 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
           <button onClick={onClose} className="btn-cancelar">
             Cancelar
           </button>
-                    <button
+          <button
+            onClick={exportarExcel}
+            className="btn-exportar-excel"
+            disabled={!dataInicio || !dataFim}
+            style={{ background: '#217346', marginRight: '8px' }}
+          >
+            <FaFileExcel /> Excel/CSV
+          </button>
+          <button
             onClick={gerarRelatorio}
             className="btn-gerar-relatorio"
             disabled={!dataInicio || !dataFim}
           >
-            <FaDownload /> Gerar Relatório
+            <FaFilePdf /> PDF
           </button>
         </div>
       </div>

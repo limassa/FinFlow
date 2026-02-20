@@ -1,16 +1,15 @@
 {
   "files": {
-    "main.css": "/static/css/main.1854bbc6.css",
-    "main.js": "/static/js/main.a87f8e57.js",
+    "main.css": "/static/css/main.ac062a8a.css",
+    "main.js": "/static/js/main.d6776b28.js",
     "static/js/488.a61d1b68.chunk.js": "/static/js/488.a61d1b68.chunk.js",
     "index.html": "/index.html",
-    "static/media/logo-liz-modern.svg": "/static/media/logo-liz-modern.3ffe96c05399d5dbbeac5e1e02c4354e.svg",
-    "main.1854bbc6.css.map": "/static/css/main.1854bbc6.css.map",
-    "main.a87f8e57.js.map": "/static/js/main.a87f8e57.js.map",
+    "main.ac062a8a.css.map": "/static/css/main.ac062a8a.css.map",
+    "main.d6776b28.js.map": "/static/js/main.d6776b28.js.map",
     "488.a61d1b68.chunk.js.map": "/static/js/488.a61d1b68.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.1854bbc6.css",
-    "static/js/main.a87f8e57.js"
+    "static/css/main.ac062a8a.css",
+    "static/js/main.d6776b28.js"
   ]
 }

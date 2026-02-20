@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt } from 'react-icons/fa';
+import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt, FaCalculator, FaCreditCard, FaChartPie, FaTags } from 'react-icons/fa';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
@@ -76,6 +76,46 @@ function Layout() {
         title="Calendário">
             <span className="icon"><FaCalendarAlt /></span>
             <span className="label">{hovered === 'calendario' && 'Calendário'}</span>
+        </div>
+        {/*Cartões*/}
+        <div className={`sidebar-item ${hovered === 'cartoes' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('cartoes')}
+        onMouseLeave={() => setHovered(null)}
+                    onClick={() => navigate('/layout/cartoes')}
+        style={{ cursor: 'pointer' }}
+        title="Cartões de Crédito">
+            <span className="icon"><FaCreditCard /></span>
+            <span className="label">{hovered === 'cartoes' && 'Cartões'}</span>
+        </div>
+        {/*Orçamento*/}
+        <div className={`sidebar-item ${hovered === 'orcamento' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('orcamento')}
+        onMouseLeave={() => setHovered(null)}
+                    onClick={() => navigate('/layout/orcamento')}
+        style={{ cursor: 'pointer' }}
+        title="Orçamento Mensal">
+            <span className="icon"><FaChartPie /></span>
+            <span className="label">{hovered === 'orcamento' && 'Orçamento'}</span>
+        </div>
+        {/*Categorias*/}
+        <div className={`sidebar-item ${hovered === 'categorias' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('categorias')}
+        onMouseLeave={() => setHovered(null)}
+                    onClick={() => navigate('/layout/categorias')}
+        style={{ cursor: 'pointer' }}
+        title="Categorias">
+            <span className="icon"><FaTags /></span>
+            <span className="label">{hovered === 'categorias' && 'Categorias'}</span>
+        </div>
+        {/*Calculadoras*/}
+        <div className={`sidebar-item ${hovered === 'calculadoras' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('calculadoras')}
+        onMouseLeave={() => setHovered(null)}
+                    onClick={() => navigate('/layout/calculadora-juros')}
+        style={{ cursor: 'pointer' }}
+        title="Calculadoras">
+            <span className="icon"><FaCalculator /></span>
+            <span className="label">{hovered === 'calculadoras' && 'Calculadoras'}</span>
         </div>
         {/*Fale Conosco*/}
         <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''}`}

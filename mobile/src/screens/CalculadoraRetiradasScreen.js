@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   resultPositive: {
-    color: '#4caf50',
+    color: colors.success,
   },
   infoCard: {
     backgroundColor: '#fff',

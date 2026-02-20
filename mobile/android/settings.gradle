@@ -44,7 +44,7 @@ if (getRNMinorVersion() >= 75) {
   }
 }
 
-rootProject.name = 'FinFlow'
+rootProject.name = 'Claricash'
 
 dependencyResolutionManagement {
   versionCatalogs {

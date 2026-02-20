@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaCalculator, FaChartLine, FaMoneyBillWave } from 'react-icons/fa';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FaCalculator, FaChartLine, FaMoneyBillWave, FaHome } from 'react-icons/fa';
+import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 
 /**
@@ -10,6 +11,9 @@ import '../App.css';
  */
 function CalculadoraAporteMeta() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const usuario = getUsuarioLogado();
+  const isInsideLayout = location.pathname.startsWith('/layout');
   const [formData, setFormData] = useState({
     taxaMensal: '0,60',
     anos: '30',
@@ -101,7 +105,13 @@ function CalculadoraAporteMeta() {
     }
   };
 
-  const voltarLogin = () => navigate('/');
+  const voltarLogin = () => {
+    if (isInsideLayout) {
+      navigate('/layout/principal');
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <div className="calculadora-fullscreen">
@@ -170,14 +180,18 @@ function CalculadoraAporteMeta() {
         </div>
 
         <button type="button" className="form-button secondary" onClick={voltarLogin}>
-          Voltar ao Login
+          {isInsideLayout ? (
+            <><FaHome style={{ marginRight: 8 }} /> Voltar ao Menu</>
+          ) : (
+            'Voltar ao Login'
+          )}
         </button>
 
         <div className="calculadora-section">
           <button
             type="button"
             className="calculadora-button"
-            onClick={() => navigate('/calculadora-juros')}
+            onClick={() => navigate(isInsideLayout ? '/layout/calculadora-juros' : '/calculadora-juros')}
           >
             <FaCalculator />
             Calculadora de Juros
@@ -185,7 +199,7 @@ function CalculadoraAporteMeta() {
           <button
             type="button"
             className="calculadora-button"
-            onClick={() => navigate('/calculadora-retiradas')}
+            onClick={() => navigate(isInsideLayout ? '/layout/calculadora-retiradas' : '/calculadora-retiradas')}
           >
             <FaCalculator />
             Simular Retiradas Mensais

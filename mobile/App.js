@@ -45,7 +45,7 @@ function HomeStackNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#3e57a2' },
+        headerStyle: { backgroundColor: '#2563EB' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
       }}
@@ -85,7 +85,7 @@ function DrawerNavigator() {
     <Drawer.Navigator
       screenOptions={({ navigation }) => ({
         headerStyle: {
-          backgroundColor: '#3e57a2',
+          backgroundColor: '#2563EB',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -100,7 +100,7 @@ function DrawerNavigator() {
             onPress={() => navigation.openDrawer()}
           />
         ),
-        drawerActiveTintColor: '#3e57a2',
+        drawerActiveTintColor: '#2563EB',
         drawerInactiveTintColor: '#666',
         drawerStyle: {
           backgroundColor: '#fff',
@@ -248,10 +248,10 @@ function MainTabs() {
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#3e57a2',
+        tabBarActiveTintColor: '#2563EB',
         tabBarInactiveTintColor: 'gray',
         headerShown: true,
-        headerStyle: { backgroundColor: '#3e57a2' },
+        headerStyle: { backgroundColor: '#2563EB' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
       })}
@@ -288,7 +288,7 @@ function MainTabs() {
         options={({ navigation }) => ({
           headerShown: true,
           title: 'Contas',
-          headerStyle: { backgroundColor: '#3e57a2' },
+          headerStyle: { backgroundColor: '#2563EB' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => (
@@ -308,7 +308,7 @@ function MainTabs() {
         options={({ navigation }) => ({
           headerShown: true,
           title: 'Configurações',
-          headerStyle: { backgroundColor: '#3e57a2' },
+          headerStyle: { backgroundColor: '#2563EB' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => (
@@ -327,7 +327,7 @@ function MainTabs() {
         component={SairScreen}
         options={{
           title: 'Sair',
-          headerStyle: { backgroundColor: '#3e57a2' },
+          headerStyle: { backgroundColor: '#2563EB' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
         }}

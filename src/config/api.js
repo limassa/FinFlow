@@ -40,6 +40,22 @@ export const API_ENDPOINTS = {
   
   // Fale Conosco
   FALE_CONOSCO: `${API_BASE_URL}/api/fale-conosco`,
+  
+  // Eventos (Agenda/Calendário)
+  EVENTOS: `${API_BASE_URL}/api/eventos`,
+  
+  // Cartões de Crédito
+  CARTOES: `${API_BASE_URL}/api/cartoes`,
+  COMPRAS_CARTAO: `${API_BASE_URL}/api/compras-cartao`,
+  
+  // Categorias Customizáveis
+  CATEGORIAS: `${API_BASE_URL}/api/categorias`,
+  
+  // Orçamento Mensal
+  ORCAMENTOS: `${API_BASE_URL}/api/orcamentos`,
+  
+  // Foto do Usuário
+  USER_FOTO: `${API_BASE_URL}/api/user/foto`,
 };
 
 export default API_BASE_URL; 

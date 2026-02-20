@@ -310,7 +310,7 @@ function GraficosPizza() {
         <button 
           onClick={prevChart} 
           className="btn-carrossel-side"
-          disabled={!hasReceitas}
+          disabled={currentChart === 0}
         >
           <FaChevronLeft />
         </button>
@@ -345,7 +345,7 @@ function GraficosPizza() {
         <button 
           onClick={nextChart} 
           className="btn-carrossel-side"
-          disabled={!hasDespesas}
+          disabled={currentChart === 1}
         >
           <FaChevronRight />
         </button>

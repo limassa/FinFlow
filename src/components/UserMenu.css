@@ -28,7 +28,15 @@
 
 .user-icon {
   font-size: 16px;
-  color: #667eea;
+  color: #2563EB;
+}
+
+.user-foto {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2563EB;
 }
 
 .user-name {
@@ -65,7 +73,7 @@
 
 .menu-header {
   padding: 15px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -76,6 +84,67 @@
 
 .menu-header svg {
   font-size: 16px;
+}
+
+.menu-foto-container {
+  position: relative;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-user-foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-user-icon {
+  font-size: 20px;
+  color: white;
+}
+
+.foto-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.menu-foto-container:hover .foto-overlay {
+  opacity: 1;
+}
+
+.foto-overlay svg {
+  font-size: 14px;
+  color: white;
+}
+
+.foto-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
 }
 
 .menu-item {

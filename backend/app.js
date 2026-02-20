@@ -1697,6 +1697,537 @@ async function enviarLembretesAgendados() {
   }
 }
 
+// =====================================================
+// NOVAS ROTAS: EVENTOS (Agenda/Calendário)
+// =====================================================
+
+// Listar eventos
+app.get('/api/eventos', async (req, res) => {
+  const { userId, mes } = req.query;
+  try {
+    let query = 'SELECT * FROM evento WHERE usuario_id = $1 AND evento_ativo = TRUE';
+    const params = [userId];
+    
+    if (mes) {
+      query += ` AND TO_CHAR(evento_data, 'YYYY-MM') = $2`;
+      params.push(mes);
+    }
+    
+    query += ' ORDER BY evento_data, evento_hora_inicio';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar eventos:', err);
+    res.status(500).json({ error: 'Erro ao buscar eventos' });
+  }
+});
+
+// Criar evento
+app.post('/api/eventos', async (req, res) => {
+  const { 
+    usuario_id, titulo, descricao, data, hora_inicio, hora_fim, 
+    tipo, cor, recorrente, frequencia, lembrete, lembrete_minutos,
+    receita_id, despesa_id 
+  } = req.body;
+  
+  try {
+    const result = await pool.query(`
+      INSERT INTO evento (
+        usuario_id, evento_titulo, evento_descricao, evento_data, 
+        evento_hora_inicio, evento_hora_fim, evento_tipo, evento_cor,
+        evento_recorrente, evento_frequencia, evento_lembrete, 
+        evento_lembrete_minutos, receita_id, despesa_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *
+    `, [
+      usuario_id, titulo, descricao, data, hora_inicio || null, hora_fim || null,
+      tipo || 'geral', cor || '#4F46E5', recorrente || false, frequencia || null,
+      lembrete !== false, lembrete_minutos || 30, receita_id || null, despesa_id || null
+    ]);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar evento:', err);
+    res.status(500).json({ error: 'Erro ao criar evento' });
+  }
+});
+
+// Atualizar evento
+app.put('/api/eventos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { 
+    titulo, descricao, data, hora_inicio, hora_fim, 
+    tipo, cor, recorrente, frequencia, lembrete, lembrete_minutos 
+  } = req.body;
+  
+  try {
+    const result = await pool.query(`
+      UPDATE evento SET 
+        evento_titulo = $1, evento_descricao = $2, evento_data = $3,
+        evento_hora_inicio = $4, evento_hora_fim = $5, evento_tipo = $6,
+        evento_cor = $7, evento_recorrente = $8, evento_frequencia = $9,
+        evento_lembrete = $10, evento_lembrete_minutos = $11,
+        evento_atualizado_em = CURRENT_TIMESTAMP
+      WHERE evento_id = $12
+      RETURNING *
+    `, [titulo, descricao, data, hora_inicio, hora_fim, tipo, cor, 
+        recorrente, frequencia, lembrete, lembrete_minutos, id]);
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar evento:', err);
+    res.status(500).json({ error: 'Erro ao atualizar evento' });
+  }
+});
+
+// Deletar evento
+app.delete('/api/eventos/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE evento SET evento_ativo = FALSE WHERE evento_id = $1', [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar evento:', err);
+    res.status(500).json({ error: 'Erro ao deletar evento' });
+  }
+});
+
+// =====================================================
+// NOVAS ROTAS: CARTÕES DE CRÉDITO
+// =====================================================
+
+// Listar cartões
+app.get('/api/cartoes', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM cartao_credito WHERE usuario_id = $1 AND cartao_ativo = TRUE ORDER BY cartao_nome',
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar cartões:', err);
+    res.status(500).json({ error: 'Erro ao buscar cartões' });
+  }
+});
+
+// Criar cartão
+app.post('/api/cartoes', async (req, res) => {
+  const { usuario_id, nome, bandeira, limite, dia_fechamento, dia_vencimento, cor } = req.body;
+  try {
+    const result = await pool.query(`
+      INSERT INTO cartao_credito (
+        usuario_id, cartao_nome, cartao_bandeira, cartao_limite, 
+        cartao_dia_fechamento, cartao_dia_vencimento, cartao_cor
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `, [usuario_id, nome, bandeira || null, limite || 0, 
+        dia_fechamento || 1, dia_vencimento || 10, cor || '#4F46E5']);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar cartão:', err);
+    res.status(500).json({ error: 'Erro ao criar cartão' });
+  }
+});
+
+// Atualizar cartão
+app.put('/api/cartoes/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, bandeira, limite, dia_fechamento, dia_vencimento, cor } = req.body;
+  try {
+    const result = await pool.query(`
+      UPDATE cartao_credito SET 
+        cartao_nome = $1, cartao_bandeira = $2, cartao_limite = $3,
+        cartao_dia_fechamento = $4, cartao_dia_vencimento = $5, cartao_cor = $6
+      WHERE cartao_id = $7
+      RETURNING *
+    `, [nome, bandeira, limite, dia_fechamento, dia_vencimento, cor, id]);
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar cartão:', err);
+    res.status(500).json({ error: 'Erro ao atualizar cartão' });
+  }
+});
+
+// Deletar cartão
+app.delete('/api/cartoes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE cartao_credito SET cartao_ativo = FALSE WHERE cartao_id = $1', [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar cartão:', err);
+    res.status(500).json({ error: 'Erro ao deletar cartão' });
+  }
+});
+
+// =====================================================
+// NOVAS ROTAS: COMPRAS NO CARTÃO
+// =====================================================
+
+// Listar compras
+app.get('/api/compras-cartao', async (req, res) => {
+  const { userId, cartaoId, mes } = req.query;
+  try {
+    let query = 'SELECT c.*, cc.cartao_nome, cc.cartao_bandeira FROM compra_cartao c JOIN cartao_credito cc ON c.cartao_id = cc.cartao_id WHERE c.usuario_id = $1 AND c.compra_ativo = TRUE';
+    const params = [userId];
+    let paramIndex = 2;
+    
+    if (cartaoId) {
+      query += ` AND c.cartao_id = $${paramIndex}`;
+      params.push(cartaoId);
+      paramIndex++;
+    }
+    
+    if (mes) {
+      query += ` AND c.compra_mes_fatura = $${paramIndex}`;
+      params.push(mes);
+    }
+    
+    query += ' ORDER BY c.compra_data DESC';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar compras:', err);
+    res.status(500).json({ error: 'Erro ao buscar compras' });
+  }
+});
+
+// Criar compra (com suporte a parcelas)
+app.post('/api/compras-cartao', async (req, res) => {
+  const { 
+    usuario_id, cartao_id, descricao, valor_total, data, 
+    categoria, parcelas 
+  } = req.body;
+  
+  try {
+    const numParcelas = parcelas || 1;
+    const valorParcela = valor_total / numParcelas;
+    const comprasCriadas = [];
+    
+    // Calcular mês da primeira fatura (baseado no dia de fechamento do cartão)
+    const cartaoResult = await pool.query(
+      'SELECT cartao_dia_fechamento FROM cartao_credito WHERE cartao_id = $1',
+      [cartao_id]
+    );
+    const diaFechamento = cartaoResult.rows[0]?.cartao_dia_fechamento || 1;
+    
+    const dataCompra = new Date(data);
+    let mesInicial = new Date(dataCompra.getFullYear(), dataCompra.getMonth(), 1);
+    
+    // Se a compra foi após o fechamento, vai para o próximo mês
+    if (dataCompra.getDate() >= diaFechamento) {
+      mesInicial.setMonth(mesInicial.getMonth() + 1);
+    }
+    
+    // Criar cada parcela como uma entrada separada
+    for (let i = 0; i < numParcelas; i++) {
+      const mesFatura = new Date(mesInicial);
+      mesFatura.setMonth(mesFatura.getMonth() + i);
+      const mesFaturaStr = mesFatura.toISOString().slice(0, 7);
+      
+      const result = await pool.query(`
+        INSERT INTO compra_cartao (
+          cartao_id, usuario_id, compra_descricao, compra_valor_total,
+          compra_data, compra_categoria, compra_parcelas, compra_parcela_atual,
+          compra_valor_parcela, compra_mes_fatura
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+      `, [
+        cartao_id, usuario_id, 
+        numParcelas > 1 ? `${descricao} (${i + 1}/${numParcelas})` : descricao,
+        valor_total, data, categoria || null, numParcelas, i + 1,
+        valorParcela, mesFaturaStr
+      ]);
+      
+      comprasCriadas.push(result.rows[0]);
+    }
+    
+    res.status(201).json(comprasCriadas);
+  } catch (err) {
+    console.error('Erro ao criar compra:', err);
+    res.status(500).json({ error: 'Erro ao criar compra' });
+  }
+});
+
+// Deletar compra (e todas as parcelas relacionadas)
+app.delete('/api/compras-cartao/:id', async (req, res) => {
+  const { id } = req.params;
+  const { deletarParcelas } = req.query;
+  
+  try {
+    if (deletarParcelas === 'true') {
+      // Buscar a compra para encontrar parcelas relacionadas
+      const compra = await pool.query(
+        'SELECT compra_descricao, compra_data, cartao_id FROM compra_cartao WHERE compra_id = $1',
+        [id]
+      );
+      
+      if (compra.rows.length > 0) {
+        const { compra_descricao, compra_data, cartao_id } = compra.rows[0];
+        // Extrair descrição base (sem o "(X/Y)")
+        const descBase = compra_descricao.replace(/\s*\(\d+\/\d+\)$/, '');
+        
+        await pool.query(`
+          UPDATE compra_cartao SET compra_ativo = FALSE 
+          WHERE cartao_id = $1 AND compra_data = $2 
+          AND compra_descricao LIKE $3
+        `, [cartao_id, compra_data, `${descBase}%`]);
+      }
+    } else {
+      await pool.query('UPDATE compra_cartao SET compra_ativo = FALSE WHERE compra_id = $1', [id]);
+    }
+    
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar compra:', err);
+    res.status(500).json({ error: 'Erro ao deletar compra' });
+  }
+});
+
+// Resumo da fatura por mês
+app.get('/api/cartoes/:id/fatura', async (req, res) => {
+  const { id } = req.params;
+  const { mes } = req.query;
+  
+  try {
+    const result = await pool.query(`
+      SELECT 
+        cc.cartao_id, cc.cartao_nome, cc.cartao_bandeira, cc.cartao_limite,
+        cc.cartao_dia_vencimento,
+        COALESCE(SUM(c.compra_valor_parcela), 0) as valor_fatura,
+        COUNT(c.compra_id) as total_compras
+      FROM cartao_credito cc
+      LEFT JOIN compra_cartao c ON cc.cartao_id = c.cartao_id 
+        AND c.compra_ativo = TRUE 
+        AND c.compra_mes_fatura = $2
+      WHERE cc.cartao_id = $1
+      GROUP BY cc.cartao_id
+    `, [id, mes]);
+    
+    res.json(result.rows[0] || {});
+  } catch (err) {
+    console.error('Erro ao buscar fatura:', err);
+    res.status(500).json({ error: 'Erro ao buscar fatura' });
+  }
+});
+
+// =====================================================
+// NOVAS ROTAS: CATEGORIAS CUSTOMIZÁVEIS
+// =====================================================
+
+// Listar categorias
+app.get('/api/categorias', async (req, res) => {
+  const { userId, tipo } = req.query;
+  try {
+    let query = 'SELECT * FROM categoria_customizada WHERE usuario_id = $1 AND categoria_ativo = TRUE';
+    const params = [userId];
+    
+    if (tipo) {
+      query += ' AND categoria_tipo = $2';
+      params.push(tipo);
+    }
+    
+    query += ' ORDER BY categoria_ordem, categoria_nome';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar categorias:', err);
+    res.status(500).json({ error: 'Erro ao buscar categorias' });
+  }
+});
+
+// Criar categoria
+app.post('/api/categorias', async (req, res) => {
+  const { usuario_id, nome, tipo, icone, cor, ordem } = req.body;
+  try {
+    const result = await pool.query(`
+      INSERT INTO categoria_customizada (
+        usuario_id, categoria_nome, categoria_tipo, categoria_icone, 
+        categoria_cor, categoria_ordem
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [usuario_id, nome, tipo, icone || 'ellipsis-horizontal', 
+        cor || '#6B7280', ordem || 0]);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') { // Unique violation
+      res.status(409).json({ error: 'Categoria já existe' });
+    } else {
+      console.error('Erro ao criar categoria:', err);
+      res.status(500).json({ error: 'Erro ao criar categoria' });
+    }
+  }
+});
+
+// Atualizar categoria
+app.put('/api/categorias/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, icone, cor, ordem } = req.body;
+  try {
+    const result = await pool.query(`
+      UPDATE categoria_customizada SET 
+        categoria_nome = $1, categoria_icone = $2, 
+        categoria_cor = $3, categoria_ordem = $4
+      WHERE categoria_id = $5
+      RETURNING *
+    `, [nome, icone, cor, ordem, id]);
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar categoria:', err);
+    res.status(500).json({ error: 'Erro ao atualizar categoria' });
+  }
+});
+
+// Deletar categoria
+app.delete('/api/categorias/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE categoria_customizada SET categoria_ativo = FALSE WHERE categoria_id = $1', [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar categoria:', err);
+    res.status(500).json({ error: 'Erro ao deletar categoria' });
+  }
+});
+
+// =====================================================
+// NOVAS ROTAS: ORÇAMENTO MENSAL
+// =====================================================
+
+// Listar orçamentos
+app.get('/api/orcamentos', async (req, res) => {
+  const { userId, mes } = req.query;
+  try {
+    let query = `
+      SELECT 
+        o.*,
+        COALESCE((
+          SELECT SUM(d.despesa_valor) 
+          FROM despesa d 
+          WHERE d.usuario_id = o.usuario_id 
+            AND d.despesa_tipo = o.orcamento_categoria
+            AND TO_CHAR(d.despesa_data, 'YYYY-MM') = o.orcamento_mes
+            AND d.despesa_ativo = TRUE
+        ), 0) as valor_realizado
+      FROM orcamento_mensal o 
+      WHERE o.usuario_id = $1 AND o.orcamento_ativo = TRUE
+    `;
+    const params = [userId];
+    
+    if (mes) {
+      query += ' AND o.orcamento_mes = $2';
+      params.push(mes);
+    }
+    
+    query += ' ORDER BY o.orcamento_categoria';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar orçamentos:', err);
+    res.status(500).json({ error: 'Erro ao buscar orçamentos' });
+  }
+});
+
+// Criar ou atualizar orçamento
+app.post('/api/orcamentos', async (req, res) => {
+  const { usuario_id, categoria, valor, mes } = req.body;
+  try {
+    // Tentar inserir, se já existir, atualizar
+    const result = await pool.query(`
+      INSERT INTO orcamento_mensal (usuario_id, orcamento_categoria, orcamento_valor, orcamento_mes)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (usuario_id, orcamento_categoria, orcamento_mes) 
+      DO UPDATE SET orcamento_valor = $3, orcamento_ativo = TRUE
+      RETURNING *
+    `, [usuario_id, categoria, valor, mes]);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar orçamento:', err);
+    res.status(500).json({ error: 'Erro ao criar orçamento' });
+  }
+});
+
+// Deletar orçamento
+app.delete('/api/orcamentos/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE orcamento_mensal SET orcamento_ativo = FALSE WHERE orcamento_id = $1', [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar orçamento:', err);
+    res.status(500).json({ error: 'Erro ao deletar orçamento' });
+  }
+});
+
+// =====================================================
+// NOVAS ROTAS: FOTO DO USUÁRIO
+// =====================================================
+
+// Upload de foto do usuário (base64)
+app.put('/api/user/foto', async (req, res) => {
+  const { userId, foto } = req.body;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'userId é obrigatório' });
+  }
+  
+  try {
+    // Tentar atualizar em minúsculas primeiro
+    try {
+      await pool.query(
+        'UPDATE usuario SET usuario_foto = $1, usuario_foto_atualizada_em = CURRENT_TIMESTAMP WHERE usuario_id = $2',
+        [foto, userId]
+      );
+    } catch (e) {
+      // Tentar com maiúsculas
+      await pool.query(
+        'UPDATE "Usuario" SET "Usuario_Foto" = $1, "Usuario_Foto_Atualizada_Em" = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $2',
+        [foto, userId]
+      );
+    }
+    
+    res.json({ success: true, message: 'Foto atualizada com sucesso' });
+  } catch (err) {
+    console.error('Erro ao atualizar foto:', err);
+    res.status(500).json({ error: 'Erro ao atualizar foto' });
+  }
+});
+
+// Buscar foto do usuário
+app.get('/api/user/foto', async (req, res) => {
+  const { userId } = req.query;
+  
+  try {
+    let result;
+    try {
+      result = await pool.query(
+        'SELECT usuario_foto FROM usuario WHERE usuario_id = $1',
+        [userId]
+      );
+    } catch (e) {
+      result = await pool.query(
+        'SELECT "Usuario_Foto" as usuario_foto FROM "Usuario" WHERE "Usuario_Id" = $1',
+        [userId]
+      );
+    }
+    
+    res.json({ foto: result.rows[0]?.usuario_foto || null });
+  } catch (err) {
+    console.error('Erro ao buscar foto:', err);
+    res.status(500).json({ error: 'Erro ao buscar foto' });
+  }
+});
+
 // Job agendado: executar a cada minuto para verificar lembretes
 // NOTA: No Railway, este cron pode não funcionar se o servidor ficar inativo
 // Use um serviço externo (cron-job.org, EasyCron) para chamar /api/lembretes/webhook

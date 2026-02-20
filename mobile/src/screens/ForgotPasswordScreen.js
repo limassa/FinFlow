@@ -65,8 +65,8 @@ export default function ForgotPasswordScreen({ navigation }) {
           <Svg width="80" height="80" viewBox="0 0 80 80">
             <Defs>
               <LinearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#3e57a2" stopOpacity="1" />
-                <Stop offset="100%" stopColor="#2d199c" stopOpacity="1" />
+                <Stop offset="0%" stopColor="#4F46E5" stopOpacity="1" />
+                <Stop offset="100%" stopColor="#2563EB" stopOpacity="1" />
               </LinearGradient>
             </Defs>
             <Circle cx="40" cy="40" r="36" fill="url(#logoGradient)" />
@@ -97,7 +97,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
           {message ? (
             <View style={styles.messageContainer}>
-              <Ionicons name="checkmark-circle" size={20} color="#4caf50" />
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
               <Text style={styles.messageText}>{message}</Text>
             </View>
           ) : null}
