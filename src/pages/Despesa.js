@@ -9,6 +9,7 @@ import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { normalizarDataInput } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
@@ -686,7 +687,9 @@ function Despesa() {
               <input
                 type="date"
                 value={dataVencimento}
-                onChange={e => setDataVencimento(e.target.value)}
+                onChange={e => setDataVencimento(normalizarDataInput(e.target.value))}
+                min="1900-01-01"
+                max="2099-12-31"
               />
             </div>
           </div>

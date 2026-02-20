@@ -3,7 +3,7 @@ import { FaFilePdf, FaDownload, FaTimes } from 'react-icons/fa';
 import RelatorioPDF from './RelatorioPDF';
 import { formatarNomeArquivo } from '../utils/formatters';
 import '../App.css';
-import { formatarData } from '../utils/formatters';
+import { formatarData, normalizarDataInput } from '../utils/formatters';
 
 function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
   const [tipoRelatorio, setTipoRelatorio] = useState('consolidado');
@@ -129,8 +129,9 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
                         <input
                           type="date"
                           value={dataInicio}
-                          onChange={(e) => setDataInicio(e.target.value)}
+                          onChange={(e) => setDataInicio(normalizarDataInput(e.target.value))}
                           className="form-select"
+                          min="1900-01-01"
                           max={new Date().toISOString().split('T')[0]}
                         />
                       </div>
@@ -140,8 +141,9 @@ function ModalRelatorio({ isOpen, onClose, receitas, despesas }) {
                         <input
                           type="date"
                           value={dataFim}
-                          onChange={(e) => setDataFim(e.target.value)}
+                          onChange={(e) => setDataFim(normalizarDataInput(e.target.value))}
                           className="form-select"
+                          min="1900-01-01"
                           max={new Date().toISOString().split('T')[0]}
                         />
                       </div>

@@ -33,6 +33,19 @@ export const formatarDataHora = (data) => {
   }
 };
 
+/** Normaliza input date (YYYY-MM-DD) para ano com no máximo 4 dígitos */
+export const normalizarDataInput = (valor) => {
+  if (!valor || typeof valor !== 'string') return valor;
+  const parts = valor.split('-');
+  if (parts.length < 1) return valor;
+  const ano = parts[0];
+  if (ano && ano.length > 4) {
+    parts[0] = ano.slice(0, 4);
+    return parts.join('-');
+  }
+  return valor;
+};
+
 export const formatarPeriodo = (dataInicio, dataFim) => {
   const inicio = formatarData(dataInicio);
   const fim = formatarData(dataFim);

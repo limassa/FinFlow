@@ -21,6 +21,7 @@ import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
+import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
@@ -67,6 +68,8 @@ export default function DespesaScreen() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
+  const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [gruposColapsados, setGruposColapsados] = useState(new Set());
   // Metas
   const [metas, setMetas] = useState([]);
   const [mostrarMetas, setMostrarMetas] = useState(false);
@@ -398,6 +401,14 @@ export default function DespesaScreen() {
     });
   }, [despesasFiltradas]);
 
+  const despesasOrdenadasPorData = React.useMemo(() => {
+    return [...despesasFiltradas].sort((a, b) => {
+      const dataA = (a.despesa_data || '').split('T')[0];
+      const dataB = (b.despesa_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [despesasFiltradas]);
+
   const handleDeleteGroup = (labelGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
@@ -429,6 +440,87 @@ export default function DespesaScreen() {
     } catch (err) {
       Alert.alert('Erro', 'Erro ao atualizar status');
     }
+  };
+
+  const renderDespesaCard = (despesa) => {
+    const conta = contas.find(c => c.conta_id === despesa.conta_id);
+    const isSelected = selectedIds.has(despesa.despesa_id);
+    return (
+      <View key={despesa.despesa_id} style={styles.despesaCard}>
+        <TouchableOpacity
+          style={styles.cardCheckbox}
+          onPress={() => toggleSelect(despesa.despesa_id)}
+        >
+          <Ionicons
+            name={isSelected ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={isSelected ? colors.primary : colors.textSecondary}
+          />
+        </TouchableOpacity>
+        <View style={styles.despesaCardContent}>
+          <View style={styles.despesaHeader}>
+            <View style={styles.despesaInfo}>
+              <Text style={styles.despesaDescricao}>{despesa.despesa_descricao}</Text>
+              <Text style={styles.despesaValor}>{formatarValor(despesa.despesa_valor)}</Text>
+            </View>
+            <Switch
+              value={despesa.despesa_pago || false}
+              onValueChange={() => handleTogglePago(despesa)}
+            />
+          </View>
+          <View style={styles.despesaDetails}>
+            <Text style={styles.despesaDetail}>
+              <Ionicons name="calendar" size={14} /> {formatarData(despesa.despesa_data)}
+            </Text>
+            {despesa.despesa_dtvencimento && (
+              <Text style={styles.despesaDetail}>
+                <Ionicons name="time" size={14} /> Venc: {formatarData(despesa.despesa_dtvencimento)}
+              </Text>
+            )}
+            <Text style={styles.despesaDetail}>
+              <Ionicons name="pricetag" size={14} /> {despesa.despesa_tipo}
+            </Text>
+            {conta && (
+              <View style={styles.despesaDetail}>
+                {(() => {
+                  const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                  if (b) {
+                    return (
+                      <View style={styles.contaBadgeRow}>
+                        <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
+                          <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
+                        </View>
+                        <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
+                      </View>
+                    );
+                  }
+                  return (
+                    <View style={styles.contaBadgeRow}>
+                      <Ionicons name="wallet" size={14} color={colors.textSecondary} />
+                      <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+          </View>
+          <View style={styles.despesaActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEdit(despesa)}
+            >
+              <Ionicons name="create" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleDelete(despesa.despesa_id)}
+            >
+              <Ionicons name="trash" size={20} color={colors.error} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   const resetForm = () => {
@@ -541,17 +633,19 @@ export default function DespesaScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total</Text>
-          <Text style={styles.statValue}>{formatarValor(totalDespesas)}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statValue}>{formatarValor(totalDespesas)}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Qtde</Text>
+            <Text style={styles.statValue}>{despesasFiltradas.length}</Text>
+          </View>
         </View>
         <View style={[styles.statCard, styles.statCardPrevisao]}>
-          <Text style={styles.statLabel}>Previsão</Text>
+          <Text style={[styles.statLabel, styles.statLabelPrevisao]}>Previsão</Text>
           <Text style={styles.statValuePrevisao}>{formatarValor(previsaoDespesas)}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Quantidade</Text>
-          <Text style={styles.statValue}>{despesasFiltradas.length}</Text>
         </View>
       </View>
 
@@ -577,6 +671,18 @@ export default function DespesaScreen() {
           onChange={setFiltroPago}
           placeholder="Status"
         />
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setExibirAgrupado(!exibirAgrupado)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={exibirAgrupado ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={exibirAgrupado ? colors.primary : colors.textSecondary}
+          />
+          <Text style={styles.checkboxLabel}>Agrupar por tipo</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Seção de Metas */}
@@ -592,10 +698,11 @@ export default function DespesaScreen() {
         {mostrarMetas && (
           <>
             <View style={styles.metasForm}>
-              <Select
+              <SelectWithIcons
                 value={metaCategoria}
                 options={tiposDespesa.map(t => ({ label: t, value: t }))}
                 onChange={setMetaCategoria}
+                categoria="despesa"
                 placeholder="Selecione a categoria"
               />
               <TextInput
@@ -682,119 +789,91 @@ export default function DespesaScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-              {despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => (
-                <View key={tipoGrupo}>
-                  <View style={[styles.groupHeader, styles.groupHeaderNivel1]}>
-                    <View style={styles.groupHeaderTitleRow}>
-                      <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
-                      <Text style={styles.groupCount}>({subgrupos.reduce((s, sg) => s + sg.itens.length, 0)})</Text>
-                    </View>
-                  </View>
-                  {subgrupos.map(({ nomeBase, itens }) => (
-                    <View key={`${tipoGrupo}|${nomeBase}`}>
-                      <View style={[styles.groupHeader, styles.groupHeaderSubnivel]}>
-                        <Text style={styles.groupHeaderText}>{nomeBase}</Text>
+              {exibirAgrupado ? (
+                despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
+                  const tipoKey = `tipo:${tipoGrupo}`;
+                  const tipoColapsado = gruposColapsados.has(tipoKey);
+                  const toggleTipo = () => {
+                    setGruposColapsados(prev => {
+                      const next = new Set(prev);
+                      if (next.has(tipoKey)) next.delete(tipoKey);
+                      else next.add(tipoKey);
+                      return next;
+                    });
+                  };
+                  const totalTipo = subgrupos.reduce((s, sg) => s + sg.itens.length, 0);
+                  const itensPlanos = subgrupos.flatMap(sg => sg.itens);
+                  return (
+                    <View key={tipoKey}>
+                      <View style={[styles.groupHeader, styles.groupHeaderNivel1]}>
+                        <TouchableOpacity style={styles.groupHeaderLeft} onPress={toggleTipo} activeOpacity={0.7}>
+                          <Ionicons name={tipoColapsado ? 'chevron-forward' : 'chevron-down'} size={18} color={colors.text} />
+                          <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
+                          <Text style={styles.groupCount}>({totalTipo})</Text>
+                        </TouchableOpacity>
                         <View style={styles.groupHeaderActions}>
                           <TouchableOpacity
                             style={styles.groupEditButton}
-                            onPress={() => itens.length > 0 && handleEdit(itens[0])}
+                            onPress={() => itensPlanos.length > 0 && handleEdit(itensPlanos[0])}
                           >
                             <Ionicons name="create" size={18} color={colors.primary} />
                             <Text style={styles.groupEditText}>Editar</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={styles.groupDeleteButton}
-                            onPress={() => handleDeleteGroup(nomeBase, itens)}
+                            onPress={() => handleDeleteGroup(tipoGrupo, itensPlanos)}
                           >
                             <Ionicons name="trash" size={18} color={colors.error} />
-                            <Text style={styles.groupDeleteText}>Excluir ({itens.length})</Text>
+                            <Text style={styles.groupDeleteText}>Excluir</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
-                      {itens.map(despesa => {
-                    const conta = contas.find(c => c.conta_id === despesa.conta_id);
-                    const isSelected = selectedIds.has(despesa.despesa_id);
-                    return (
-                      <View key={despesa.despesa_id} style={styles.despesaCard}>
-                        <TouchableOpacity
-                          style={styles.cardCheckbox}
-                          onPress={() => toggleSelect(despesa.despesa_id)}
-                        >
-                          <Ionicons
-                            name={isSelected ? 'checkbox' : 'square-outline'}
-                            size={22}
-                            color={isSelected ? colors.primary : colors.textSecondary}
-                          />
-                        </TouchableOpacity>
-                        <View style={styles.despesaCardContent}>
-                          <View style={styles.despesaHeader}>
-                            <View style={styles.despesaInfo}>
-                              <Text style={styles.despesaDescricao}>{despesa.despesa_descricao}</Text>
-                              <Text style={styles.despesaValor}>{formatarValor(despesa.despesa_valor)}</Text>
-                            </View>
-                            <Switch
-                              value={despesa.despesa_pago || false}
-                              onValueChange={() => handleTogglePago(despesa)}
-                            />
-                          </View>
-                          <View style={styles.despesaDetails}>
-                            <Text style={styles.despesaDetail}>
-                              <Ionicons name="calendar" size={14} /> {formatarData(despesa.despesa_data)}
-                            </Text>
-                            {despesa.despesa_dtvencimento && (
-                              <Text style={styles.despesaDetail}>
-                                <Ionicons name="time" size={14} /> Venc: {formatarData(despesa.despesa_dtvencimento)}
-                              </Text>
-                            )}
-                            <Text style={styles.despesaDetail}>
-                              <Ionicons name="pricetag" size={14} /> {despesa.despesa_tipo}
-                            </Text>
-                            {conta && (
-                              <View style={styles.despesaDetail}>
-                                {(() => {
-                                  const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
-                                  if (b) {
-                                    return (
-                                      <View style={styles.contaBadgeRow}>
-                                        <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
-                                          <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
-                                        </View>
-                                        <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
-                                      </View>
-                                    );
-                                  }
-                                  return (
-                                    <View style={styles.contaBadgeRow}>
-                                      <Ionicons name="wallet" size={14} color={colors.textSecondary} />
-                                      <Text style={styles.despesaDetailText}>{conta.conta_nome}</Text>
-                                    </View>
-                                  );
-                                })()}
+                      {!tipoColapsado && subgrupos.map(({ nomeBase, itens }) => {
+                        const subKey = `${tipoKey}:${nomeBase}`;
+                        const subColapsado = gruposColapsados.has(subKey);
+                        const toggleSub = () => {
+                          setGruposColapsados(prev => {
+                            const next = new Set(prev);
+                            if (next.has(subKey)) next.delete(subKey);
+                            else next.add(subKey);
+                            return next;
+                          });
+                        };
+                        return (
+                          <View key={subKey} style={styles.subGroup}>
+                            <TouchableOpacity style={[styles.groupHeader, styles.groupHeaderSubnivel]} onPress={toggleSub} activeOpacity={0.7}>
+                              <View style={styles.groupHeaderLeft}>
+                                <Ionicons name={subColapsado ? 'chevron-forward' : 'chevron-down'} size={16} color={colors.textSecondary} />
+                                <Text style={styles.groupHeaderText}>{nomeBase}</Text>
+                                <Text style={styles.subGroupCount}>({itens.length})</Text>
                               </View>
-                            )}
-                          </View>
-                          <View style={styles.despesaActions}>
-                            <TouchableOpacity
-                              style={styles.actionButton}
-                              onPress={() => handleEdit(despesa)}
-                            >
-                              <Ionicons name="create" size={20} color={colors.primary} />
+                              <View style={styles.groupHeaderActions}>
+                                <TouchableOpacity
+                                  style={styles.groupEditButton}
+                                  onPress={() => itens.length > 0 && handleEdit(itens[0])}
+                                >
+                                  <Ionicons name="create" size={18} color={colors.primary} />
+                                  <Text style={styles.groupEditText}>Editar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.groupDeleteButton}
+                                  onPress={() => handleDeleteGroup(nomeBase, itens)}
+                                >
+                                  <Ionicons name="trash" size={18} color={colors.error} />
+                                  <Text style={styles.groupDeleteText}>Excluir</Text>
+                                </TouchableOpacity>
+                              </View>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.actionButton}
-                              onPress={() => handleDelete(despesa.despesa_id)}
-                            >
-                              <Ionicons name="trash" size={20} color={colors.error} />
-                            </TouchableOpacity>
+                            {!subColapsado && itens.map(despesa => renderDespesaCard(despesa))}
                           </View>
-                        </View>
-                      </View>
-                    );
-                  })}
+                        );
+                      })}
                     </View>
-                  ))}
-                </View>
-              ))}
+                  );
+                })
+              ) : (
+                despesasOrdenadasPorData.map(despesa => renderDespesaCard(despesa))
+              )}
             </>
           )}
         </ScrollView>
@@ -994,20 +1073,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
   statCardPrevisao: {
-    flex: 0.9,
+    alignSelf: 'stretch',
+  },
+  statLabelPrevisao: {
+    fontSize: 10,
   },
   statValuePrevisao: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1046,6 +1128,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   metasForm: {
+    flexDirection: 'column',
     paddingHorizontal: 14,
     paddingBottom: 14,
     gap: 10,
@@ -1200,10 +1283,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 8,
   },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   groupHeaderText: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
+  },
+  subGroup: {
+    marginLeft: 12,
+    marginBottom: 8,
+  },
+  subGroupCount: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginLeft: 6,
   },
   groupHeaderActions: {
     flexDirection: 'row',
@@ -1272,7 +1369,7 @@ const styles = StyleSheet.create({
   despesaValor: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#f44336',
+    color: colors.error,
   },
   despesaDetails: {
     flexDirection: 'row',

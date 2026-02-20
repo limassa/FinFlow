@@ -53,6 +53,8 @@ export default function ReceitaScreen() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
+  const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [gruposColapsados, setGruposColapsados] = useState(new Set());
 
   useEffect(() => {
     if (userId) {
@@ -361,6 +363,14 @@ export default function ReceitaScreen() {
     });
   }, [receitasFiltradas]);
 
+  const receitasOrdenadasPorData = React.useMemo(() => {
+    return [...receitasFiltradas].sort((a, b) => {
+      const dataA = (a.receita_data || '').split('T')[0];
+      const dataB = (b.receita_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [receitasFiltradas]);
+
   const handleDeleteGroup = (labelGrupo, itens) => {
     const qtd = itens.length;
     if (qtd === 0) return;
@@ -418,6 +428,79 @@ export default function ReceitaScreen() {
 
   const opcoesMeses = gerarOpcoesMeses();
 
+  const renderReceitaCard = (receita) => {
+    const conta = contas.find(c => c.conta_id === receita.conta_id);
+    const isSelected = selectedIds.has(receita.receita_id);
+    return (
+      <View key={receita.receita_id} style={styles.receitaCard}>
+        <TouchableOpacity
+          style={styles.cardCheckbox}
+          onPress={() => toggleSelect(receita.receita_id)}
+        >
+          <Ionicons
+            name={isSelected ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={isSelected ? colors.primary : colors.textSecondary}
+          />
+        </TouchableOpacity>
+        <View style={styles.receitaCardContent}>
+          <View style={styles.receitaHeader}>
+            <View style={styles.receitaInfo}>
+              <Text style={styles.receitaDescricao}>{receita.receita_descricao}</Text>
+              <Text style={styles.receitaValor}>{formatarValor(receita.receita_valor)}</Text>
+            </View>
+            <Switch
+              value={receita.receita_recebido || false}
+              onValueChange={() => handleToggleRecebido(receita)}
+            />
+          </View>
+          <View style={styles.receitaDetails}>
+            <Text style={styles.receitaDetail}>
+              <Ionicons name="calendar" size={14} /> {formatarData(receita.receita_data)}
+            </Text>
+            <Text style={styles.receitaDetail}>
+              <Ionicons name="pricetag" size={14} /> {receita.receita_tipo}
+            </Text>
+            {conta && (
+              <View style={styles.receitaDetail}>
+                {(() => {
+                  const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
+                  return b ? (
+                    <View style={styles.contaBadgeRow}>
+                      <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
+                        <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
+                      </View>
+                      <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.contaBadgeRow}>
+                      <Ionicons name="wallet" size={14} color={colors.textSecondary} />
+                      <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+          </View>
+          <View style={styles.receitaActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEdit(receita)}
+            >
+              <Ionicons name="create" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleDelete(receita.receita_id)}
+            >
+              <Ionicons name="trash" size={20} color={colors.error} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   // Função para abrir formulário de nova receita
   const handleAddPress = React.useCallback(() => {
     console.log('Botão adicionar clicado');
@@ -461,11 +544,11 @@ export default function ReceitaScreen() {
           <Text style={styles.statValue}>{formatarValor(totalReceitas)}</Text>
         </View>
         <View style={[styles.statCard, styles.statCardPrevisao]}>
-          <Text style={styles.statLabel}>Previsão</Text>
+          <Text style={[styles.statLabel, styles.statLabelPrevisao]}>Previsão</Text>
           <Text style={styles.statValuePrevisao}>{formatarValor(previsaoReceitas)}</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Quantidade</Text>
+          <Text style={styles.statLabel}>Qtde</Text>
           <Text style={styles.statValue}>{receitasFiltradas.length}</Text>
         </View>
       </View>
@@ -492,6 +575,18 @@ export default function ReceitaScreen() {
           onChange={setFiltroRecebido}
           placeholder="Status"
         />
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setExibirAgrupado(!exibirAgrupado)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={exibirAgrupado ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={exibirAgrupado ? colors.primary : colors.textSecondary}
+          />
+          <Text style={styles.checkboxLabel}>Agrupar por tipo</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -531,103 +626,91 @@ export default function ReceitaScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-              {receitasPorTipo.map(({ tipo: tipoGrupo, itens }) => (
-                <View key={tipoGrupo}>
-                  <View style={styles.groupHeader}>
-                    <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
-                    <View style={styles.groupHeaderActions}>
-                      <TouchableOpacity
-                        style={styles.groupEditButton}
-                        onPress={() => itens.length > 0 && handleEdit(itens[0])}
-                      >
-                        <Ionicons name="create" size={18} color={colors.primary} />
-                        <Text style={styles.groupEditText}>Editar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.groupDeleteButton}
-                        onPress={() => handleDeleteGroup(tipoGrupo, itens)}
-                      >
-                        <Ionicons name="trash" size={18} color={colors.error} />
-                        <Text style={styles.groupDeleteText}>Excluir grupo ({itens.length})</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  {itens.map(receita => {
-                    const conta = contas.find(c => c.conta_id === receita.conta_id);
-                    const isSelected = selectedIds.has(receita.receita_id);
-                    return (
-                      <View key={receita.receita_id} style={styles.receitaCard}>
-                        <TouchableOpacity
-                          style={styles.cardCheckbox}
-                          onPress={() => toggleSelect(receita.receita_id)}
-                        >
-                          <Ionicons
-                            name={isSelected ? 'checkbox' : 'square-outline'}
-                            size={22}
-                            color={isSelected ? colors.primary : colors.textSecondary}
-                          />
+              {exibirAgrupado ? (
+                receitasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
+                  const tipoKey = `tipo:${tipoGrupo}`;
+                  const tipoColapsado = gruposColapsados.has(tipoKey);
+                  const toggleTipo = () => {
+                    setGruposColapsados(prev => {
+                      const next = new Set(prev);
+                      if (next.has(tipoKey)) next.delete(tipoKey);
+                      else next.add(tipoKey);
+                      return next;
+                    });
+                  };
+                  const totalTipo = subgrupos.reduce((s, sg) => s + sg.itens.length, 0);
+                  const itensPlanos = subgrupos.flatMap(sg => sg.itens);
+                  return (
+                    <View key={tipoKey}>
+                      <View style={styles.groupHeader}>
+                        <TouchableOpacity style={styles.groupHeaderLeft} onPress={toggleTipo} activeOpacity={0.7}>
+                          <Ionicons name={tipoColapsado ? 'chevron-forward' : 'chevron-down'} size={18} color={colors.text} />
+                          <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
+                          <Text style={styles.groupCount}>({totalTipo})</Text>
                         </TouchableOpacity>
-                        <View style={styles.receitaCardContent}>
-                          <View style={styles.receitaHeader}>
-                            <View style={styles.receitaInfo}>
-                              <Text style={styles.receitaDescricao}>{receita.receita_descricao}</Text>
-                              <Text style={styles.receitaValor}>{formatarValor(receita.receita_valor)}</Text>
-                            </View>
-                            <Switch
-                              value={receita.receita_recebido || false}
-                              onValueChange={() => handleToggleRecebido(receita)}
-                            />
-                          </View>
-                          <View style={styles.receitaDetails}>
-                            <Text style={styles.receitaDetail}>
-                              <Ionicons name="calendar" size={14} /> {formatarData(receita.receita_data)}
-                            </Text>
-                            <Text style={styles.receitaDetail}>
-                              <Ionicons name="pricetag" size={14} /> {receita.receita_tipo}
-                            </Text>
-                            {conta && (
-                              <View style={styles.receitaDetail}>
-                                {(() => {
-                                  const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
-                                  return b ? (
-                                    <View style={styles.contaBadgeRow}>
-                                      <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
-                                        <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
-                                      </View>
-                                      <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
-                                    </View>
-                                  ) : (
-                                    <View style={styles.contaBadgeRow}>
-                                      <Ionicons name="wallet" size={14} color={colors.textSecondary} />
-                                      <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
-                                    </View>
-                                  );
-                                })()}
-                              </View>
-                            )}
-                          </View>
-                          <View style={styles.receitaActions}>
-                            <TouchableOpacity
-                              style={styles.actionButton}
-                              onPress={() => handleEdit(receita)}
-                            >
-                              <Ionicons name="create" size={20} color={colors.primary} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.actionButton}
-                              onPress={() => handleDelete(receita.receita_id)}
-                            >
-                              <Ionicons name="trash" size={20} color={colors.error} />
-                            </TouchableOpacity>
-                          </View>
+                        <View style={styles.groupHeaderActions}>
+                          <TouchableOpacity
+                            style={styles.groupEditButton}
+                            onPress={() => itensPlanos.length > 0 && handleEdit(itensPlanos[0])}
+                          >
+                            <Ionicons name="create" size={18} color={colors.primary} />
+                            <Text style={styles.groupEditText}>Editar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.groupDeleteButton}
+                            onPress={() => handleDeleteGroup(tipoGrupo, itensPlanos)}
+                          >
+                            <Ionicons name="trash" size={18} color={colors.error} />
+                            <Text style={styles.groupDeleteText}>Excluir</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
-                    );
-                  })}
+                      {!tipoColapsado && subgrupos.map(({ nomeBase, itens }) => {
+                        const subKey = `${tipoKey}:${nomeBase}`;
+                        const subColapsado = gruposColapsados.has(subKey);
+                        const toggleSub = () => {
+                          setGruposColapsados(prev => {
+                            const next = new Set(prev);
+                            if (next.has(subKey)) next.delete(subKey);
+                            else next.add(subKey);
+                            return next;
+                          });
+                        };
+                        return (
+                          <View key={subKey} style={styles.subGroup}>
+                            <View style={styles.subGroupHeader}>
+                              <TouchableOpacity style={styles.groupHeaderLeft} onPress={toggleSub} activeOpacity={0.7}>
+                                <Ionicons name={subColapsado ? 'chevron-forward' : 'chevron-down'} size={16} color={colors.textSecondary} />
+                                <Text style={styles.subGroupText}>{nomeBase}</Text>
+                                <Text style={styles.subGroupCount}>({itens.length})</Text>
+                              </TouchableOpacity>
+                              <View style={styles.groupHeaderActions}>
+                                <TouchableOpacity
+                                  style={styles.groupEditButton}
+                                  onPress={() => itens.length > 0 && handleEdit(itens[0])}
+                                >
+                                  <Ionicons name="create" size={18} color={colors.primary} />
+                                  <Text style={styles.groupEditText}>Editar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.groupDeleteButton}
+                                  onPress={() => handleDeleteGroup(nomeBase, itens)}
+                                >
+                                  <Ionicons name="trash" size={18} color={colors.error} />
+                                  <Text style={styles.groupDeleteText}>Excluir</Text>
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                            {!subColapsado && itens.map(receita => renderReceitaCard(receita))}
+                          </View>
+                        );
+                      })}
                     </View>
-                  ))}
-                </View>
-              ))}
+                  );
+                })
+              ) : (
+                receitasOrdenadasPorData.map(receita => renderReceitaCard(receita))
+              )}
             </>
           )}
         </ScrollView>
@@ -682,10 +765,11 @@ export default function ReceitaScreen() {
               />
 
               <Text style={styles.label}>Tipo *</Text>
-              <Select
+              <SelectWithIcons
                 value={tipo}
                 options={tiposReceita.map(t => ({ label: t, value: t }))}
                 onChange={setTipo}
+                categoria="receita"
                 placeholder="Selecione o tipo"
               />
 
@@ -800,8 +884,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     padding: 16,
+    gap: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
     gap: 12,
   },
   statCard: {
@@ -812,26 +900,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
   statCardPrevisao: {
-    flex: 0.9,
+    alignSelf: 'stretch',
+  },
+  statLabelPrevisao: {
+    fontSize: 10,
   },
   statValuePrevisao: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text,
   },
   filterContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '500',
   },
   filterLabel: {
     fontSize: 14,
@@ -927,6 +1029,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 8,
     borderRadius: 8,
+    borderRadius: 8,
+  },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   groupHeaderText: {
     fontSize: 16,
@@ -937,6 +1045,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  subGroup: {
+    marginLeft: 12,
+    marginBottom: 8,
+  },
+  subGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f5f9fc',
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  subGroupText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginLeft: 6,
+  },
+  subGroupCount: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginLeft: 6,
   },
   groupEditButton: {
     flexDirection: 'row',
@@ -1000,7 +1133,7 @@ const styles = StyleSheet.create({
   receitaValor: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#4caf50',
+    color: colors.success,
   },
   receitaDetails: {
     flexDirection: 'row',
