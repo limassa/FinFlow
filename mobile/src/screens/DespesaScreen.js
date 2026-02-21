@@ -543,16 +543,16 @@ export default function DespesaScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Ionicons
-          name="add"
-          size={28}
-          color="#fff"
-          style={{ marginRight: 15 }}
+        <TouchableOpacity
           onPress={() => {
             resetForm();
             setShowForm(true);
           }}
-        />
+          style={{ marginRight: 15, padding: 5 }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
       ),
     });
   }, [navigation]);
@@ -636,16 +636,16 @@ export default function DespesaScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Total</Text>
-            <Text style={styles.statValue}>{formatarValor(totalDespesas)}</Text>
+            <Text style={[styles.statValue, { color: colors.error }]}>{formatarValor(totalDespesas)}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Previsão</Text>
+            <Text style={styles.statValuePrevisao}>{formatarValor(previsaoDespesas)}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Qtde</Text>
-            <Text style={styles.statValue}>{despesasFiltradas.length}</Text>
+            <Text style={styles.statValue}>{despesasFiltradas?.length ?? 0}</Text>
           </View>
-        </View>
-        <View style={[styles.statCard, styles.statCardPrevisao]}>
-          <Text style={[styles.statLabel, styles.statLabelPrevisao]}>Previsão</Text>
-          <Text style={styles.statValuePrevisao}>{formatarValor(previsaoDespesas)}</Text>
         </View>
       </View>
 
@@ -1061,16 +1061,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsContainer: {
-    flexDirection: 'row',
     padding: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
     gap: 12,
   },
   statCard: {
     flex: 1,
+    minWidth: 90,
     backgroundColor: '#fff',
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   statLabel: {
     fontSize: 11,
@@ -1081,9 +1089,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-  },
-  statCardPrevisao: {
-    alignSelf: 'stretch',
   },
   statLabelPrevisao: {
     fontSize: 10,

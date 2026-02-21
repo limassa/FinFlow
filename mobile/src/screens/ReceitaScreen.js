@@ -21,6 +21,7 @@ import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
+import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
@@ -60,6 +61,8 @@ export default function ReceitaScreen() {
     if (userId) {
       fetchReceitas();
       fetchContas();
+    } else {
+      setLoading(false);
     }
   }, [userId, mesFiltro]);
 
@@ -332,9 +335,10 @@ export default function ReceitaScreen() {
   };
 
   const receitasFiltradas = React.useMemo(() => {
-    if (filtroRecebido === 'todos') return receitas;
-    if (filtroRecebido === 'recebido') return receitas.filter(r => r.receita_recebido);
-    return receitas.filter(r => !r.receita_recebido);
+    const lista = Array.isArray(receitas) ? receitas : [];
+    if (filtroRecebido === 'todos') return lista;
+    if (filtroRecebido === 'recebido') return lista.filter(r => r.receita_recebido);
+    return lista.filter(r => !r.receita_recebido);
   }, [receitas, filtroRecebido]);
 
   const receitasPorTipo = React.useMemo(() => {
@@ -539,17 +543,19 @@ export default function ReceitaScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total</Text>
-          <Text style={styles.statValue}>{formatarValor(totalReceitas)}</Text>
-        </View>
-        <View style={[styles.statCard, styles.statCardPrevisao]}>
-          <Text style={[styles.statLabel, styles.statLabelPrevisao]}>Previsão</Text>
-          <Text style={styles.statValuePrevisao}>{formatarValor(previsaoReceitas)}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Qtde</Text>
-          <Text style={styles.statValue}>{receitasFiltradas.length}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statValue}>{formatarValor(totalReceitas)}</Text>
+          </View>
+          <View style={[styles.statCard, styles.statCardPrevisao]}>
+            <Text style={[styles.statLabel, styles.statLabelPrevisao]}>Previsão</Text>
+            <Text style={styles.statValuePrevisao}>{formatarValor(previsaoReceitas)}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Qtde</Text>
+            <Text style={styles.statValue}>{receitasFiltradas?.length ?? 0}</Text>
+          </View>
         </View>
       </View>
 
@@ -884,9 +890,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsContainer: {
-    flexDirection: 'column',
     padding: 16,
-    gap: 12,
   },
   statsRow: {
     flexDirection: 'row',
@@ -894,10 +898,16 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
+    minWidth: 90,
     backgroundColor: '#fff',
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   statLabel: {
     fontSize: 11,
@@ -908,9 +918,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-  },
-  statCardPrevisao: {
-    alignSelf: 'stretch',
   },
   statLabelPrevisao: {
     fontSize: 10,
@@ -1028,7 +1035,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 12,
     marginBottom: 8,
-    borderRadius: 8,
     borderRadius: 8,
   },
   groupHeaderLeft: {

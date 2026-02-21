@@ -30,6 +30,9 @@ import FaleConoscoScreen from './src/screens/FaleConoscoScreen';
 import SairScreen from './src/screens/SairScreen';
 import CalculadorasScreen from './src/screens/CalculadorasScreen';
 import CalculadoraSalarioHoraScreen from './src/screens/CalculadoraSalarioHoraScreen';
+import CategoriasScreen from './src/screens/CategoriasScreen';
+import OrcamentoScreen from './src/screens/OrcamentoScreen';
+import CartaoCreditoScreen from './src/screens/CartaoCreditoScreen';
 
 // Auth Context
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -93,13 +96,13 @@ function DrawerNavigator() {
           fontWeight: 'bold',
         },
         headerLeft: () => (
-          <Ionicons
-            name="menu"
-            size={28}
-            color="#fff"
-            style={{ marginLeft: 15 }}
+          <TouchableOpacity
             onPress={() => navigation.openDrawer()}
-          />
+            style={{ marginLeft: 15, padding: 5 }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="menu" size={28} color="#fff" />
+          </TouchableOpacity>
         ),
         drawerActiveTintColor: '#2563EB',
         drawerInactiveTintColor: '#666',
@@ -147,17 +150,13 @@ function DrawerNavigator() {
           ),
           title: 'Contas',
           headerRight: () => (
-            <Ionicons
-              name="add"
-              size={28}
-              color="#fff"
-              style={{ marginRight: 15 }}
-              onPress={() => {
-                // Navegar para Contas e abrir formulário
-                navigation.navigate('Contas');
-                // O componente ContasScreen vai gerenciar o estado do formulário
-              }}
-            />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Contas')}
+              style={{ marginRight: 15, padding: 5 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+            </TouchableOpacity>
           ),
         })}
       />
@@ -170,19 +169,45 @@ function DrawerNavigator() {
           ),
           title: 'Receitas',
           headerRight: () => (
-            <Ionicons
-              name="add"
-              size={28}
-              color="#fff"
-              style={{ marginRight: 15 }}
-              onPress={() => {
-                // Navegar para Receita e abrir formulário
-                navigation.navigate('Receita');
-                // O componente ReceitaScreen vai gerenciar o estado do formulário
-              }}
-            />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Receita')}
+              style={{ marginRight: 15, padding: 5 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+            </TouchableOpacity>
           ),
         })}
+      />
+      <Drawer.Screen
+        name="Categorias"
+        component={CategoriasScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="pricetags" size={size} color={color} />
+          ),
+          title: 'Categorias',
+        }}
+      />
+      <Drawer.Screen
+        name="Orcamento"
+        component={OrcamentoScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="pie-chart" size={size} color={color} />
+          ),
+          title: 'Orçamento',
+        }}
+      />
+      <Drawer.Screen
+        name="CartaoCredito"
+        component={CartaoCreditoScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="card" size={size} color={color} />
+          ),
+          title: 'Cartão de Crédito',
+        }}
       />
       <Drawer.Screen
         name="Despesa"
@@ -193,17 +218,13 @@ function DrawerNavigator() {
           ),
           title: 'Despesas',
           headerRight: () => (
-            <Ionicons
-              name="add"
-              size={28}
-              color="#fff"
-              style={{ marginRight: 15 }}
-              onPress={() => {
-                // Navegar para Despesa e abrir formulário
-                navigation.navigate('Despesa');
-                // O componente DespesaScreen vai gerenciar o estado do formulário
-              }}
-            />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Despesa')}
+              style={{ marginRight: 15, padding: 5 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+            </TouchableOpacity>
           ),
         })}
       />

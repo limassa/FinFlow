@@ -89,7 +89,7 @@ export function AuthProvider({ children }) {
   }
 
   function getUserId() {
-    return user?.id || null;
+    return user?.id ?? user?.usuario_id ?? null;
   }
 
   return (
