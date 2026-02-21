@@ -11,6 +11,7 @@ import Despesa from './pages/Despesa';
 import FaleConosco from './pages/FaleConosco';
 import Contas from './pages/Contas';
 import Calendario from './pages/Calendario';
+import Agenda from './pages/Agenda';
 import Layout from './pages/Layout';
 import Dashboard from './pages/Dashboard';
 import Configuracoes from './pages/Configuracoes';
@@ -55,6 +56,7 @@ root.render(
           <Route path="despesa" element={<Despesa />} />
           <Route path="contas" element={<Contas />} />
           <Route path="calendario" element={<Calendario />} />
+          <Route path="agenda" element={<Agenda />} />
           <Route path="detalhes-grafico" element={<DetalhesGrafico />} />
           <Route path="calculadora-juros" element={<CalculadoraJuros />} />
           <Route path="calculadora-retiradas" element={<CalculadoraRetiradas />} />

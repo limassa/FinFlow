@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
   
   // Eventos (Agenda/Calendário)
   EVENTOS: `${API_BASE_URL}/api/eventos`,
+  EVENTOS_LEMBRETES: `${API_BASE_URL}/api/eventos/lembretes-pendentes`,
   
   // Cartões de Crédito
   CARTOES: `${API_BASE_URL}/api/cartoes`,

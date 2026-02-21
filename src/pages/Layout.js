@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt, FaCalculator, FaCreditCard, FaChartPie, FaTags } from 'react-icons/fa';
+import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt, FaCalendarWeek, FaCalculator, FaCreditCard, FaChartPie, FaTags } from 'react-icons/fa';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
 import AdSense from '../components/AdSense';
+import LembreteEventoProvider from '../components/LembreteEventoProvider';
 
 /*const menuItems = [
   { name: 'Home', icon: <FaHome />, path: '/home' },
@@ -21,6 +22,7 @@ function Layout() {
   }
 
   return (
+    <LembreteEventoProvider>
     <div className="home-container">
       <Header />
       {/* AdSense: crie unidades em AdSense > Anúncios e defina REACT_APP_ADSENSE_SLOT_HEADER no Netlify (Build env) */}
@@ -76,6 +78,16 @@ function Layout() {
         title="Calendário">
             <span className="icon"><FaCalendarAlt /></span>
             <span className="label">{hovered === 'calendario' && 'Calendário'}</span>
+        </div>
+        {/*Agenda*/}
+        <div className={`sidebar-item ${hovered === 'agenda' ? 'hovered' : ''}`}
+        onMouseEnter={() => setHovered('agenda')}
+        onMouseLeave={() => setHovered(null)}
+                    onClick={() => navigate('/layout/agenda')}
+        style={{ cursor: 'pointer' }}
+        title="Agenda">
+            <span className="icon"><FaCalendarWeek /></span>
+            <span className="label">{hovered === 'agenda' && 'Agenda'}</span>
         </div>
         {/*Cartões*/}
         <div className={`sidebar-item ${hovered === 'cartoes' ? 'hovered' : ''}`}
@@ -146,6 +158,7 @@ function Layout() {
         <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_FOOTER} format="auto" className="ad-footer" />
       </main>
     </div>
+    </LembreteEventoProvider>
   );
 }
 

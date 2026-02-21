@@ -46,6 +46,38 @@ export const normalizarDataInput = (valor) => {
   return valor;
 };
 
+/** Formata valor monetário enquanto digita (estilo calculadora) */
+export const formatarValorInput = (valor) => {
+  if (!valor && valor !== 0) return '';
+  
+  // Remove tudo que não é número
+  let numeros = String(valor).replace(/\D/g, '');
+  
+  // Se não tem números, retorna vazio
+  if (!numeros) return '';
+  
+  // Converte para número e divide por 100 para ter 2 casas decimais
+  const numero = parseInt(numeros, 10) / 100;
+  
+  // Formata com separador de milhar e decimal brasileiro
+  return numero.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
+/** Converte valor formatado de volta para número */
+export const valorParaNumero = (valorFormatado) => {
+  if (!valorFormatado) return 0;
+  
+  // Remove pontos de milhar e troca vírgula por ponto
+  const numero = String(valorFormatado)
+    .replace(/\./g, '')
+    .replace(',', '.');
+  
+  return parseFloat(numero) || 0;
+};
+
 export const formatarPeriodo = (dataInicio, dataFim) => {
   const inicio = formatarData(dataInicio);
   const fim = formatarData(dataFim);

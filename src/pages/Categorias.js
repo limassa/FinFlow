@@ -1,19 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaTags, FaPlus, FaEdit, FaTrash, FaHome, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { 
+  FaTags, FaPlus, FaEdit, FaTrash, FaHome, FaArrowUp, FaArrowDown,
+  FaShoppingCart, FaCar, FaHouseUser, FaMedkit, FaGraduationCap,
+  FaUtensils, FaFilm, FaTshirt, FaMoneyBillWave, FaCreditCard, FaPlane,
+  FaGift, FaPaw, FaDumbbell, FaMusic, FaBook, FaGamepad,
+  FaMobileAlt, FaLaptop, FaWifi, FaTint, FaBolt, FaTools,
+  FaBriefcase, FaTrophy, FaHeart, FaStar, FaLeaf, FaGlobe,
+  FaEllipsisH, FaBus, FaShoppingBag, FaPiggyBank, FaChartLine, FaPhone
+} from 'react-icons/fa';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 
-// Ícones disponíveis
-const iconesDisponiveis = [
-  'ellipsis-horizontal', 'cart', 'car', 'home', 'medkit', 'school',
-  'restaurant', 'film', 'shirt', 'cash', 'card', 'airplane',
-  'gift', 'paw', 'fitness', 'musical-notes', 'book', 'game-controller',
-  'phone-portrait', 'laptop', 'wifi', 'water', 'flash', 'construct',
-  'briefcase', 'trophy', 'heart', 'star', 'leaf', 'globe'
-];
+// Mapa de ícones disponíveis
+const iconesMap = {
+  'ellipsis': FaEllipsisH,
+  'cart': FaShoppingCart,
+  'car': FaCar,
+  'home': FaHouseUser,
+  'medkit': FaMedkit,
+  'school': FaGraduationCap,
+  'restaurant': FaUtensils,
+  'film': FaFilm,
+  'shirt': FaTshirt,
+  'cash': FaMoneyBillWave,
+  'card': FaCreditCard,
+  'airplane': FaPlane,
+  'gift': FaGift,
+  'paw': FaPaw,
+  'fitness': FaDumbbell,
+  'music': FaMusic,
+  'book': FaBook,
+  'gamepad': FaGamepad,
+  'phone': FaMobileAlt,
+  'laptop': FaLaptop,
+  'wifi': FaWifi,
+  'water': FaTint,
+  'flash': FaBolt,
+  'tools': FaTools,
+  'briefcase': FaBriefcase,
+  'trophy': FaTrophy,
+  'heart': FaHeart,
+  'star': FaStar,
+  'leaf': FaLeaf,
+  'globe': FaGlobe,
+  'bus': FaBus,
+  'bag': FaShoppingBag,
+  'piggy': FaPiggyBank,
+  'chart': FaChartLine,
+  'telephone': FaPhone
+};
+
+const iconesDisponiveis = Object.keys(iconesMap);
 
 // Cores disponíveis
 const coresDisponiveis = [
@@ -37,8 +77,9 @@ function Categorias() {
   // Form
   const [formCategoria, setFormCategoria] = useState({
     nome: '',
-    tipo: 'despesa',
-    icone: 'ellipsis-horizontal',
+    tipoDespesa: true,
+    tipoReceita: false,
+    icone: 'ellipsis',
     cor: '#6B7280'
   });
 
@@ -66,16 +107,18 @@ function Categorias() {
       setEditando(categoria);
       setFormCategoria({
         nome: categoria.categoria_nome,
-        tipo: categoria.categoria_tipo,
-        icone: categoria.categoria_icone || 'ellipsis-horizontal',
+        tipoDespesa: categoria.categoria_tipo === 'despesa',
+        tipoReceita: categoria.categoria_tipo === 'receita',
+        icone: categoria.categoria_icone || 'ellipsis',
         cor: categoria.categoria_cor || '#6B7280'
       });
     } else {
       setEditando(null);
       setFormCategoria({
         nome: '',
-        tipo: tipoAtivo,
-        icone: 'ellipsis-horizontal',
+        tipoDespesa: tipoAtivo === 'despesa',
+        tipoReceita: tipoAtivo === 'receita',
+        icone: 'ellipsis',
         cor: '#6B7280'
       });
     }
@@ -83,7 +126,17 @@ function Categorias() {
   };
 
   const salvarCategoria = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    if (!formCategoria.nome.trim()) {
+      alert('Por favor, informe o nome da categoria');
+      return;
+    }
+
+    if (!formCategoria.tipoDespesa && !formCategoria.tipoReceita) {
+      alert('Selecione pelo menos um tipo (Despesa ou Receita)');
+      return;
+    }
     
     try {
       if (editando) {
@@ -94,14 +147,32 @@ function Categorias() {
           ordem: editando.categoria_ordem
         });
       } else {
-        await axios.post(API_ENDPOINTS.CATEGORIAS, {
-          usuario_id: userId,
-          nome: formCategoria.nome,
-          tipo: formCategoria.tipo,
-          icone: formCategoria.icone,
-          cor: formCategoria.cor,
-          ordem: categorias.length
-        });
+        // Criar categoria para cada tipo selecionado
+        const promises = [];
+        
+        if (formCategoria.tipoDespesa) {
+          promises.push(axios.post(API_ENDPOINTS.CATEGORIAS, {
+            usuario_id: userId,
+            nome: formCategoria.nome,
+            tipo: 'despesa',
+            icone: formCategoria.icone,
+            cor: formCategoria.cor,
+            ordem: categorias.length
+          }));
+        }
+        
+        if (formCategoria.tipoReceita) {
+          promises.push(axios.post(API_ENDPOINTS.CATEGORIAS, {
+            usuario_id: userId,
+            nome: formCategoria.nome,
+            tipo: 'receita',
+            icone: formCategoria.icone,
+            cor: formCategoria.cor,
+            ordem: categorias.length
+          }));
+        }
+
+        await Promise.all(promises);
       }
 
       setShowModal(false);
@@ -159,14 +230,15 @@ function Categorias() {
     }
   };
 
-  // Renderizar ícone (simulado - em produção usar react-icons ou similar)
+  // Renderizar ícone usando react-icons
   const renderIcone = (icone, cor) => {
+    const IconComponent = iconesMap[icone] || FaEllipsisH;
     return (
       <div 
         className="categoria-icone-preview"
         style={{ backgroundColor: cor }}
       >
-        <span className="icone-nome">{icone.slice(0, 2).toUpperCase()}</span>
+        <IconComponent size={18} color="white" />
       </div>
     );
   };
@@ -278,7 +350,8 @@ function Categorias() {
               <h3>{editando ? 'Editar Categoria' : 'Nova Categoria'}</h3>
               <button className="btn-fechar" onClick={() => setShowModal(false)}>×</button>
             </div>
-            <form onSubmit={salvarCategoria} className="modal-form">
+            
+            <div className="modal-body" style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
               <div className="form-group">
                 <label>Nome da Categoria</label>
                 <input
@@ -293,31 +366,76 @@ function Categorias() {
               
               {!editando && (
                 <div className="form-group">
-                  <label>Tipo</label>
-                  <select
-                    value={formCategoria.tipo}
-                    onChange={e => setFormCategoria({ ...formCategoria, tipo: e.target.value })}
-                  >
-                    <option value="despesa">Despesa</option>
-                    <option value="receita">Receita</option>
-                  </select>
+                  <label>Tipo (selecione um ou ambos)</label>
+                  <div className="checkbox-group" style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
+                    <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={formCategoria.tipoDespesa}
+                        onChange={e => setFormCategoria({ ...formCategoria, tipoDespesa: e.target.checked })}
+                        style={{ width: '18px', height: '18px', accentColor: '#EF4444' }}
+                      />
+                      <span style={{ color: '#EF4444', fontWeight: '500' }}>Despesa</span>
+                    </label>
+                    <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={formCategoria.tipoReceita}
+                        onChange={e => setFormCategoria({ ...formCategoria, tipoReceita: e.target.checked })}
+                        style={{ width: '18px', height: '18px', accentColor: '#10B981' }}
+                      />
+                      <span style={{ color: '#10B981', fontWeight: '500' }}>Receita</span>
+                    </label>
+                  </div>
                 </div>
               )}
               
               <div className="form-group">
                 <label>Ícone</label>
-                <div className="icones-grid">
-                  {iconesDisponiveis.map(icone => (
-                    <button
-                      key={icone}
-                      type="button"
-                      className={`icone-btn ${formCategoria.icone === icone ? 'selected' : ''}`}
-                      onClick={() => setFormCategoria({ ...formCategoria, icone })}
-                      title={icone}
-                    >
-                      {icone.slice(0, 2).toUpperCase()}
-                    </button>
-                  ))}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  gap: '8px',
+                  padding: '12px',
+                  background: 'transparent',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  maxHeight: '150px',
+                  overflowY: 'auto'
+                }}>
+                  {iconesDisponiveis.map(icone => {
+                    const IconComponent = iconesMap[icone];
+                    const isSelected = formCategoria.icone === icone;
+                    return (
+                      <button
+                        key={icone}
+                        type="button"
+                        onClick={() => setFormCategoria({ ...formCategoria, icone })}
+                        title={icone}
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          border: isSelected ? '3px solid #4F46E5' : '2px solid #d1d5db',
+                          borderRadius: '10px',
+                          background: isSelected ? '#EEF2FF' : 'transparent',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <IconComponent 
+                          size={20} 
+                          style={{ 
+                            color: isSelected ? '#4F46E5' : '#1f2937',
+                            minWidth: '20px',
+                            minHeight: '20px'
+                          }}
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               
@@ -344,16 +462,51 @@ function Categorias() {
                   <span>{formCategoria.nome || 'Nome da categoria'}</span>
                 </div>
               </div>
-              
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-save">
-                  {editando ? 'Salvar' : 'Criar Categoria'}
-                </button>
-              </div>
-            </form>
+            </div>
+            
+            {/* Botões fora do scroll para sempre aparecerem */}
+            <div className="modal-footer" style={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: '12px', 
+              padding: '16px 20px', 
+              borderTop: '1px solid #e5e7eb',
+              background: '#f9fafb',
+              flexShrink: 0
+            }}>
+              <button 
+                type="button" 
+                className="btn-cancel" 
+                onClick={() => setShowModal(false)}
+                style={{
+                  padding: '10px 24px',
+                  background: '#e5e7eb',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                className="btn-save"
+                onClick={salvarCategoria}
+                style={{
+                  padding: '10px 24px',
+                  background: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                {editando ? 'Salvar' : 'Criar Categoria'}
+              </button>
+            </div>
           </div>
         </div>
       )}

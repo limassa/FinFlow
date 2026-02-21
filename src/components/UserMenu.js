@@ -16,16 +16,20 @@ function UserMenu() {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user'));
-    console.log('UserMenu - userData:', userData);
     if (userData) {
       setUser(userData);
-      // Buscar configuração de lembretes do usuário
+      if (userData.foto) setUserFoto(userData.foto);
       fetchLembretesConfig(userData.id);
-      // Buscar foto do usuário
       fetchUserFoto(userData.id);
-    } else {
-      console.log('UserMenu - Nenhum usuário encontrado no localStorage');
     }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.foto) setUserFoto(e.detail.foto);
+    };
+    window.addEventListener('userFotoUpdated', handler);
+    return () => window.removeEventListener('userFotoUpdated', handler);
   }, []);
 
   const fetchUserFoto = async (userId) => {

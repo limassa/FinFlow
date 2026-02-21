@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import { getIconForTipo } from '../utils/categoryIcons';
+import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import '../App.css';
 
 /**
@@ -11,10 +11,13 @@ import '../App.css';
  * @param {string} categoria - 'conta' | 'despesa' | 'receita'
  * @param {string} placeholder - Texto quando nada selecionado
  * @param {boolean} required - Campo obrigatório
+ * @param {Object} customIcons - Mapa de ícones customizados { nomeCat: 'FaIcon', ... }
  */
-function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa', placeholder = 'Selecione', required = false }) {
+function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa', placeholder = 'Selecione', required = false, customIcons = {} }) {
   const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const ref = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -26,15 +29,36 @@ function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa',
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Calcular se deve abrir para cima ou para baixo
+  const handleOpen = () => {
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownHeight = Math.min(options.length * 42 + 10, 250);
+      
+      // Se não houver espaço embaixo mas houver em cima, abre para cima
+      setOpenUp(spaceBelow < dropdownHeight && spaceAbove > dropdownHeight);
+    }
+    setOpen(!open);
+  };
+
+  const getIcon = (tipo) => {
+    if (customIcons[tipo]) {
+      return getIconComponentByName(customIcons[tipo]);
+    }
+    return getIconForTipo(tipo, categoria);
+  };
+
   const selectedLabel = value || placeholder;
-  const IconSelected = value ? getIconForTipo(value, categoria) : null;
+  const IconSelected = value ? getIcon(value) : null;
 
   return (
     <div className="select-with-icons-wrap" ref={ref}>
       <button
         type="button"
         className={`select-with-icons-trigger ${open ? 'open' : ''} ${required && !value ? 'required' : ''}`}
-        onClick={() => setOpen(!open)}
+        onClick={handleOpen}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -45,7 +69,11 @@ function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa',
         <FaChevronDown className="select-with-icons-chevron" />
       </button>
       {open && (
-        <ul className="select-with-icons-dropdown" role="listbox">
+        <ul 
+          className={`select-with-icons-dropdown ${openUp ? 'open-up' : ''}`} 
+          role="listbox"
+          ref={dropdownRef}
+        >
           {!required && (
             <li
               role="option"
@@ -57,7 +85,7 @@ function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa',
             </li>
           )}
           {options.map((opt) => {
-            const Icon = getIconForTipo(opt, categoria);
+            const Icon = getIcon(opt);
             return (
               <li
                 key={opt}

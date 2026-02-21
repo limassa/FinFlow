@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaUser, FaBell, FaPalette, FaShieldAlt, FaDownload, FaTrash, FaSave, FaEye, FaEyeSlash } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaUser, FaBell, FaPalette, FaShieldAlt, FaTrash, FaSave, FaEye, FaEyeSlash, FaCamera } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getUsuarioLogado } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -9,10 +9,13 @@ import InputMask from 'react-input-mask';
 
 function Configuracoes() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('perfil');
   const [showPassword, setShowPassword] = useState(false);
+  const [userFoto, setUserFoto] = useState(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
   
   // Estados do formulário
   const [formData, setFormData] = useState({
@@ -55,10 +58,11 @@ function Configuracoes() {
     try {
       setLoading(true);
       
-      // Buscar configurações do usuário
-      const [lembretesRes, perfilRes] = await Promise.all([
+      // Buscar configurações do usuário e foto
+      const [lembretesRes, perfilRes, fotoRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.USER_LEMBRETES}?userId=${userId}`),
-        fetch(`${API_ENDPOINTS.USER_PROFILE}?userId=${userId}`)
+        fetch(`${API_ENDPOINTS.USER_PROFILE}?userId=${userId}`),
+        fetch(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`)
       ]);
 
       if (lembretesRes.ok) {
@@ -79,6 +83,11 @@ function Configuracoes() {
           email: perfil.email || '',
           telefone: perfil.telefone || ''
         }));
+      }
+
+      if (fotoRes.ok) {
+        const data = await fotoRes.json();
+        if (data.foto) setUserFoto(data.foto);
       }
 
       // Carregar preferências de privacidade do localStorage
@@ -188,6 +197,44 @@ function Configuracoes() {
     }
   };
 
+  const handleFotoClick = () => fileInputRef.current?.click();
+
+  const handleFotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Selecione uma imagem (JPG, PNG, etc.)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result;
+      setUploadingFoto(true);
+      try {
+        const res = await fetch(API_ENDPOINTS.USER_FOTO, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, foto: base64 })
+        });
+        if (res.ok) {
+          setUserFoto(base64);
+          const stored = localStorage.getItem('user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            localStorage.setItem('user', JSON.stringify({ ...parsed, foto: base64 }));
+          }
+          window.dispatchEvent(new CustomEvent('userFotoUpdated', { detail: { foto: base64 } }));
+        } else alert('Erro ao salvar foto.');
+      } catch (err) {
+        alert('Erro ao salvar foto.');
+      } finally {
+        setUploadingFoto(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleExcluirConta = async () => {
     if (window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
       try {
@@ -270,6 +317,7 @@ function Configuracoes() {
           {activeTab === 'perfil' && (
             <div className="config-section">
               <h3>Informações do Perfil</h3>
+              <div className="config-perfil-layout">
               <form onSubmit={handleSalvarPerfil} className="config-form">
                 <div className="form-group">
                   <label>Nome Completo:</label>
@@ -351,6 +399,33 @@ function Configuracoes() {
                   <FaSave /> Salvar Alterações
                 </button>
               </form>
+                <div className="config-foto-box">
+                  <label className="config-foto-label">Foto do perfil:</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFotoChange}
+                    style={{ display: 'none' }}
+                  />
+                  <div 
+                    className="config-foto-container" 
+                    onClick={handleFotoClick}
+                    title="Clique para alterar a foto"
+                  >
+                    {uploadingFoto ? (
+                      <div className="config-foto-loading">Salvando...</div>
+                    ) : userFoto ? (
+                      <img src={userFoto} alt="Foto" className="config-foto-img" />
+                    ) : (
+                      <div className="config-foto-placeholder">
+                        <FaCamera />
+                        <span>Adicionar foto</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

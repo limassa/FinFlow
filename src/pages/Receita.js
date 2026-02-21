@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import { getIconForTipo } from '../utils/categoryIcons';
+import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
 import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
@@ -9,7 +9,7 @@ import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
-import { normalizarDataInput } from '../utils/formatters';
+import { normalizarDataInput, formatarValorInput, valorParaNumero } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
@@ -37,7 +37,12 @@ function Receita() {
   console.log('Usuário logado:', usuario);
   console.log('User ID:', userId);
   
-  const tiposReceita = [
+  // Estado para categorias customizadas
+  const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+  const [iconesCustomizados, setIconesCustomizados] = useState({});
+  
+  // Categorias padrão
+  const tiposReceitaPadrao = [
     'Salário',
     'Venda',
     'Presente',
@@ -45,6 +50,9 @@ function Receita() {
     'Aluguel',
     'Outros'
   ];
+  
+  // Combinar categorias padrão com customizadas
+  const tiposReceita = [...tiposReceitaPadrao, ...categoriasCustomizadas];
   const [tipo, setTipo] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [recebido, setRecebido] = useState(false);
@@ -57,6 +65,13 @@ function Receita() {
   const [exibirAgrupado, setExibirAgrupado] = useState(true);
   const [modalExclusao, setModalExclusao] = useState(null);
   const [modalEditarRecorrente, setModalEditarRecorrente] = useState(null);
+  
+  const formContainerRef = useRef(null);
+  
+  // Estado para modal de criar categoria rápida
+  const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
+  const [novaCategoriaNome, setNovaCategoriaNome] = useState('');
+  const [salvandoCategoria, setSalvandoCategoria] = useState(false);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -90,6 +105,7 @@ function Receita() {
     if (userId) {
       fetchReceitas();
       fetchContas();
+      fetchCategoriasCustomizadas();
     }
   }, [userId, mesFiltro]);
 
@@ -99,6 +115,55 @@ function Receita() {
       setContas(res.data);
     } catch (err) {
       console.log('Erro ao buscar contas:', err);
+    }
+  };
+
+  const fetchCategoriasCustomizadas = async () => {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=receita`);
+      const nomes = res.data.map(cat => cat.categoria_nome);
+      setCategoriasCustomizadas(nomes);
+      
+      // Criar mapa de ícones customizados
+      const icones = {};
+      res.data.forEach(cat => {
+        if (cat.categoria_icone) {
+          icones[cat.categoria_nome] = cat.categoria_icone;
+        }
+      });
+      setIconesCustomizados(icones);
+    } catch (err) {
+      console.log('Erro ao buscar categorias customizadas:', err);
+    }
+  };
+
+  const criarCategoriaRapida = async () => {
+    if (!novaCategoriaNome.trim()) return;
+    
+    setSalvandoCategoria(true);
+    try {
+      await axios.post(API_ENDPOINTS.CATEGORIAS, {
+        usuario_id: userId,
+        nome: novaCategoriaNome.trim(),
+        tipo: 'receita',
+        icone: 'ellipsis',
+        cor: '#6B7280'
+      });
+      
+      // Atualizar lista de categorias
+      await fetchCategoriasCustomizadas();
+      
+      // Selecionar a nova categoria
+      setTipo(novaCategoriaNome.trim());
+      
+      // Fechar modal e limpar
+      setMostrarModalCategoria(false);
+      setNovaCategoriaNome('');
+    } catch (err) {
+      console.error('Erro ao criar categoria:', err);
+      alert('Erro ao criar categoria');
+    } finally {
+      setSalvandoCategoria(false);
     }
   };
 
@@ -138,7 +203,7 @@ function Receita() {
     try {
       const receitaData = {
         descricao, 
-        valor, 
+        valor: valorParaNumero(valor), 
         data, 
         tipo,
         recebido,
@@ -170,7 +235,9 @@ function Receita() {
 
   const handleEdit = (receita) => {
     setDescricao(receita.receita_descricao);
-    setValor(receita.receita_valor);
+    // Formatar valor para exibição
+    const valorNum = parseFloat(receita.receita_valor) || 0;
+    setValor(valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     // Formatar a data para o formato YYYY-MM-DD que o input date espera
     // Usar método mais seguro para evitar problemas de fuso horário
     const dataFormatada = receita.receita_data ? 
@@ -190,7 +257,7 @@ function Receita() {
     }
     if (submitting) return;
     const receitaEditando = receitas.find(r => r.receita_id === editId);
-    const payload = { descricao, valor, data, tipo, recebido, conta_id: contaId || null };
+    const payload = { descricao, valor: valorParaNumero(valor), data, tipo, recebido, conta_id: contaId || null };
     if (receitaEditando && receitaEhRecorrente(receitaEditando)) {
       setModalEditarRecorrente({
         mensagem: 'Replicar alterações para os itens não recebidos da série?',
@@ -474,6 +541,14 @@ function Receita() {
     }
   };
 
+  // Função para obter ícone (considera customizados)
+  const getIcone = (tipo) => {
+    if (iconesCustomizados[tipo]) {
+      return getIconComponentByName(iconesCustomizados[tipo]);
+    }
+    return getIconForTipo(tipo, 'receita');
+  };
+
   const formatarValor = (valor) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -487,6 +562,47 @@ function Receita() {
 
   return (
     <div className="receita-container">
+      {/* Modal de criação rápida de categoria */}
+      {mostrarModalCategoria && (
+        <div className="modal-overlay" onClick={() => setMostrarModalCategoria(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Nova Categoria</h3>
+              <button className="modal-close" onClick={() => setMostrarModalCategoria(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div className="form-group">
+                <label>Nome da Categoria:</label>
+                <input
+                  type="text"
+                  value={novaCategoriaNome}
+                  onChange={(e) => setNovaCategoriaNome(e.target.value)}
+                  placeholder="Ex: Freelance, Comissão, etc."
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setMostrarModalCategoria(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn-save"
+                  onClick={criarCategoriaRapida}
+                  disabled={salvandoCategoria || !novaCategoriaNome.trim()}
+                >
+                  {salvandoCategoria ? 'Salvando...' : 'Criar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalExclusao && (
         <ConfirmacaoExclusao
           mensagem={modalExclusao.mensagem}
@@ -532,7 +648,7 @@ function Receita() {
       </div>
 
       {/* Formulário */}
-      <div className="form-container">
+      <div className="form-container" ref={formContainerRef}>
         <h3>{editId ? 'Editar Receita' : 'Adicionar Nova Receita'}</h3>
         <form onSubmit={editId ? handleUpdate : handleSubmit} className="receita-form">
           <div className="form-row">
@@ -549,11 +665,11 @@ function Receita() {
             <div className="form-group">
               <label>Valor:</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="numeric"
                 placeholder="0,00"
                 value={valor}
-                onChange={e => setValor(e.target.value)}
+                onChange={e => setValor(formatarValorInput(e.target.value))}
                 required
               />
             </div>
@@ -571,17 +687,42 @@ function Receita() {
               />
             </div>
             <div className="form-group">
-              <label>Tipo:</label>
-              <SelectWithIcons
-                options={tiposReceita}
-                value={tipo}
-                onChange={setTipo}
-                categoria="receita"
-                placeholder="Selecione"
-                required
-              />
+              <label>Categoria:</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <SelectWithIcons
+                    options={tiposReceita}
+                    value={tipo}
+                    onChange={setTipo}
+                    categoria="receita"
+                    placeholder="Selecione"
+                    required
+                    customIcons={iconesCustomizados}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalCategoria(true)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    border: '2px solid #4F46E5',
+                    background: '#EEF2FF',
+                    color: '#4F46E5',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    fontWeight: 'bold'
+                  }}
+                  title="Criar nova categoria"
+                >
+                  +
+                </button>
+              </div>
             </div>
-            
 
             <div className="form-group">
               <label>Conta (Opcional):</label>
@@ -756,7 +897,7 @@ function Receita() {
                 });
               };
               const totalTipo = subgrupos.reduce((s, sg) => s + sg.itens.length, 0);
-              const IconTipo = getIconForTipo(tipoGrupo, 'receita');
+              const IconTipo = getIcone(tipoGrupo);
               return (
                 <div key={tipoKey} className="grid-grupo-tipo">
                   <div
@@ -834,7 +975,7 @@ function Receita() {
                       <div className="grid-cell">{formatarData(receita.receita_data)}</div>
                       <div className="grid-cell grid-cell-tipo">
                       {(() => {
-                        const Icon = getIconForTipo(receita.receita_tipo, 'receita');
+                        const Icon = getIcone(receita.receita_tipo);
                         return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
                       })()}
                     </div>
@@ -917,7 +1058,7 @@ function Receita() {
                   <div className="grid-cell">{formatarData(receita.receita_data)}</div>
                   <div className="grid-cell grid-cell-tipo">
                     {(() => {
-                      const Icon = getIconForTipo(receita.receita_tipo, 'receita');
+                      const Icon = getIcone(receita.receita_tipo);
                       return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
                     })()}
                   </div>

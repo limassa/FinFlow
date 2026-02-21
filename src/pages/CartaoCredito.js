@@ -5,6 +5,7 @@ import { FaCreditCard, FaPlus, FaEdit, FaTrash, FaHome, FaShoppingCart, FaCalend
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import SelectWithIcons from '../components/SelectWithIcons';
+import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import '../App.css';
 
 const bandeiras = [
@@ -58,17 +59,47 @@ function CartaoCredito() {
     parcelas: 1
   });
 
-  // Categorias de despesa (fixas por enquanto)
-  const categoriasDespesa = [
+  // Categorias de despesa
+  const categoriasPadrao = [
     'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Educação',
     'Lazer', 'Vestuário', 'Assinaturas', 'Compras', 'Outros'
   ];
+  const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+  const [iconesCustomizados, setIconesCustomizados] = useState({});
+  const categoriasDespesa = [...categoriasPadrao, ...categoriasCustomizadas];
+  
+  // Função para obter ícone (considera customizados)
+  const getIcone = (tipo) => {
+    if (iconesCustomizados[tipo]) {
+      return getIconComponentByName(iconesCustomizados[tipo]);
+    }
+    return getIconForTipo(tipo, 'despesa');
+  };
 
   useEffect(() => {
     if (userId) {
       carregarDados();
+      carregarCategorias();
     }
   }, [userId, mesSelecionado]);
+
+  const carregarCategorias = async () => {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=despesa`);
+      const nomes = res.data.map(cat => cat.categoria_nome);
+      setCategoriasCustomizadas(nomes);
+      
+      const icones = {};
+      res.data.forEach(cat => {
+        if (cat.categoria_icone) {
+          icones[cat.categoria_nome] = cat.categoria_icone;
+        }
+      });
+      setIconesCustomizados(icones);
+    } catch (err) {
+      console.log('Erro ao buscar categorias:', err);
+    }
+  };
 
   const carregarDados = async () => {
     setLoading(true);
@@ -430,7 +461,14 @@ function CartaoCredito() {
                     <div key={compra.compra_id} className="table-row">
                       <span className="compra-descricao">{compra.compra_descricao}</span>
                       <span className="compra-cartao">{compra.cartao_nome}</span>
-                      <span className="compra-categoria">{compra.compra_categoria || '-'}</span>
+                      <span className="compra-categoria">
+                        {compra.compra_categoria ? (
+                          <>{(() => {
+                            const Icon = getIcone(compra.compra_categoria);
+                            return <Icon className="category-icon" />;
+                          })()} {compra.compra_categoria}</>
+                        ) : '-'}
+                      </span>
                       <span className="compra-data">{formatarData(compra.compra_data)}</span>
                       <span className="compra-valor despesa">{formatarValor(compra.compra_valor_parcela)}</span>
                       <span className="compra-acoes">
@@ -616,27 +654,27 @@ function CartaoCredito() {
                 </div>
               )}
               
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Data da Compra</label>
+              <div className="form-row" style={{ gap: '12px' }}>
+                <div className="form-group" style={{ flex: '0 0 140px', maxWidth: '140px' }}>
+                  <label>Data</label>
                   <input
                     type="date"
                     value={formCompra.data}
                     onChange={e => setFormCompra({ ...formCompra, data: e.target.value })}
                     required
+                    style={{ padding: '8px 6px', fontSize: '13px' }}
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ flex: 1 }}>
                   <label>Categoria</label>
-                  <select
+                  <SelectWithIcons
+                    options={categoriasDespesa}
                     value={formCompra.categoria}
-                    onChange={e => setFormCompra({ ...formCompra, categoria: e.target.value })}
-                  >
-                    <option value="">Selecione</option>
-                    {categoriasDespesa.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormCompra({ ...formCompra, categoria: val })}
+                    categoria="despesa"
+                    placeholder="Selecione"
+                    customIcons={iconesCustomizados}
+                  />
                 </div>
               </div>
               

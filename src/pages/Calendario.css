@@ -14,6 +14,17 @@
   margin-bottom: 30px;
   padding: 0 20px;
 }
+.calendario-header .header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.calendario-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 24px;
+}
 
 .calendario-header h2 {
   font-size: 2rem;

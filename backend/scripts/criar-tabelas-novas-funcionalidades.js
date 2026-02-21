@@ -8,23 +8,57 @@
  * - Coluna usuario_foto na tabela usuario
  */
 
-require('dotenv').config({ path: '../config.env' });
-require('dotenv').config();
+const path = require('path');
+
+// Carregar config.env usando caminho absoluto
+const configPath = path.join(__dirname, '..', 'config.env');
+console.log('📄 Carregando configurações de:', configPath);
+require('dotenv').config({ path: configPath });
 
 const { Pool } = require('pg');
 
-// Configuração do banco
-const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+// Mostrar configurações carregadas
+console.log('📋 Configurações carregadas:');
+console.log('   USE_LOCAL_DB:', process.env.USE_LOCAL_DB);
+console.log('   DB_HOST:', process.env.DB_HOST);
+console.log('   DB_PORT:', process.env.DB_PORT);
+console.log('   DB_NAME:', process.env.DB_NAME);
+console.log('   DATABASE_PUBLIC_URL:', process.env.DATABASE_PUBLIC_URL ? '(definido)' : '(não definido)');
 
-if (!connectionString) {
-  console.error('❌ DATABASE_PUBLIC_URL ou DATABASE_URL não configurada!');
-  process.exit(1);
+// Configuração do banco - prioriza conexão local
+const useLocal = process.env.USE_LOCAL_DB === 'true' || !process.env.DATABASE_PUBLIC_URL;
+
+let pool;
+
+if (useLocal) {
+  // Conexão LOCAL
+  console.log('\n🏠 Conectando ao banco de dados LOCAL...');
+  console.log('   Host:', process.env.DB_HOST || 'localhost');
+  console.log('   Porta:', process.env.DB_PORT || 5433);
+  console.log('   Database:', process.env.DB_NAME || 'FinFlowTeste');
+  
+  pool = new Pool({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 5433,
+    database: process.env.DB_NAME || 'FinFlowTeste',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'admin'
+  });
+} else {
+  // Conexão PRODUÇÃO
+  console.log('\n☁️ Conectando ao banco de dados de PRODUÇÃO...');
+  const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    console.error('❌ DATABASE_PUBLIC_URL ou DATABASE_URL não configurada!');
+    process.exit(1);
+  }
+  
+  pool = new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false }
+  });
 }
-
-const pool = new Pool({
-  connectionString,
-  ssl: { rejectUnauthorized: false }
-});
 
 async function criarTabelas() {
   const client = await pool.connect();

@@ -1,14 +1,14 @@
 // Configuração da API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://finflow-production-e4b3.up.railway.app';
+// Em desenvolvimento, usar localhost. Em produção, usar a URL do Railway.
+const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+
+const API_BASE_URL = isDevelopment 
+  ? 'http://localhost:3001' 
+  : (process.env.REACT_APP_API_URL || 'https://finflow-production-e4b3.up.railway.app');
 
 // Debug: Log da URL da API
 console.log('🔗 API_BASE_URL configurada:', API_BASE_URL);
-console.log('🔗 REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-
-// Debug: Log da URL da API
-console.log('🔗 API_BASE_URL configurada:', API_BASE_URL);
-console.log('🔗 REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-console.log('🔗 Ambiente:', process.env.NODE_ENV);
+console.log('🔗 Ambiente:', isDevelopment ? 'development (localhost)' : 'production');
 
 export const API_ENDPOINTS = {
   // Autenticação
@@ -43,6 +43,7 @@ export const API_ENDPOINTS = {
   
   // Eventos (Agenda/Calendário)
   EVENTOS: `${API_BASE_URL}/api/eventos`,
+  EVENTOS_LEMBRETES: `${API_BASE_URL}/api/eventos/lembretes-pendentes`,
   
   // Cartões de Crédito
   CARTOES: `${API_BASE_URL}/api/cartoes`,

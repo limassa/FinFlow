@@ -1701,15 +1701,73 @@ async function enviarLembretesAgendados() {
 // NOVAS ROTAS: EVENTOS (Agenda/Calendário)
 // =====================================================
 
-// Listar eventos
+// Lembretes de eventos pendentes (para pop-up web - não usa email/WhatsApp)
+app.get('/api/eventos/lembretes-pendentes', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) {
+    return res.status(400).json({ error: 'userId obrigatório' });
+  }
+  try {
+    // Horário atual em Brasília (UTC-3)
+    const agora = new Date();
+    const formatter = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const partes = formatter.formatToParts(agora);
+    const getPart = (t) => partes.find(p => p.type === t)?.value || '00';
+    const dataAtual = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+    const horaAtual = `${getPart('hour')}:${getPart('minute')}`;
+    
+    const result = await pool.query(`
+      SELECT * FROM evento 
+      WHERE usuario_id = $1 AND evento_ativo = TRUE 
+        AND evento_lembrete = TRUE
+        AND evento_data >= (CURRENT_DATE - INTERVAL '1 day')
+        AND evento_data <= (CURRENT_DATE + INTERVAL '7 days')
+      ORDER BY evento_data, evento_hora_inicio
+    `, [userId]);
+    
+    // Filtrar no JS: lembrete deve ser mostrado quando
+    // (data + hora_inicio - lembrete_minutos) está entre (agora - 2min) e (agora + 1min)
+    const nowMin = new Date(agora.getTime() - 2 * 60 * 1000);
+    const nowMax = new Date(agora.getTime() + 1 * 60 * 1000);
+    
+    const pendentes = result.rows.filter(ev => {
+      const data = String(ev.evento_data || ev.evento_Data || '').slice(0, 10);
+      const hinicio = String(ev.evento_hora_inicio || ev.evento_hora_Inicio || '00:00').slice(0, 5);
+      const mins = parseInt(ev.evento_lembrete_minutos || ev.evento_lembrete_Minutos || 30, 10);
+      // Usar timezone Brasil (-03:00) para o horário do evento
+      const lembreteDate = new Date(data + 'T' + hinicio + ':00-03:00');
+      lembreteDate.setMinutes(lembreteDate.getMinutes() - mins);
+      return lembreteDate >= nowMin && lembreteDate <= nowMax;
+    });
+    
+    res.json(pendentes);
+  } catch (err) {
+    console.error('Erro ao buscar lembretes de eventos:', err);
+    res.status(500).json({ error: 'Erro ao buscar lembretes' });
+  }
+});
+
+// Listar eventos (suporta mes ou dataInicio/dataFim para agenda semanal)
 app.get('/api/eventos', async (req, res) => {
-  const { userId, mes } = req.query;
+  const { userId, mes, dataInicio, dataFim } = req.query;
   try {
     let query = 'SELECT * FROM evento WHERE usuario_id = $1 AND evento_ativo = TRUE';
     const params = [userId];
+    let paramIndex = 2;
     
-    if (mes) {
-      query += ` AND TO_CHAR(evento_data, 'YYYY-MM') = $2`;
+    if (dataInicio && dataFim) {
+      query += ` AND evento_data >= $${paramIndex}::date AND evento_data <= $${paramIndex + 1}::date`;
+      params.push(dataInicio, dataFim);
+    } else if (mes) {
+      query += ` AND TO_CHAR(evento_data, 'YYYY-MM') = $${paramIndex}`;
       params.push(mes);
     }
     
@@ -2052,7 +2110,7 @@ app.post('/api/categorias', async (req, res) => {
         categoria_cor, categoria_ordem
       ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [usuario_id, nome, tipo, icone || 'ellipsis-horizontal', 
+    `, [usuario_id, nome, tipo, icone || 'ellipsis', 
         cor || '#6B7280', ordem || 0]);
     
     res.status(201).json(result.rows[0]);
@@ -2106,50 +2164,150 @@ app.delete('/api/categorias/:id', async (req, res) => {
 app.get('/api/orcamentos', async (req, res) => {
   const { userId, mes } = req.query;
   try {
-    let query = `
-      SELECT 
-        o.*,
-        COALESCE((
-          SELECT SUM(d.despesa_valor) 
-          FROM despesa d 
-          WHERE d.usuario_id = o.usuario_id 
-            AND d.despesa_tipo = o.orcamento_categoria
-            AND TO_CHAR(d.despesa_data, 'YYYY-MM') = o.orcamento_mes
-            AND d.despesa_ativo = TRUE
-        ), 0) as valor_realizado
-      FROM orcamento_mensal o 
-      WHERE o.usuario_id = $1 AND o.orcamento_ativo = TRUE
-    `;
-    const params = [userId];
-    
-    if (mes) {
-      query += ' AND o.orcamento_mes = $2';
-      params.push(mes);
+    // Buscar orçamentos (padrão PascalCase, fallback minúsculas)
+    let orcResult;
+    try {
+      orcResult = await pool.query(
+        'SELECT * FROM "Orcamento_Mensal" WHERE "Usuario_Id" = $1 AND "Orcamento_Ativo" = TRUE' + (mes ? ' AND "Orcamento_Mes" = $2' : '') + ' ORDER BY "Orcamento_Categoria"',
+        mes ? [userId, mes] : [userId]
+      );
+    } catch (e) {
+      let orcQuery = 'SELECT * FROM orcamento_mensal WHERE usuario_id = $1 AND orcamento_ativo = TRUE';
+      const orcParams = [userId];
+      if (mes) { orcQuery += ' AND orcamento_mes = $2'; orcParams.push(mes); }
+      orcQuery += ' ORDER BY orcamento_categoria';
+      orcResult = await pool.query(orcQuery, orcParams);
     }
-    
-    query += ' ORDER BY o.orcamento_categoria';
-    
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+
+    // Buscar despesas (padrão PascalCase, fallback minúsculas)
+    let despesas = [];
+    try {
+      const despRes = await pool.query(
+        'SELECT "Despesa_Id", "Usuario_Id", "Despesa_Valor", "Despesa_Tipo", "Despesa_Data", "Despesa_DtVencimento", "Despesa_Ativo" FROM "Despesa" WHERE "Usuario_Id" = $1 AND "Despesa_Ativo" = TRUE',
+        [userId]
+      );
+      despesas = despRes.rows.map(r => ({
+        usuario_id: r.Usuario_Id ?? r.usuario_id,
+        despesa_valor: r.Despesa_Valor ?? r.despesa_valor,
+        despesa_tipo: r.Despesa_Tipo ?? r.despesa_tipo,
+        despesa_data: r.Despesa_Data ?? r.despesa_data,
+        despesa_dtvencimento: r.Despesa_DtVencimento ?? r.despesa_dtvencimento,
+        despesa_ativo: r.Despesa_Ativo ?? r.despesa_ativo
+      }));
+    } catch (e) {
+      try {
+        const despRes = await pool.query(
+          'SELECT despesa_id, usuario_id, despesa_valor, despesa_tipo, despesa_data, despesa_dtvencimento, despesa_ativo FROM despesa WHERE usuario_id = $1 AND despesa_ativo = TRUE',
+          [userId]
+        );
+        despesas = despRes.rows;
+      } catch (e2) {
+        console.error('Erro ao buscar despesas para orçamento:', e2);
+      }
+    }
+
+    // Buscar compras de cartão (para incluir no valor_realizado)
+    let comprasCartao = [];
+    try {
+      const compRes = await pool.query(
+        'SELECT c.usuario_id, c.compra_valor_parcela, c.compra_categoria, c.compra_mes_fatura FROM compra_cartao c WHERE c.usuario_id = $1 AND c.compra_ativo = TRUE',
+        [userId]
+      );
+      comprasCartao = compRes.rows.map(r => ({
+        usuario_id: r.usuario_id,
+        compra_valor_parcela: r.compra_valor_parcela,
+        compra_categoria: r.compra_categoria,
+        compra_mes_fatura: (r.compra_mes_fatura || '').trim().slice(0, 7)
+      }));
+    } catch (e2) {
+      /* compra_cartao pode não existir */
+    }
+
+    // Calcular valor_realizado para cada orçamento
+    const categoriasMatch = (dTipo, oCat) => {
+      const dt = (dTipo || '').trim();
+      const oc = (oCat || '').trim();
+      if (dt === oc) return true;
+      if (['Investimento', 'Investimentos'].includes(dt) && ['Investimento', 'Investimentos'].includes(oc)) return true;
+      return false;
+    };
+
+    const getMes = (d) => {
+      const data = d.despesa_dtvencimento || d.despesa_data;
+      if (!data) return null;
+      let s;
+      if (data instanceof Date) {
+        s = data.toISOString ? data.toISOString().slice(0, 10) : null;
+      } else {
+        s = String(data).split('T')[0] || String(data).slice(0, 10);
+      }
+      return s ? s.slice(0, 7) : null; // YYYY-MM
+    };
+
+    const orcamentos = orcResult.rows.map(o => {
+      const oUserId = String(o.usuario_id || o.Usuario_Id || '');
+      const oMes = String(o.orcamento_mes || o.Orcamento_Mes || '').trim();
+      const oCat = String(o.orcamento_categoria || o.Orcamento_Categoria || '').trim();
+
+      let valorRealizado = 0;
+      for (const d of despesas) {
+        const dUserId = String(d.usuario_id ?? d.Usuario_Id ?? '');
+        if (dUserId !== oUserId) continue;
+        if (!categoriasMatch(d.despesa_tipo, oCat)) continue;
+        const dMes = getMes(d);
+        if (!dMes || dMes !== oMes) continue;
+        valorRealizado += parseFloat(d.despesa_valor || 0);
+      }
+      for (const c of comprasCartao) {
+        const cUserId = String(c.usuario_id ?? '');
+        if (cUserId !== oUserId) continue;
+        if (!categoriasMatch(c.compra_categoria, oCat)) continue;
+        if (!c.compra_mes_fatura || c.compra_mes_fatura !== oMes) continue;
+        valorRealizado += parseFloat(c.compra_valor_parcela || 0);
+      }
+
+      // Normalizar para o frontend (sempre lowercase)
+      return {
+        orcamento_id: o.Orcamento_Id ?? o.orcamento_id,
+        usuario_id: o.Usuario_Id ?? o.usuario_id,
+        orcamento_categoria: o.Orcamento_Categoria ?? o.orcamento_categoria,
+        orcamento_valor: o.Orcamento_Valor ?? o.orcamento_valor,
+        orcamento_mes: o.Orcamento_Mes ?? o.orcamento_mes,
+        orcamento_ativo: o.Orcamento_Ativo ?? o.orcamento_ativo,
+        orcamento_criado_em: o.Orcamento_Criado_Em ?? o.orcamento_criado_em,
+        valor_realizado: valorRealizado
+      };
+    });
+
+    res.json(orcamentos);
   } catch (err) {
     console.error('Erro ao buscar orçamentos:', err);
     res.status(500).json({ error: 'Erro ao buscar orçamentos' });
   }
 });
 
-// Criar ou atualizar orçamento
+// Criar ou atualizar orçamento (padrão PascalCase, fallback minúsculas)
 app.post('/api/orcamentos', async (req, res) => {
   const { usuario_id, categoria, valor, mes } = req.body;
   try {
-    // Tentar inserir, se já existir, atualizar
-    const result = await pool.query(`
-      INSERT INTO orcamento_mensal (usuario_id, orcamento_categoria, orcamento_valor, orcamento_mes)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (usuario_id, orcamento_categoria, orcamento_mes) 
-      DO UPDATE SET orcamento_valor = $3, orcamento_ativo = TRUE
-      RETURNING *
-    `, [usuario_id, categoria, valor, mes]);
-    
+    let result;
+    try {
+      result = await pool.query(`
+        INSERT INTO "Orcamento_Mensal" ("Usuario_Id", "Orcamento_Categoria", "Orcamento_Valor", "Orcamento_Mes")
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT ("Usuario_Id", "Orcamento_Categoria", "Orcamento_Mes") 
+        DO UPDATE SET "Orcamento_Valor" = $3, "Orcamento_Ativo" = TRUE
+        RETURNING *
+      `, [usuario_id, categoria, valor, mes]);
+    } catch (e) {
+      result = await pool.query(`
+        INSERT INTO orcamento_mensal (usuario_id, orcamento_categoria, orcamento_valor, orcamento_mes)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (usuario_id, orcamento_categoria, orcamento_mes) 
+        DO UPDATE SET orcamento_valor = $3, orcamento_ativo = TRUE
+        RETURNING *
+      `, [usuario_id, categoria, valor, mes]);
+    }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao criar orçamento:', err);
@@ -2157,11 +2315,46 @@ app.post('/api/orcamentos', async (req, res) => {
   }
 });
 
-// Deletar orçamento
+// Atualizar orçamento (padrão PascalCase, fallback minúsculas)
+app.put('/api/orcamentos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { categoria, valor } = req.body;
+  try {
+    let result;
+    try {
+      result = await pool.query(`
+        UPDATE "Orcamento_Mensal" 
+        SET "Orcamento_Categoria" = $1, "Orcamento_Valor" = $2 
+        WHERE "Orcamento_Id" = $3 AND "Orcamento_Ativo" = TRUE
+        RETURNING *
+      `, [categoria, valor, id]);
+    } catch (e) {
+      result = await pool.query(`
+        UPDATE orcamento_mensal 
+        SET orcamento_categoria = $1, orcamento_valor = $2 
+        WHERE orcamento_id = $3 AND orcamento_ativo = TRUE
+        RETURNING *
+      `, [categoria, valor, id]);
+    }
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Orçamento não encontrado' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar orçamento:', err);
+    res.status(500).json({ error: 'Erro ao atualizar orçamento' });
+  }
+});
+
+// Deletar orçamento (padrão PascalCase, fallback minúsculas)
 app.delete('/api/orcamentos/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE orcamento_mensal SET orcamento_ativo = FALSE WHERE orcamento_id = $1', [id]);
+    try {
+      await pool.query('UPDATE "Orcamento_Mensal" SET "Orcamento_Ativo" = FALSE WHERE "Orcamento_Id" = $1', [id]);
+    } catch (e) {
+      await pool.query('UPDATE orcamento_mensal SET orcamento_ativo = FALSE WHERE orcamento_id = $1', [id]);
+    }
     res.status(204).send();
   } catch (err) {
     console.error('Erro ao deletar orçamento:', err);
@@ -2182,16 +2375,14 @@ app.put('/api/user/foto', async (req, res) => {
   }
   
   try {
-    // Tentar atualizar em minúsculas primeiro
     try {
       await pool.query(
-        'UPDATE usuario SET usuario_foto = $1, usuario_foto_atualizada_em = CURRENT_TIMESTAMP WHERE usuario_id = $2',
+        'UPDATE "Usuario" SET "Usuario_Foto" = $1, "Usuario_Foto_Atualizada_Em" = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $2',
         [foto, userId]
       );
     } catch (e) {
-      // Tentar com maiúsculas
       await pool.query(
-        'UPDATE "Usuario" SET "Usuario_Foto" = $1, "Usuario_Foto_Atualizada_Em" = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $2',
+        'UPDATE usuario SET usuario_foto = $1, usuario_foto_atualizada_em = CURRENT_TIMESTAMP WHERE usuario_id = $2',
         [foto, userId]
       );
     }
@@ -2211,12 +2402,12 @@ app.get('/api/user/foto', async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        'SELECT usuario_foto FROM usuario WHERE usuario_id = $1',
+        'SELECT "Usuario_Foto" as usuario_foto FROM "Usuario" WHERE "Usuario_Id" = $1',
         [userId]
       );
     } catch (e) {
       result = await pool.query(
-        'SELECT "Usuario_Foto" as usuario_foto FROM "Usuario" WHERE "Usuario_Id" = $1',
+        'SELECT usuario_foto FROM usuario WHERE usuario_id = $1',
         [userId]
       );
     }

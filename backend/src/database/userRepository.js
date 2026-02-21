@@ -1,6 +1,47 @@
 const pool = require('./connection');
 const bcrypt = require('bcrypt');
 
+// Função para normalizar campos de receita (converte maiúsculas para minúsculas)
+const normalizarReceita = (row) => {
+  if (!row) return row;
+  return {
+    receita_id: row.receita_id || row.Receita_Id || row.RECEITA_ID,
+    usuario_id: row.usuario_id || row.Usuario_Id || row.USUARIO_ID,
+    conta_id: row.conta_id || row.Conta_Id || row.CONTA_ID,
+    receita_descricao: row.receita_descricao || row.Receita_Descricao || row.RECEITA_DESCRICAO,
+    receita_valor: row.receita_valor || row.Receita_Valor || row.RECEITA_VALOR,
+    receita_data: row.receita_data || row.Receita_Data || row.RECEITA_DATA,
+    receita_tipo: row.receita_tipo || row.Receita_Tipo || row.RECEITA_TIPO,
+    receita_recebido: row.receita_recebido !== undefined ? row.receita_recebido : (row.Receita_Recebido !== undefined ? row.Receita_Recebido : false),
+    receita_recorrente: row.receita_recorrente !== undefined ? row.receita_recorrente : (row.Receita_Recorrente !== undefined ? row.Receita_Recorrente : false),
+    receita_frequencia: row.receita_frequencia || row.Receita_Frequencia || row.RECEITA_FREQUENCIA,
+    receita_proximasparcelas: row.receita_proximasparcelas || row.Receita_ProximasParcelas || row.RECEITA_PROXIMASPARCELAS,
+    receita_ativo: row.receita_ativo !== undefined ? row.receita_ativo : (row.Receita_Ativo !== undefined ? row.Receita_Ativo : true),
+    receita_criado_em: row.receita_criado_em || row.Receita_CriadoEm || row.RECEITA_CRIADOEM,
+  };
+};
+
+// Função para normalizar campos de despesa (converte maiúsculas para minúsculas)
+const normalizarDespesa = (row) => {
+  if (!row) return row;
+  return {
+    despesa_id: row.despesa_id || row.Despesa_Id || row.DESPESA_ID,
+    usuario_id: row.usuario_id || row.Usuario_Id || row.USUARIO_ID,
+    conta_id: row.conta_id || row.Conta_Id || row.CONTA_ID,
+    despesa_descricao: row.despesa_descricao || row.Despesa_Descricao || row.DESPESA_DESCRICAO,
+    despesa_valor: row.despesa_valor || row.Despesa_Valor || row.DESPESA_VALOR,
+    despesa_data: row.despesa_data || row.Despesa_Data || row.DESPESA_DATA,
+    despesa_dtvencimento: row.despesa_dtvencimento || row.Despesa_DtVencimento || row.DESPESA_DTVENCIMENTO,
+    despesa_tipo: row.despesa_tipo || row.Despesa_Tipo || row.DESPESA_TIPO,
+    despesa_pago: row.despesa_pago !== undefined ? row.despesa_pago : (row.Despesa_Pago !== undefined ? row.Despesa_Pago : false),
+    despesa_recorrente: row.despesa_recorrente !== undefined ? row.despesa_recorrente : (row.Despesa_Recorrente !== undefined ? row.Despesa_Recorrente : false),
+    despesa_frequencia: row.despesa_frequencia || row.Despesa_Frequencia || row.DESPESA_FREQUENCIA,
+    despesa_proximasparcelas: row.despesa_proximasparcelas || row.Despesa_ProximasParcelas || row.DESPESA_PROXIMASPARCELAS,
+    despesa_ativo: row.despesa_ativo !== undefined ? row.despesa_ativo : (row.Despesa_Ativo !== undefined ? row.Despesa_Ativo : true),
+    despesa_criado_em: row.despesa_criado_em || row.Despesa_CriadoEm || row.DESPESA_CRIADOEM,
+  };
+};
+
 const userRepository = {
   async createUser({ email, senha, nome, telefone }) {
     // Criptografar a senha antes de salvar
@@ -44,20 +85,29 @@ const userRepository = {
   },
 
   async loginUser(email, senha) {
-    // Primeiro, buscar o usuário pelo email
-    // Tentar com aspas duplas primeiro (case-sensitive)
+    // Padrão: PascalCase ("Usuario"). Fallback: minúsculas (usuario)
     let result;
     try {
       result = await pool.query(
         'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha" FROM "Usuario" WHERE "Usuario_Email" = $1 AND "Usuario_Ativo" = TRUE',
         [email]
       );
+      if (result.rows.length === 0) {
+        result = await pool.query(
+          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
+          [email]
+        );
+      }
     } catch (err) {
-      // Se falhar, tentar sem aspas (minúscula)
-      result = await pool.query(
-        'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
-        [email]
-      );
+      try {
+        result = await pool.query(
+          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
+          [email]
+        );
+      } catch (err2) {
+        console.error('Erro ao buscar usuário:', err2.message);
+        return null;
+      }
     }
     
     if (result.rows.length === 0) {
@@ -110,67 +160,60 @@ const userRepository = {
     };
   },
 
-  // Método temporário para debug
+  // Método temporário para debug (padrão PascalCase)
   async getAllUsers() {
-    const result = await pool.query('SELECT Usuario_Id, Usuario_Email, Usuario_Nome FROM Usuario');
-    return result.rows;
+    try {
+      return (await pool.query('SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome" FROM "Usuario"')).rows;
+    } catch (err) {
+      return (await pool.query('SELECT usuario_id, usuario_email, usuario_nome FROM usuario')).rows;
+    }
   },
 
-  // Função para migrar senhas antigas para criptografadas
+  // Função para migrar senhas antigas para criptografadas (padrão PascalCase)
   async migratePasswords() {
-    const result = await pool.query('SELECT Usuario_Id, Usuario_Email, Usuario_Senha FROM Usuario');
+    let result;
+    try {
+      result = await pool.query('SELECT "Usuario_Id", "Usuario_Email", "Usuario_Senha" FROM "Usuario"');
+    } catch (err) {
+      result = await pool.query('SELECT usuario_id, usuario_email, usuario_senha FROM usuario');
+    }
     const users = result.rows;
     
     for (const user of users) {
-      // Verificar se a senha já está criptografada
-      if (!user.usuario_senha.startsWith('$2b$') && !user.usuario_senha.startsWith('$2a$')) {
-        // Senha não está criptografada, vamos criptografá-la
+      const senha = user.usuario_senha || user.Usuario_Senha;
+      const userId = user.usuario_id || user.Usuario_Id;
+      const email = user.usuario_email || user.Usuario_Email;
+      if (senha && !senha.startsWith('$2b$') && !senha.startsWith('$2a$')) {
         const saltRounds = 10;
-        const senhaCriptografada = await bcrypt.hash(user.usuario_senha, saltRounds);
-        
-        await pool.query(
-          'UPDATE Usuario SET Usuario_Senha = $1 WHERE Usuario_Id = $2',
-          [senhaCriptografada, user.usuario_id]
-        );
-        
-        console.log(`Senha migrada para usuário: ${user.usuario_email}`);
+        const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
+        try {
+          await pool.query('UPDATE "Usuario" SET "Usuario_Senha" = $1 WHERE "Usuario_Id" = $2', [senhaCriptografada, userId]);
+        } catch (e) {
+          await pool.query('UPDATE usuario SET usuario_senha = $1 WHERE usuario_id = $2', [senhaCriptografada, userId]);
+        }
+        console.log(`Senha migrada para usuário: ${email}`);
       }
     }
     
     console.log('Migração de senhas concluída!');
   },
 
-  // Métodos para Receitas
+  // Métodos para Receitas (padrão: PascalCase, fallback: minúsculas)
   async getReceitas(userId, mes = null) {
-    // Tentar com aspas duplas primeiro (case-sensitive)
+    const paramsMes = mes ? [userId, mes + '-01'] : [userId];
     let result;
     try {
       let query = 'SELECT * FROM "Receita" WHERE "Usuario_Id" = $1 AND "Receita_Ativo" = TRUE';
-      let params = [userId];
-      
-      if (mes) {
-        query += ' AND DATE_TRUNC(\'month\', "Receita_Data") = DATE_TRUNC(\'month\', $2::date)';
-        params.push(mes + '-01');
-      }
-      
+      if (mes) query += ' AND DATE_TRUNC(\'month\', "Receita_Data") = DATE_TRUNC(\'month\', $2::date)';
       query += ' ORDER BY "Receita_Data" ASC';
-      
-      result = await pool.query(query, params);
+      result = await pool.query(query, paramsMes);
     } catch (err) {
-      // Se falhar, tentar sem aspas (minúscula)
-      let query = 'SELECT * FROM receita WHERE usuario_id = $1 AND receita_ativo = TRUE';
-      let params = [userId];
-      
-      if (mes) {
-        query += ' AND DATE_TRUNC(\'month\', receita_data) = DATE_TRUNC(\'month\', $2::date)';
-        params.push(mes + '-01');
-      }
-      
-      query += ' ORDER BY receita_data ASC';
-      
-      result = await pool.query(query, params);
+      let q = 'SELECT * FROM receita WHERE usuario_id = $1 AND receita_ativo = TRUE';
+      if (mes) q += ' AND DATE_TRUNC(\'month\', receita_data) = DATE_TRUNC(\'month\', $2::date)';
+      q += ' ORDER BY receita_data ASC';
+      result = await pool.query(q, paramsMes);
     }
-    return result.rows;
+    return result.rows.map(normalizarReceita);
   },
 
   async createReceita({ descricao, valor, data, tipo, recebido, conta_id, usuario_id, recorrente = false, frequencia = 'mensal', proximasParcelas = 12 }) {
@@ -227,37 +270,22 @@ const userRepository = {
     return result.rows[0];
   },
 
-  // Métodos para Despesas
+  // Métodos para Despesas (padrão: PascalCase, fallback: minúsculas)
   async getDespesas(userId, mes = null) {
-    // Tentar com aspas duplas primeiro (case-sensitive)
+    const paramsMes = mes ? [userId, mes + '-01'] : [userId];
     let result;
     try {
       let query = 'SELECT * FROM "Despesa" WHERE "Usuario_Id" = $1 AND "Despesa_Ativo" = TRUE';
-      let params = [userId];
-      
-      if (mes) {
-        query += ' AND DATE_TRUNC(\'month\', "Despesa_Data") = DATE_TRUNC(\'month\', $2::date)';
-        params.push(mes + '-01');
-      }
-      
+      if (mes) query += ' AND DATE_TRUNC(\'month\', "Despesa_Data") = DATE_TRUNC(\'month\', $2::date)';
       query += ' ORDER BY "Despesa_Data" ASC';
-      
-      result = await pool.query(query, params);
+      result = await pool.query(query, paramsMes);
     } catch (err) {
-      // Se falhar, tentar sem aspas (minúscula)
-      let query = 'SELECT * FROM despesa WHERE usuario_id = $1 AND despesa_ativo = TRUE';
-      let params = [userId];
-      
-      if (mes) {
-        query += ' AND DATE_TRUNC(\'month\', despesa_data) = DATE_TRUNC(\'month\', $2::date)';
-        params.push(mes + '-01');
-      }
-      
-      query += ' ORDER BY despesa_data ASC';
-      
-      result = await pool.query(query, params);
+      let q = 'SELECT * FROM despesa WHERE usuario_id = $1 AND despesa_ativo = TRUE';
+      if (mes) q += ' AND DATE_TRUNC(\'month\', despesa_data) = DATE_TRUNC(\'month\', $2::date)';
+      q += ' ORDER BY despesa_data ASC';
+      result = await pool.query(q, paramsMes);
     }
-    return result.rows;
+    return result.rows.map(normalizarDespesa);
   },
 
   async createDespesa({ descricao, valor, data, dataVencimento, tipo, pago, conta_id, usuario_id, recorrente = false, frequencia = 'mensal', proximasParcelas = 12 }) {
@@ -342,28 +370,27 @@ const userRepository = {
   async createConta({ nome, tipo, saldo, incrementarSaldoTotal = true, usuario_id, banco }) {
     const bancoVal = (banco && String(banco).trim()) ? String(banco).trim() : null;
     let result;
-    // Tentar conta (lowercase) primeiro - schema mais comum
     try {
       result = await pool.query(
-        'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id, conta_banco) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id", "Conta_Banco") VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [nome, tipo, saldo || 0, usuario_id, bancoVal]
       );
     } catch (err) {
-      if (err.message && err.message.includes('conta_banco')) {
+      if (err.message && (err.message.includes('Conta_Banco') || err.message.includes('does not exist'))) {
         result = await pool.query(
-          'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *',
+          'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id") VALUES ($1, $2, $3, $4) RETURNING *',
           [nome, tipo, saldo || 0, usuario_id]
         );
       } else {
         try {
           result = await pool.query(
-            'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id", "Conta_Banco") VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id, conta_banco) VALUES ($1, $2, $3, $4, $5) RETURNING *',
             [nome, tipo, saldo || 0, usuario_id, bancoVal]
           );
         } catch (err2) {
-          if (err2.message && (err2.message.includes('Conta_Banco') || err2.message.includes('does not exist'))) {
+          if (err2.message && err2.message.includes('conta_banco')) {
             result = await pool.query(
-              'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id") VALUES ($1, $2, $3, $4) RETURNING *',
+              'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *',
               [nome, tipo, saldo || 0, usuario_id]
             );
           } else {
@@ -384,31 +411,28 @@ const userRepository = {
 
   async updateConta(id, { nome, tipo, saldo, banco }) {
     const bancoVal = (banco !== undefined && banco !== null && String(banco).trim()) ? String(banco).trim() : null;
-    console.log('[updateConta] id:', id, 'banco param:', banco, 'bancoVal:', bancoVal);
     let result;
     try {
       result = await pool.query(
-        'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3, conta_banco = $4 WHERE conta_id = $5 RETURNING *',
+        'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3, "Conta_Banco" = $4 WHERE "Conta_Id" = $5 RETURNING *',
         [nome, tipo, saldo || 0, bancoVal, id]
       );
-      console.log('[updateConta] UPDATE conta OK, row conta_banco:', result.rows[0]?.conta_banco);
     } catch (err) {
-      console.log('[updateConta] err:', err.message);
-      if (err.message && err.message.includes('conta_banco')) {
+      if (err.message && (err.message.includes('Conta_Banco') || err.message.includes('does not exist'))) {
         result = await pool.query(
-          'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3 WHERE conta_id = $4 RETURNING *',
+          'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3 WHERE "Conta_Id" = $4 RETURNING *',
           [nome, tipo, saldo || 0, id]
         );
       } else {
         try {
           result = await pool.query(
-            'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3, "Conta_Banco" = $4 WHERE "Conta_Id" = $5 RETURNING *',
+            'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3, conta_banco = $4 WHERE conta_id = $5 RETURNING *',
             [nome, tipo, saldo || 0, bancoVal, id]
           );
         } catch (err2) {
-          if (err2.message && (err2.message.includes('Conta_Banco') || err2.message.includes('does not exist'))) {
+          if (err2.message && err2.message.includes('conta_banco')) {
             result = await pool.query(
-              'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3 WHERE "Conta_Id" = $4 RETURNING *',
+              'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3 WHERE conta_id = $4 RETURNING *',
               [nome, tipo, saldo || 0, id]
             );
           } else {
@@ -977,8 +1001,8 @@ const userRepository = {
     
     const itemData = item.rows[0];
     const isRecorrente = tipo === 'receita' 
-      ? itemData.receita_recorrente 
-      : itemData.despesa_recorrente;
+      ? (itemData.receita_recorrente ?? itemData.Receita_Recorrente)
+      : (itemData.despesa_recorrente ?? itemData.Despesa_Recorrente);
     
     // Tentar com aspas duplas primeiro (case-sensitive)
     let result;

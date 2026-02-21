@@ -1,0 +1,103 @@
+.lembrete-event-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.lembrete-event-popup {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  border-top: 4px solid #4F46E5;
+  overflow: hidden;
+}
+
+.lembrete-event-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  color: white;
+}
+
+.lembrete-event-icon {
+  font-size: 24px;
+}
+
+.lembrete-event-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.lembrete-event-body {
+  padding: 20px;
+}
+
+.lembrete-event-titulo {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.lembrete-event-horario {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 12px 0;
+}
+
+.lembrete-event-desc {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.lembrete-event-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+}
+
+.btn-lembrete-proximo {
+  flex: 1;
+  padding: 10px 16px;
+  background: #e9ecef;
+  color: #495057;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-lembrete-proximo:hover {
+  background: #dee2e6;
+}
+
+.btn-lembrete-ok {
+  padding: 10px 24px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-lembrete-ok:hover {
+  background: #45a049;
+}

@@ -266,6 +266,14 @@
 }
 */
 
+/* Select com fundo branco em Receita, Despesa e Orçamento */
+.receita-container .select-with-icons-trigger,
+.despesa-container .select-with-icons-trigger,
+.orcamento-container .select-with-icons-trigger {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
 /* Estilos para a tela de Receitas e Despesas - padronizados */
 .receita-container {
   padding: 20px;
@@ -567,7 +575,8 @@
   border-radius: 8px;
   font-size: var(--font-size-sm);
   font-family: var(--font-family);
-  background: var(--white);
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   color: var(--black);
   cursor: pointer;
   text-align: left;
@@ -602,6 +611,22 @@
   left: 0;
   right: 0;
   margin: 4px 0 0 0;
+  padding: 0;
+  list-style: none;
+  background: #ffffff !important;
+  border: 2px solid var(--grey-300);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(30, 58, 95, 0.12);
+  z-index: 1000;
+  max-height: 260px;
+  overflow-y: auto;
+  font-family: var(--font-family);
+}
+
+.select-with-icons-dropdown.open-up {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 4px 0;
   padding: 0;
   list-style: none;
   background: var(--white);
@@ -2562,6 +2587,69 @@ select.form-input:focus {
   font-weight: 600;
 }
 
+.config-perfil-layout {
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.config-perfil-layout .config-form {
+  flex: 1;
+  min-width: 280px;
+  max-width: 500px;
+}
+.config-foto-box {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 160px;
+}
+.config-foto-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #495057;
+  font-weight: 500;
+  font-size: 14px;
+}
+.config-foto-container {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #e9ecef;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.config-foto-container:hover {
+  border-color: #2563EB;
+  background: #f0f4ff;
+}
+.config-foto-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.config-foto-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  font-size: 12px;
+}
+.config-foto-placeholder svg {
+  font-size: 32px;
+}
+.config-foto-loading {
+  font-size: 12px;
+  color: #6c757d;
+}
+
 .config-form {
   max-width: 600px;
 }
@@ -3310,9 +3398,11 @@ select.form-input:focus {
   padding: 0;
   width: 90%;
   max-width: 500px;
-  max-height: 95vh; /* Aumentar ainda mais a altura máxima */
+  max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Estilos para scrollbar do modal */
@@ -4349,7 +4439,7 @@ select.form-input:focus {
 .calculadora-header {
   text-align: center;
   margin-bottom: 2rem;
-  color: #3e57a2;
+  color: #4F46E5;
 }
 
 .calculadora-header h1 {
@@ -4360,11 +4450,11 @@ select.form-input:focus {
 
 .calculadora-header p {
   font-size: 1.2rem;
-  color: #5a6c9e;
+  color: #2563EB;
 }
 
 .calculadora-form-full {
-  background: linear-gradient(135deg, #3e57a2 0%, #5a6c9e 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #2563EB 50%, #1d4ed8 100%);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(62, 87, 162, 0.25);
@@ -4417,14 +4507,14 @@ select.form-input:focus {
 
 .calculadora-form-full .form-button.primary {
   background: white;
-  color: #3e57a2;
+  color: #4F46E5;
   border: 1px solid rgba(255,255,255,0.9);
 }
 
 .calculadora-form-full .form-button.primary:hover {
   background: #f8fafc;
   border-color: white;
-  color: #3e57a2;
+  color: #4F46E5;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
@@ -4467,7 +4557,7 @@ select.form-input:focus {
 
 .calculadora-button {
   background: rgba(255, 255, 255, 0.95);
-  color: #3e57a2;
+  color: #4F46E5;
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 8px;
   padding: 0.875rem 1.25rem;
@@ -5519,7 +5609,18 @@ select.form-input:focus {
   align-items: center;
   justify-content: center;
 }
-.mes-selector .btn-mes:hover { background: var(--primary-700); }
+.mes-selector .btn-mes:hover:not(:disabled) { background: var(--primary-700); }
+.mes-selector .btn-mes:disabled { opacity: 0.5; cursor: not-allowed; }
+.mes-selector .mes-select {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  min-width: 140px;
+}
 .mes-selector .mes-atual {
   font-size: 18px;
   font-weight: 600;
@@ -5589,6 +5690,11 @@ select.form-input:focus {
   color: var(--grey-800);
 }
 .orcamento-status { display: flex; align-items: center; }
+.orcamento-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
 .status-icon { font-size: 18px; }
 .status-icon.ok { color: #10B981; }
 .status-icon.atencao { color: #F59E0B; }
@@ -5913,6 +6019,254 @@ select.form-input:focus {
 .modal-cartao, .modal-compra, .modal-orcamento, .modal-categoria, .modal-evento {
   max-width: 500px;
   width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-orcamento {
+  overflow: visible !important;
+}
+
+/* Modal form com scroll - evita campos passando da tela */
+.modal-compra .modal-form,
+.modal-cartao .modal-form {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+  padding-bottom: 120px;
+}
+
+/* Orçamento: form pequeno, overflow visible para dropdown aparecer */
+.modal-orcamento .modal-form {
+  overflow: visible;
+  flex: 1;
+  padding: 20px;
+}
+
+.modal-compra .form-group,
+.modal-cartao .form-group,
+.modal-orcamento .form-group {
+  position: relative;
+  min-width: 0;
+}
+
+.modal-compra .form-row,
+.modal-cartao .form-row,
+.modal-orcamento .form-row {
+  min-width: 0;
+}
+
+.modal-compra input,
+.modal-compra select,
+.modal-cartao input,
+.modal-cartao select,
+.modal-orcamento input,
+.modal-orcamento select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Dropdown dentro de modais */
+.modal-compra .select-with-icons-wrap,
+.modal-cartao .select-with-icons-wrap,
+.modal-orcamento .select-with-icons-wrap {
+  position: relative;
+  z-index: 1100;
+  min-width: 0;
+}
+
+.modal-compra .select-with-icons-trigger,
+.modal-cartao .select-with-icons-trigger,
+.modal-orcamento .select-with-icons-trigger {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 2px solid #d1d5db !important;
+  min-height: 42px;
+}
+
+.modal-orcamento .select-with-icons-wrap {
+  overflow: visible;
+}
+
+.modal-compra .select-with-icons-dropdown,
+.modal-cartao .select-with-icons-dropdown,
+.modal-orcamento .select-with-icons-dropdown {
+  z-index: 9999 !important;
+  position: absolute;
+  max-height: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal de Categorias - garantir que botões apareçam */
+.modal-categoria .modal-form {
+  padding: 20px;
+}
+
+.modal-categoria .icones-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.modal-categoria .icone-btn {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-categoria .icone-btn svg {
+  color: #374151 !important;
+  fill: #374151 !important;
+  width: 18px;
+  height: 18px;
+}
+
+.modal-categoria .icone-btn:hover {
+  border-color: #4F46E5;
+  background: #EEF2FF;
+}
+
+.modal-categoria .icone-btn:hover svg {
+  color: #4F46E5 !important;
+  fill: #4F46E5 !important;
+}
+
+.modal-categoria .icone-btn.selected {
+  background: #4F46E5;
+  border-color: #4F46E5;
+}
+
+.modal-categoria .icone-btn.selected svg {
+  color: white !important;
+  fill: white !important;
+}
+
+.modal-categoria .cores-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  padding: 6px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Garantir scroll no form interno */
+.modal-categoria .modal-form {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-categoria .cor-btn {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-categoria .cor-btn:hover {
+  transform: scale(1.1);
+}
+
+.modal-categoria .cor-btn.selected {
+  border-color: #1f2937;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor;
+}
+
+.modal-categoria .categoria-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.modal-categoria .preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: white;
+  border-left: 4px solid;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.modal-categoria .modal-actions {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
+  flex-shrink: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.modal-categoria .btn-cancel,
+.modal-categoria .btn-save {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px !important;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.modal-categoria .btn-cancel {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.modal-categoria .btn-cancel:hover {
+  background: #d1d5db !important;
+}
+
+.modal-categoria .btn-save {
+  background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.modal-categoria .btn-save:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+/* Fallback - garantir que botões apareçam no final */
+.modal-categoria form.modal-form > .modal-actions {
+  position: relative;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Responsivo novas funcionalidades */
@@ -5934,8 +6288,184 @@ select.form-input:focus {
   .compras-table .table-header span:nth-child(n+3),
   .compras-table .table-row span:nth-child(n+3) { display: none; }
   .form-row { grid-template-columns: 1fr; }
+  
+  /* Modais cartão e orçamento em telas pequenas */
+  .modal-compra, .modal-cartao, .modal-orcamento {
+    max-height: 85vh;
+  }
+  .modal-compra .form-row,
+  .modal-cartao .form-row,
+  .modal-orcamento .form-row {
+    grid-template-columns: 1fr;
+  }
+  .modal-compra .form-group[style*="flex: 0 0 140px"],
+  .modal-cartao .form-group[style*="flex: 0 0 140px"] {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+  }
 }
 
+/* =====================================================
+   FATURAS DE CARTÃO NA TELA DE DESPESAS
+   ===================================================== */
 
+.cartoes-fatura-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
 
+.cartoes-fatura-lista {
+  padding: 16px;
+}
 
+.cartao-fatura-item {
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cartao-fatura-item:last-child {
+  margin-bottom: 0;
+}
+
+.cartao-fatura-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f9fafb;
+  cursor: pointer;
+  border-left: 4px solid;
+  transition: background-color 0.2s;
+}
+
+.cartao-fatura-header:hover {
+  background: #f3f4f6;
+}
+
+.cartao-fatura-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cartao-fatura-info .cartao-nome {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.cartao-fatura-info .cartao-bandeira {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.cartao-fatura-valor {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cartao-fatura-valor .valor {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.cartao-fatura-valor .qtd-compras {
+  font-size: 12px;
+  color: #6b7280;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.cartao-compras-lista {
+  padding: 12px 16px;
+  background: white;
+}
+
+.cartao-compras-lista .compras-header {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 100px 80px 85px 100px;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 2px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.cartao-compras-lista .compra-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 100px 80px 85px 100px;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  align-items: center;
+}
+
+.cartao-compras-lista .compra-row:last-child {
+  border-bottom: none;
+}
+
+.cartao-compras-lista .compra-row span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cartao-compras-lista .compra-row .category-icon {
+  font-size: 14px;
+  color: #4F46E5;
+}
+
+.cartao-fatura-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+  border-radius: 8px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.cartao-fatura-total .valor {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .cartao-fatura-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .cartao-fatura-valor {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .cartao-compras-lista .compras-header,
+  .cartao-compras-lista .compra-row {
+    grid-template-columns: 1fr 80px;
+  }
+  
+  .cartao-compras-lista .compras-header span:nth-child(2),
+  .cartao-compras-lista .compras-header span:nth-child(3),
+  .cartao-compras-lista .compras-header span:nth-child(4),
+  .cartao-compras-lista .compras-header span:nth-child(5),
+  .cartao-compras-lista .compra-row span:nth-child(2),
+  .cartao-compras-lista .compra-row span:nth-child(3),
+  .cartao-compras-lista .compra-row span:nth-child(4),
+  .cartao-compras-lista .compra-row span:nth-child(5) {
+    display: none;
+  }
+}

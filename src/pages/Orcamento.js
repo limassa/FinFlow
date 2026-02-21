@@ -4,6 +4,8 @@ import axios from 'axios';
 import { FaChartPie, FaPlus, FaEdit, FaTrash, FaHome, FaExclamationTriangle, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
+import SelectWithIcons from '../components/SelectWithIcons';
+import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import '../App.css';
 
 // Categorias padrão de despesa
@@ -29,12 +31,47 @@ function Orcamento() {
     categoria: '',
     valor: ''
   });
+  const [editandoOrcamento, setEditandoOrcamento] = useState(null);
+
+  // Categorias customizadas
+  const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+  const [iconesCustomizados, setIconesCustomizados] = useState({});
 
   useEffect(() => {
     if (userId) {
       carregarOrcamentos();
+      carregarCategorias();
     }
   }, [userId, mesSelecionado]);
+
+  const carregarCategorias = async () => {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=despesa`);
+      const nomes = res.data.map(cat => cat.categoria_nome);
+      setCategoriasCustomizadas(nomes);
+      
+      const icones = {};
+      res.data.forEach(cat => {
+        if (cat.categoria_icone) {
+          icones[cat.categoria_nome] = cat.categoria_icone;
+        }
+      });
+      setIconesCustomizados(icones);
+    } catch (err) {
+      console.log('Erro ao buscar categorias:', err);
+    }
+  };
+
+  // Função para obter ícone (considera customizados)
+  const getIcone = (tipo) => {
+    if (iconesCustomizados[tipo]) {
+      return getIconComponentByName(iconesCustomizados[tipo]);
+    }
+    return getIconForTipo(tipo, 'despesa');
+  };
+  
+  // Todas as categorias disponíveis (padrão + customizadas)
+  const todasCategorias = [...categoriasPadrao, ...categoriasCustomizadas];
 
   const carregarOrcamentos = async () => {
     setLoading(true);
@@ -59,7 +96,32 @@ function Orcamento() {
   const formatarMes = (mes) => {
     const [ano, mesNum] = mes.split('-');
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return `${meses[parseInt(mesNum) - 1]} ${ano}`;
+    return `${meses[parseInt(mesNum, 10) - 1]} ${ano}`;
+  };
+
+  // Opções de mês: Jan (ano-1) até Dez (ano+2). Ex: hoje 2025 → Jan/24 até Dez/27
+  const gerarOpcoesMeses = () => {
+    const opcoes = [];
+    const anoMin = new Date().getFullYear() - 1;
+    const anoMax = new Date().getFullYear() + 2;
+    for (let ano = anoMin; ano <= anoMax; ano++) {
+      for (let m = 0; m < 12; m++) {
+        opcoes.push({
+          valor: `${ano}-${String(m + 1).padStart(2, '0')}`,
+          label: `${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m]} ${ano}`
+        });
+      }
+    }
+    return opcoes;
+  };
+  const opcoesMeses = gerarOpcoesMeses();
+
+  const mudarMes = (delta) => {
+    const [ano, mes] = mesSelecionado.split('-').map(Number);
+    const d = new Date(ano, mes - 1, 1);
+    d.setMonth(d.getMonth() + delta);
+    const novoMes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (opcoesMeses.some(o => o.valor === novoMes)) setMesSelecionado(novoMes);
   };
 
   const parseCurrency = (value) => {
@@ -93,22 +155,44 @@ function Orcamento() {
 
   // Handlers
   const abrirModal = () => {
+    setEditandoOrcamento(null);
     setFormOrcamento({ categoria: '', valor: '' });
     setShowModal(true);
+  };
+
+  const abrirModalEdicao = (orc) => {
+    setEditandoOrcamento(orc);
+    setFormOrcamento({
+      categoria: orc.orcamento_categoria,
+      valor: orc.orcamento_valor?.toString().replace('.', ',') || ''
+    });
+    setShowModal(true);
+  };
+
+  const fecharModal = () => {
+    setShowModal(false);
+    setEditandoOrcamento(null);
+    setFormOrcamento({ categoria: '', valor: '' });
   };
 
   const salvarOrcamento = async (e) => {
     e.preventDefault();
     
     try {
-      await axios.post(API_ENDPOINTS.ORCAMENTOS, {
-        usuario_id: userId,
-        categoria: formOrcamento.categoria,
-        valor: parseCurrency(formOrcamento.valor),
-        mes: mesSelecionado
-      });
-
-      setShowModal(false);
+      if (editandoOrcamento) {
+        await axios.put(`${API_ENDPOINTS.ORCAMENTOS}/${editandoOrcamento.orcamento_id}`, {
+          categoria: formOrcamento.categoria,
+          valor: parseCurrency(formOrcamento.valor)
+        });
+      } else {
+        await axios.post(API_ENDPOINTS.ORCAMENTOS, {
+          usuario_id: userId,
+          categoria: formOrcamento.categoria,
+          valor: parseCurrency(formOrcamento.valor),
+          mes: mesSelecionado
+        });
+      }
+      fecharModal();
       carregarOrcamentos();
     } catch (error) {
       console.error('Erro ao salvar orçamento:', error);
@@ -162,9 +246,12 @@ function Orcamento() {
     }
   };
 
-  // Categorias disponíveis (excluindo as já usadas)
-  const categoriasDisponiveis = categoriasPadrao.filter(
-    cat => !orcamentos.some(o => o.orcamento_categoria === cat)
+  // Categorias disponíveis (excluindo as já usadas, mas ao editar inclui a da própria)
+  const categoriasDisponiveis = todasCategorias.filter(
+    cat => !orcamentos.some(o => 
+      o.orcamento_categoria === cat && 
+      (!editandoOrcamento || o.orcamento_id !== editandoOrcamento.orcamento_id)
+    )
   );
 
   const totais = calcularTotais();
@@ -194,22 +281,24 @@ function Orcamento() {
         <div className="mes-selector">
           <button 
             className="btn-mes"
-            onClick={() => {
-              const d = new Date(mesSelecionado + '-01');
-              d.setMonth(d.getMonth() - 1);
-              setMesSelecionado(d.toISOString().slice(0, 7));
-            }}
+            onClick={() => mudarMes(-1)}
+            disabled={mesSelecionado === opcoesMeses[0]?.valor}
           >
             ‹
           </button>
-          <span className="mes-atual">{formatarMes(mesSelecionado)}</span>
+          <select
+            className="mes-select"
+            value={mesSelecionado}
+            onChange={(e) => setMesSelecionado(e.target.value)}
+          >
+            {opcoesMeses.map(o => (
+              <option key={o.valor} value={o.valor}>{o.label}</option>
+            ))}
+          </select>
           <button 
             className="btn-mes"
-            onClick={() => {
-              const d = new Date(mesSelecionado + '-01');
-              d.setMonth(d.getMonth() + 1);
-              setMesSelecionado(d.toISOString().slice(0, 7));
-            }}
+            onClick={() => mudarMes(1)}
+            disabled={mesSelecionado === opcoesMeses[opcoesMeses.length - 1]?.valor}
           >
             ›
           </button>
@@ -267,18 +356,34 @@ function Orcamento() {
               return (
                 <div key={orc.orcamento_id} className={`orcamento-card ${status}`}>
                   <div className="orcamento-card-header">
-                    <h3>{orc.orcamento_categoria}</h3>
+                    <h3>
+                      {(() => {
+                        const Icon = getIcone(orc.orcamento_categoria);
+                        return <Icon className="category-icon" style={{ marginRight: '8px' }} />;
+                      })()}
+                      {orc.orcamento_categoria}
+                    </h3>
                     <div className="orcamento-status">
                       {status === 'ok' && <FaCheckCircle className="status-icon ok" />}
                       {status === 'atencao' && <FaExclamationTriangle className="status-icon atencao" />}
                       {status === 'excedido' && <FaTimesCircle className="status-icon excedido" />}
                     </div>
-                    <button 
-                      className="btn-delete"
-                      onClick={() => excluirOrcamento(orc.orcamento_id)}
-                    >
-                      <FaTrash />
-                    </button>
+                    <div className="orcamento-card-actions">
+                      <button 
+                        className="btn-edit"
+                        onClick={() => abrirModalEdicao(orc)}
+                        title="Editar"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button 
+                        className="btn-delete"
+                        onClick={() => excluirOrcamento(orc.orcamento_id)}
+                        title="Excluir"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="orcamento-valores">
@@ -324,16 +429,15 @@ function Orcamento() {
             <form onSubmit={salvarOrcamento} className="modal-form">
               <div className="form-group">
                 <label>Categoria</label>
-                <select
+                <SelectWithIcons
+                  options={categoriasDisponiveis}
                   value={formOrcamento.categoria}
-                  onChange={e => setFormOrcamento({ ...formOrcamento, categoria: e.target.value })}
+                  onChange={(val) => setFormOrcamento({ ...formOrcamento, categoria: val })}
+                  categoria="despesa"
+                  placeholder="Selecione uma categoria"
                   required
-                >
-                  <option value="">Selecione uma categoria</option>
-                  {categoriasDisponiveis.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                  customIcons={iconesCustomizados}
+                />
               </div>
               
               <div className="form-group">
@@ -348,11 +452,11 @@ function Orcamento() {
               </div>
               
               <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
+                <button type="button" className="btn-cancel" onClick={fecharModal}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn-save">
-                  Salvar Orçamento
+                  {editandoOrcamento ? 'Atualizar' : 'Salvar'} Orçamento
                 </button>
               </div>
             </form>

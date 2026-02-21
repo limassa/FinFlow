@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import { getIconForTipo } from '../utils/categoryIcons';
+import React, { useEffect, useState, useRef } from 'react';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight, FaCreditCard } from 'react-icons/fa';
+import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
@@ -9,7 +9,7 @@ import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
-import { normalizarDataInput } from '../utils/formatters';
+import { normalizarDataInput, formatarValorInput, valorParaNumero } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
@@ -39,10 +39,20 @@ function Despesa() {
   const [metaCategoria, setMetaCategoria] = useState('');
   const [metaValor, setMetaValor] = useState('');
   
+  // Estados para cartões de crédito
+  const [faturasCartao, setFaturasCartao] = useState([]);
+  const [cartaoExpandido, setCartaoExpandido] = useState(null);
+  const [mostrarCartoes, setMostrarCartoes] = useState(true);
+  
+  // Estado para categorias customizadas
+  const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+  const [iconesCustomizados, setIconesCustomizados] = useState({});
+  
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
 
-  const tiposDespesa = [
+  // Categorias padrão
+  const tiposDespesaPadrao = [
     'Alimentação',
     'Transporte',
     'Saúde',
@@ -57,7 +67,10 @@ function Despesa() {
     'Presentes',
     'Telefonia',
     'Pet Shop'
-  ];        
+  ];
+  
+  // Combinar categorias padrão com customizadas
+  const tiposDespesa = [...tiposDespesaPadrao, ...categoriasCustomizadas];        
   const [tipo, setTipo] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -66,6 +79,13 @@ function Despesa() {
   const [exibirAgrupado, setExibirAgrupado] = useState(true);
   const [modalExclusao, setModalExclusao] = useState(null);
   const [modalEditarRecorrente, setModalEditarRecorrente] = useState(null);
+  
+  const formContainerRef = useRef(null);
+  
+  // Estado para modal de criar categoria rápida
+  const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
+  const [novaCategoriaNome, setNovaCategoriaNome] = useState('');
+  const [salvandoCategoria, setSalvandoCategoria] = useState(false);
 
   // Função para navegar para home e rolar para o topo
   const navigateToHome = () => {
@@ -76,18 +96,30 @@ function Despesa() {
     }, 100);
   };
 
-  // Gerar opções dos últimos 12 meses
+  // Gerar opções dos meses (6 futuros + 12 passados)
   const gerarOpcoesMeses = () => {
     const opcoes = [];
     const hoje = new Date();
     
+    // 6 meses futuros
+    for (let i = 6; i >= 1; i--) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      const mesAno = data.toLocaleDateString('pt-BR', { 
+        year: 'numeric', 
+        month: 'long' 
+      });
+      const valor = data.toISOString().slice(0, 7);
+      opcoes.push({ label: mesAno, value: valor });
+    }
+    
+    // Mês atual + 12 meses passados
     for (let i = 0; i < 12; i++) {
       const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       const mesAno = data.toLocaleDateString('pt-BR', { 
         year: 'numeric', 
         month: 'long' 
       });
-      const valor = data.toISOString().slice(0, 7); // YYYY-MM
+      const valor = data.toISOString().slice(0, 7);
       opcoes.push({ label: mesAno, value: valor });
     }
     return opcoes;
@@ -102,6 +134,8 @@ function Despesa() {
       fetchDespesas();
       fetchContas();
       fetchMetas();
+      fetchCategoriasCustomizadas();
+      fetchFaturasCartao();
     }
   }, [userId, mesFiltro]);
 
@@ -120,6 +154,81 @@ function Despesa() {
       setMetas(res.data);
     } catch (err) {
       console.log('Erro ao buscar metas:', err);
+    }
+  };
+
+  const fetchFaturasCartao = async () => {
+    try {
+      // Se não tiver filtro de mês, busca todas as compras
+      const mesParam = mesFiltro ? `&mes=${mesFiltro}` : '';
+      const [cartoesRes, comprasRes] = await Promise.all([
+        axios.get(`${API_ENDPOINTS.CARTOES}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.COMPRAS_CARTAO}?userId=${userId}${mesParam}`)
+      ]);
+      
+      // Agrupar compras por cartão
+      const faturas = cartoesRes.data.map(cartao => {
+        const comprasCartao = comprasRes.data.filter(c => c.cartao_id === cartao.cartao_id);
+        const valorTotal = comprasCartao.reduce((sum, c) => sum + parseFloat(c.compra_valor_parcela || 0), 0);
+        return {
+          ...cartao,
+          compras: comprasCartao,
+          valorFatura: valorTotal
+        };
+      }).filter(f => f.valorFatura > 0); // Só mostra cartões com fatura
+      
+      setFaturasCartao(faturas);
+    } catch (err) {
+      console.log('Erro ao buscar faturas de cartão:', err);
+    }
+  };
+
+  const fetchCategoriasCustomizadas = async () => {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=despesa`);
+      const nomes = res.data.map(cat => cat.categoria_nome);
+      setCategoriasCustomizadas(nomes);
+      
+      // Criar mapa de ícones customizados
+      const icones = {};
+      res.data.forEach(cat => {
+        if (cat.categoria_icone) {
+          icones[cat.categoria_nome] = cat.categoria_icone;
+        }
+      });
+      setIconesCustomizados(icones);
+    } catch (err) {
+      console.log('Erro ao buscar categorias customizadas:', err);
+    }
+  };
+
+  const criarCategoriaRapida = async () => {
+    if (!novaCategoriaNome.trim()) return;
+    
+    setSalvandoCategoria(true);
+    try {
+      await axios.post(API_ENDPOINTS.CATEGORIAS, {
+        usuario_id: userId,
+        nome: novaCategoriaNome.trim(),
+        tipo: 'despesa',
+        icone: 'ellipsis',
+        cor: '#6B7280'
+      });
+      
+      // Atualizar lista de categorias
+      await fetchCategoriasCustomizadas();
+      
+      // Selecionar a nova categoria
+      setTipo(novaCategoriaNome.trim());
+      
+      // Fechar modal e limpar
+      setMostrarModalCategoria(false);
+      setNovaCategoriaNome('');
+    } catch (err) {
+      console.error('Erro ao criar categoria:', err);
+      alert('Erro ao criar categoria');
+    } finally {
+      setSalvandoCategoria(false);
     }
   };
 
@@ -158,7 +267,7 @@ function Despesa() {
     try {
       const despesaData = {
         descricao, 
-        valor, 
+        valor: valorParaNumero(valor), 
         data, 
         dataVencimento,
         tipo,
@@ -192,20 +301,20 @@ function Despesa() {
 
   const handleEdit = (despesa) => {
     setDescricao(despesa.despesa_descricao);
-    setValor(despesa.despesa_valor);
-    // Formatar a data para o formato YYYY-MM-DD que o input date espera
-    // Usar método mais seguro para evitar problemas de fuso horário
-    const dataFormatada = despesa.despesa_data ? 
-      despesa.despesa_data.split('T')[0] : '';
+    const valorNum = parseFloat(despesa.despesa_valor) || 0;
+    setValor(valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const dataFormatada = despesa.despesa_data ? despesa.despesa_data.split('T')[0] : '';
     setData(dataFormatada);
-    // Formatar a data de vencimento para o formato YYYY-MM-DD
-    const dataVencimentoFormatada = despesa.despesa_dtvencimento ? 
-      despesa.despesa_dtvencimento.split('T')[0] : '';
+    const dataVencimentoFormatada = despesa.despesa_dtvencimento ? despesa.despesa_dtvencimento.split('T')[0] : '';
     setDataVencimento(dataVencimentoFormatada);
     setTipo(despesa.despesa_tipo);
     setPago(despesa.despesa_pago || false);
     setContaId(despesa.conta_id || '');
+    setRecorrente(despesa.despesa_recorrente || false);
+    setFrequencia(despesa.despesa_frequencia || 'mensal');
+    setProximasParcelas(despesa.despesa_proximasparcelas || 12);
     setEditId(despesa.despesa_id);
+    setTimeout(() => formContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   const getItensDoGrupo = (despesaRef) => {
@@ -400,7 +509,7 @@ function Despesa() {
     }
     if (submitting) return;
     const despesaEditando = despesas.find(d => d.despesa_id === editId);
-    const payload = { descricao, valor, data, dataVencimento, tipo, pago, conta_id: contaId || null };
+    const payload = { descricao, valor: valorParaNumero(valor), data, dataVencimento, tipo, pago, conta_id: contaId || null };
     if (despesaEditando && despesaEhRecorrente(despesaEditando)) {
       setModalEditarRecorrente({
         mensagem: 'Replicar alterações para os itens não pagos da série?',
@@ -522,6 +631,14 @@ function Despesa() {
     }).format(valor);
   };
 
+  // Função para obter ícone (considera customizados)
+  const getIcone = (tipo) => {
+    if (iconesCustomizados[tipo]) {
+      return getIconComponentByName(iconesCustomizados[tipo]);
+    }
+    return getIconForTipo(tipo, 'despesa');
+  };
+
   const handleSalvarMeta = async () => {
     if (!metaCategoria || !metaValor) {
       alert('Preencha todos os campos');
@@ -601,6 +718,47 @@ function Despesa() {
 
   return (
     <div className="receita-container">
+      {/* Modal de criação rápida de categoria */}
+      {mostrarModalCategoria && (
+        <div className="modal-overlay" onClick={() => setMostrarModalCategoria(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>Nova Categoria</h3>
+              <button className="modal-close" onClick={() => setMostrarModalCategoria(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div className="form-group">
+                <label>Nome da Categoria:</label>
+                <input
+                  type="text"
+                  value={novaCategoriaNome}
+                  onChange={(e) => setNovaCategoriaNome(e.target.value)}
+                  placeholder="Ex: Academia, Streaming, etc."
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setMostrarModalCategoria(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn-save"
+                  onClick={criarCategoriaRapida}
+                  disabled={salvandoCategoria || !novaCategoriaNome.trim()}
+                >
+                  {salvandoCategoria ? 'Salvando...' : 'Criar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalExclusao && (
         <ConfirmacaoExclusao
           mensagem={modalExclusao.mensagem}
@@ -646,7 +804,7 @@ function Despesa() {
       </div>
 
       {/* Formulário */}
-      <div className="form-container">
+      <div className="form-container" ref={formContainerRef}>
         <h3>{editId ? 'Editar Despesa' : 'Adicionar Nova Despesa'}</h3>
         <form onSubmit={editId ? handleUpdate : handleSubmit} className="receita-form">
           <div className="form-row">
@@ -663,11 +821,11 @@ function Despesa() {
             <div className="form-group">
               <label>Valor:</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="numeric"
                 placeholder="0,00"
                 value={valor}
-                onChange={e => setValor(e.target.value)}
+                onChange={e => setValor(formatarValorInput(e.target.value))}
                 required
               />
             </div>
@@ -678,8 +836,10 @@ function Despesa() {
               <input
                 type="date"
                 value={data}
-                onChange={e => setData(e.target.value)}
+                onChange={e => setData(normalizarDataInput(e.target.value))}
                 required
+                min="1900-01-01"
+                max="2099-12-31"
               />
             </div>
             <div className="form-group">
@@ -695,15 +855,41 @@ function Despesa() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Tipo:</label>
-              <SelectWithIcons
-                options={tiposDespesa}
-                value={tipo}
-                onChange={setTipo}
-                categoria="despesa"
-                placeholder="Selecione"
-                required
-              />
+              <label>Categoria:</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <SelectWithIcons
+                    options={tiposDespesa}
+                    value={tipo}
+                    onChange={setTipo}
+                    categoria="despesa"
+                    placeholder="Selecione"
+                    required
+                    customIcons={iconesCustomizados}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalCategoria(true)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    border: '2px solid #4F46E5',
+                    background: '#EEF2FF',
+                    color: '#4F46E5',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    fontWeight: 'bold'
+                  }}
+                  title="Criar nova categoria"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div className="form-group">
               <label>Conta:</label>
@@ -801,6 +987,7 @@ function Despesa() {
                   onChange={setMetaCategoria}
                   categoria="despesa"
                   placeholder="Selecione a categoria"
+                  customIcons={iconesCustomizados}
                 />
                 <input
                   type="number"
@@ -842,7 +1029,7 @@ function Despesa() {
                   return (
                     <div key={meta.meta_id} className={`metas-grid-row ${status}`}>
                       <div>{(() => {
-                    const Icon = getIconForTipo(meta.categoria, 'despesa');
+                    const Icon = getIcone(meta.categoria);
                     return <><Icon className="category-icon" /> {meta.categoria}</>;
                   })()}</div>
                       <div>{metaPercentual.toFixed(1)}%</div>
@@ -869,6 +1056,86 @@ function Despesa() {
           </>
         )}
       </div>
+
+      {/* Seção de Faturas de Cartão */}
+      {faturasCartao.length > 0 && (
+        <div className="cartoes-fatura-container">
+          <div className="metas-header" onClick={() => setMostrarCartoes(!mostrarCartoes)}>
+            <h3><FaCreditCard /> Faturas de Cartão de Crédito</h3>
+            <span>{mostrarCartoes ? '▼' : '▶'}</span>
+          </div>
+          
+          {mostrarCartoes && (
+            <div className="cartoes-fatura-lista">
+              {faturasCartao.map(cartao => (
+                <div key={cartao.cartao_id} className="cartao-fatura-item">
+                  <div 
+                    className="cartao-fatura-header"
+                    onClick={() => setCartaoExpandido(cartaoExpandido === cartao.cartao_id ? null : cartao.cartao_id)}
+                    style={{ borderLeftColor: cartao.cartao_cor }}
+                  >
+                    <div className="cartao-fatura-info">
+                      <FaCreditCard style={{ color: cartao.cartao_cor }} />
+                      <span className="cartao-nome">{cartao.cartao_nome}</span>
+                      <span className="cartao-bandeira">({cartao.cartao_bandeira})</span>
+                    </div>
+                    <div className="cartao-fatura-valor">
+                      <span className="valor despesa">{formatarValor(cartao.valorFatura)}</span>
+                      <span className="qtd-compras">{cartao.compras.length} compra(s)</span>
+                      <span>{cartaoExpandido === cartao.cartao_id ? <FaChevronDown /> : <FaChevronRight />}</span>
+                    </div>
+                  </div>
+                  
+                  {cartaoExpandido === cartao.cartao_id && (
+                    <div className="cartao-compras-lista">
+                      <div className="compras-header">
+                        <span>Descrição</span>
+                        <span>Categoria</span>
+                        <span>Data</span>
+                        <span>Parcela</span>
+                        <span>Vencimento</span>
+                        <span>Valor</span>
+                      </div>
+                      {cartao.compras.map(compra => {
+                        const diaVen = cartao.cartao_dia_vencimento || 10;
+                        const mesFat = (compra.compra_mes_fatura || '').trim();
+                        const vencimento = mesFat ? `${String(diaVen).padStart(2, '0')}/${mesFat.slice(5, 7)}` : '-';
+                        return (
+                        <div key={compra.compra_id} className="compra-row">
+                          <span>{compra.compra_descricao}</span>
+                          <span>
+                            {compra.compra_categoria ? (
+                              <>{(() => {
+                                const Icon = getIcone(compra.compra_categoria);
+                                return <Icon className="category-icon" />;
+                              })()} {compra.compra_categoria}</>
+                            ) : '-'}
+                          </span>
+                          <span>{formatarData(compra.compra_data)}</span>
+                          <span>
+                            {compra.compra_parcelas > 1 
+                              ? `${compra.compra_parcela_atual}/${compra.compra_parcelas}` 
+                              : '-'}
+                          </span>
+                          <span>{vencimento}</span>
+                          <span className="despesa">{formatarValor(compra.compra_valor_parcela)}</span>
+                        </div>
+                      );})}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              <div className="cartao-fatura-total">
+                <span>Total Faturas:</span>
+                <span className="valor despesa">
+                  {formatarValor(faturasCartao.reduce((sum, c) => sum + c.valorFatura, 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Grid de Despesas */}
       <div className="grid-container">
@@ -963,7 +1230,7 @@ function Despesa() {
                 });
               };
               const totalTipo = subgrupos.reduce((s, sg) => s + sg.itens.length, 0);
-              const IconTipo = getIconForTipo(tipoGrupo, 'despesa');
+              const IconTipo = getIcone(tipoGrupo);
               return (
                 <div key={tipoKey} className="grid-grupo-tipo">
                   <div
@@ -1042,7 +1309,7 @@ function Despesa() {
                       <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
                       <div className="grid-cell grid-cell-tipo">
                         {(() => {
-                          const Icon = getIconForTipo(despesa.despesa_tipo, 'despesa');
+                          const Icon = getIcone(despesa.despesa_tipo);
                           return <><Icon className="category-icon" /> {despesa.despesa_tipo}</>;
                         })()}
                       </div>
@@ -1113,7 +1380,7 @@ function Despesa() {
                   <div className="grid-cell">{formatarData(despesa.despesa_dtvencimento)}</div>
                   <div className="grid-cell grid-cell-tipo">
                     {(() => {
-                      const Icon = getIconForTipo(despesa.despesa_tipo, 'despesa');
+                      const Icon = getIcone(despesa.despesa_tipo);
                       return <><Icon className="category-icon" /> {despesa.despesa_tipo}</>;
                     })()}
                   </div>

@@ -1,0 +1,258 @@
+.agenda-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.agenda-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.agenda-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.agenda-header-nav h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  min-width: 260px;
+}
+
+.agenda-header-nav .btn-navegar {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agenda-header-nav .btn-navegar:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.agenda-header-actions {
+  margin-left: 24px;
+}
+
+.agenda-grid {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.agenda-dias-header {
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  background: #4CAF50;
+  color: white;
+  flex-shrink: 0;
+}
+
+.agenda-corner {
+  height: 80px;
+  min-height: 80px;
+  background: #3d8b40;
+  border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.agenda-scroll-wrapper {
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.agenda-slots {
+  min-height: min-content;
+}
+
+.agenda-slot-row {
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  min-height: 48px;
+}
+
+.agenda-hora-cell {
+  height: 48px;
+  min-height: 48px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #666;
+  border-top: 1px solid #eee;
+  border-right: 1px solid #e0e0e0;
+  background: #f8f8f8;
+  flex-shrink: 0;
+}
+
+.agenda-dia-header {
+  padding: 12px 8px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.agenda-dia-header:last-child {
+  border-right: none;
+}
+
+.agenda-dia-header .dia-nome {
+  display: block;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.agenda-dia-header .dia-numero {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+.agenda-slot-cell {
+  border-right: 1px solid #eee;
+  border-top: 1px solid #eee;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agenda-slot-cell:not(.has-eventos) {
+  justify-content: center;
+  align-items: center;
+}
+
+.agenda-slot-cell:hover {
+  background: #e8f5e9;
+}
+
+.agenda-slot-cell:last-child {
+  border-right: none;
+}
+
+.agenda-slot-add {
+  opacity: 0.4;
+  font-size: 18px;
+}
+
+.agenda-slot-cell:hover .agenda-slot-add {
+  opacity: 0.8;
+}
+
+.agenda-event-pill {
+  flex: 1;
+  min-height: 0;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.agenda-slot-cell.has-eventos .agenda-event-pill {
+  width: 100%;
+}
+
+.agenda-loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+/* Modal Novo Evento - Agenda */
+.modal-evento-agenda {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+  min-width: 320px;
+  width: 95%;
+}
+
+.modal-form-agenda {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal-form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 20px 20px 16px;
+}
+
+.modal-actions-agenda {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.modal-evento-agenda .form-group,
+.modal-evento-agenda .form-row {
+  min-width: 0;
+}
+
+.modal-evento-agenda input,
+.modal-evento-agenda select,
+.modal-evento-agenda textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row-agenda {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cores-selector-agenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modal-evento-agenda .cor-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.modal-evento-agenda .cor-btn.selected {
+  border-color: #333;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
+}

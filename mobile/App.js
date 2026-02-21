@@ -20,6 +20,7 @@ import ReceitaScreen from './src/screens/ReceitaScreen';
 import DespesaScreen from './src/screens/DespesaScreen';
 import ContasScreen from './src/screens/ContasScreen';
 import CalendarioScreen from './src/screens/CalendarioScreen';
+import AgendaScreen from './src/screens/AgendaScreen';
 import ConfiguracoesScreen from './src/screens/ConfiguracoesScreen';
 import CalculadoraJurosScreen from './src/screens/CalculadoraJurosScreen';
 import CalculadoraRetiradasScreen from './src/screens/CalculadoraRetiradasScreen';
@@ -125,6 +126,16 @@ function DrawerNavigator() {
             <Ionicons name="calendar" size={size} color={color} />
           ),
           title: 'Calendário',
+        }}
+      />
+      <Drawer.Screen
+        name="Agenda"
+        component={AgendaScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="grid-outline" size={size} color={color} />
+          ),
+          title: 'Agenda',
         }}
       />
       <Drawer.Screen
