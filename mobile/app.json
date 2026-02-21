@@ -20,7 +20,8 @@
         {
           "defaultChannel": "lembretes-eventos"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "ios": {
       "supportsTablet": true,

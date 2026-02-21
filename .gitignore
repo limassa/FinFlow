@@ -92,3 +92,7 @@ out/
 
 # Submodule (evita conflito no Netlify; use em outro repositório se precisar)
 services/evolution-api/
+
+# Expo: usar Prebuild/CNG - EAS gera android/ios no build
+mobile/android/
+mobile/ios/
