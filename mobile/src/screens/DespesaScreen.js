@@ -38,7 +38,9 @@ const tiposDespesaPadrao = [
   'Investimento',
   'Educação',
   'Lazer',
-  'Presentes'
+  'Presentes',
+  'Telefonia',
+  'Pet Shop',
 ];
 
 export default function DespesaScreen() {

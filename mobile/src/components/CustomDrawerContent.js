@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import { View, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
@@ -20,10 +20,15 @@ export default function CustomDrawerContent(props) {
     }
   }, [userId]);
 
+  const abrirConfiguracoes = () => {
+    props.navigation.navigate('Configuracoes');
+    props.navigation.closeDrawer();
+  };
+
   return (
     <DrawerContentScrollView {...props}>
       <View style={styles.drawerHeader}>
-        <View style={styles.fotoWrapper}>
+        <TouchableOpacity style={styles.fotoWrapper} onPress={abrirConfiguracoes} activeOpacity={0.8}>
           {userFoto ? (
             <Image
               source={{ uri: userFoto.startsWith('data:') ? userFoto : `data:image/jpeg;base64,${userFoto}` }}
@@ -35,11 +40,10 @@ export default function CustomDrawerContent(props) {
               <Text style={styles.fotoPlaceholderText}>?</Text>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
         <Text style={styles.userLabel} numberOfLines={1}>
           {userNome || 'Usuário'}
         </Text>
-        <Text style={styles.fotoHint}>Foto em Configurações</Text>
       </View>
       <DrawerItemList {...props} />
     </DrawerContentScrollView>
@@ -82,10 +86,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     maxWidth: '100%',
-  },
-  fotoHint: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginTop: 4,
   },
 });

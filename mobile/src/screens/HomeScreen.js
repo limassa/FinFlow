@@ -6,7 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -297,6 +299,21 @@ export default function HomeScreen() {
           <Text style={styles.versionText}>Versão {versao.versao_mobile}</Text>
         </View>
       )}
+
+      {/* Logo da empresa - abre site ao clicar */}
+      <TouchableOpacity
+        style={styles.companyFooter}
+        onPress={() => Linking.openURL('https://lizsoftware.com.br')}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.companyFooterLabel}>Desenvolvido por</Text>
+        <Image
+          source={require('../../assets/logo_nova.png')}
+          style={styles.companyLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.companyFooterLink}>Liz Software</Text>
+      </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -496,12 +513,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   versionText: {
     fontSize: 12,
     color: '#999',
     fontWeight: '500',
+  },
+  companyFooter: {
+    alignItems: 'center',
+    padding: 20,
+    marginBottom: 24,
+  },
+  companyFooterLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  companyLogo: {
+    width: 48,
+    height: 48,
+    marginBottom: 6,
+  },
+  companyFooterLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
 });
 
