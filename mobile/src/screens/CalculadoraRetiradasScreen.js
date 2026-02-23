@@ -17,6 +17,13 @@ import { Picker } from '@react-native-picker/picker';
 
 export default function CalculadoraRetiradasScreen() {
   const navigation = useNavigation();
+  const scrollRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (resultado && scrollRef.current) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [resultado]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -169,7 +176,7 @@ export default function CalculadoraRetiradasScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView ref={scrollRef} style={styles.container}>
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Valor Inicial (R$)</Text>

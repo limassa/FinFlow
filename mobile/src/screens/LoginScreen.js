@@ -9,10 +9,11 @@ import {
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/theme';
 
@@ -46,18 +47,11 @@ export default function LoginScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Logo do App */}
         <View style={styles.logoContainer}>
-          <Svg width="80" height="80" viewBox="0 0 80 80">
-            <Defs>
-              <LinearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#4F46E5" stopOpacity="1" />
-                <Stop offset="100%" stopColor="#2563EB" stopOpacity="1" />
-              </LinearGradient>
-            </Defs>
-            <Circle cx="40" cy="40" r="36" fill="url(#logoGradient)" />
-            <Path d="M 16 30 L 40 16 L 64 30 L 40 44 Z" fill="white" opacity="0.9" />
-            <Path d="M 16 50 L 40 64 L 64 50 L 40 36 Z" fill="white" opacity="0.7" />
-            <Path d="M 40 16 L 40 64" stroke="white" strokeWidth="4" fill="none" opacity="0.8" />
-          </Svg>
+          <Image
+            source={require('../../assets/logo_nova.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.logoTitle}>Claricash</Text>
           <Text style={styles.logoSubtitle}>Controle Financeiro</Text>
         </View>
@@ -124,6 +118,16 @@ export default function LoginScreen({ navigation }) {
               Não tem uma conta? Cadastre-se
             </Text>
           </TouchableOpacity>
+
+          {/* Desenvolvido por - igual ao web */}
+          <TouchableOpacity
+            style={styles.developedBy}
+            onPress={() => Linking.openURL('https://lizsoftware.com.br')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.developedByLabel}>Desenvolvido por</Text>
+            <Text style={styles.developedByLink}>Liz Software</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -144,6 +148,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
     marginTop: 20,
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
   },
   logoTitle: {
     fontSize: 32,
@@ -222,5 +230,22 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 14,
     fontWeight: '500',
+  },
+  developedBy: {
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignItems: 'center',
+  },
+  developedByLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  developedByLink: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
 });

@@ -26,7 +26,7 @@ import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 
-const tiposDespesa = [
+const tiposDespesaPadrao = [
   'Alimentação',
   'Transporte',
   'Saúde',
@@ -75,14 +75,33 @@ export default function DespesaScreen() {
   const [mostrarMetas, setMostrarMetas] = useState(false);
   const [metaCategoria, setMetaCategoria] = useState('');
   const [metaValor, setMetaValor] = useState('');
+  const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+
+  const tiposDespesa = React.useMemo(() => {
+    const padrao = [...tiposDespesaPadrao];
+    const custom = (categoriasCustomizadas || []).filter(c => c && !padrao.includes(c));
+    return [...padrao, ...custom];
+  }, [categoriasCustomizadas]);
 
   useEffect(() => {
     if (userId) {
       fetchDespesas();
       fetchContas();
       fetchMetas();
+      fetchCategoriasCustomizadas();
     }
   }, [userId, mesFiltro]);
+
+  const fetchCategoriasCustomizadas = async () => {
+    if (!userId) return;
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=despesa`);
+      const nomes = (res.data || []).map(c => c.categoria_nome || c.categoria_Nome).filter(Boolean);
+      setCategoriasCustomizadas(nomes);
+    } catch (err) {
+      console.log('Erro ao buscar categorias:', err);
+    }
+  };
 
   const fetchMetas = async () => {
     if (!userId) return;
@@ -384,7 +403,7 @@ export default function DespesaScreen() {
       if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
       grupos[tipoKey][nomeBase].push(d);
     });
-    const ordem = [...tiposDespesa];
+    const ordem = [...tiposDespesaPadrao, ...categoriasCustomizadas];
     const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
     const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
     return ordemFinal.map(tipo => {
@@ -399,7 +418,7 @@ export default function DespesaScreen() {
       }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
       return { tipo, subgrupos };
     });
-  }, [despesasFiltradas]);
+  }, [despesasFiltradas, categoriasCustomizadas]);
 
   const despesasOrdenadasPorData = React.useMemo(() => {
     return [...despesasFiltradas].sort((a, b) => {
@@ -934,12 +953,13 @@ export default function DespesaScreen() {
                 placeholder="Selecione a data de vencimento"
               />
 
-              <Text style={styles.label}>Tipo *</Text>
-              <Select
+              <Text style={styles.label}>Categoria *</Text>
+              <SelectWithIcons
                 value={tipo}
                 options={tiposDespesa.map(t => ({ label: t, value: t }))}
                 onChange={setTipo}
-                placeholder="Selecione o tipo"
+                categoria="despesa"
+                placeholder="Selecione a categoria"
               />
 
               <AccountSelector

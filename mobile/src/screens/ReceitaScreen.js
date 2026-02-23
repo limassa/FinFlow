@@ -26,7 +26,7 @@ import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
 
-const tiposReceita = ['Salário', 'Venda', 'Presente', 'Investimento', 'Aluguel', 'Outros'];
+const tiposReceitaPadrao = ['Salário', 'Venda', 'Presente', 'Investimento', 'Aluguel', 'Outros'];
 
 export default function ReceitaScreen() {
   const navigation = useNavigation();
@@ -56,11 +56,19 @@ export default function ReceitaScreen() {
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [exibirAgrupado, setExibirAgrupado] = useState(true);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
+  const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+
+  const tiposReceita = React.useMemo(() => {
+    const padrao = [...tiposReceitaPadrao];
+    const custom = (categoriasCustomizadas || []).filter(c => c && !padrao.includes(c));
+    return [...padrao, ...custom];
+  }, [categoriasCustomizadas]);
 
   useEffect(() => {
     if (userId) {
       fetchReceitas();
       fetchContas();
+      fetchCategoriasCustomizadas();
     } else {
       setLoading(false);
     }
@@ -91,6 +99,17 @@ export default function ReceitaScreen() {
       Alert.alert('Erro', 'Erro ao carregar receitas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategoriasCustomizadas = async () => {
+    if (!userId) return;
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=receita`);
+      const nomes = (res.data || []).map(c => c.categoria_nome || c.categoria_Nome).filter(Boolean);
+      setCategoriasCustomizadas(nomes);
+    } catch (err) {
+      console.log('Erro ao buscar categorias:', err);
     }
   };
 
@@ -350,7 +369,7 @@ export default function ReceitaScreen() {
       if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
       grupos[tipoKey][nomeBase].push(r);
     });
-    const ordem = [...tiposReceita];
+    const ordem = [...tiposReceitaPadrao, ...categoriasCustomizadas];
     const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
     const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
     return ordemFinal.map(tipo => {
@@ -365,7 +384,7 @@ export default function ReceitaScreen() {
       }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
       return { tipo, subgrupos };
     });
-  }, [receitasFiltradas]);
+  }, [receitasFiltradas, categoriasCustomizadas]);
 
   const receitasOrdenadasPorData = React.useMemo(() => {
     return [...receitasFiltradas].sort((a, b) => {
@@ -770,13 +789,13 @@ export default function ReceitaScreen() {
                 placeholder="Selecione a data"
               />
 
-              <Text style={styles.label}>Tipo *</Text>
+              <Text style={styles.label}>Categoria *</Text>
               <SelectWithIcons
                 value={tipo}
                 options={tiposReceita.map(t => ({ label: t, value: t }))}
                 onChange={setTipo}
                 categoria="receita"
-                placeholder="Selecione o tipo"
+                placeholder="Selecione a categoria"
               />
 
               <AccountSelector

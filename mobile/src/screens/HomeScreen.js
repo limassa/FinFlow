@@ -204,40 +204,40 @@ export default function HomeScreen() {
 
       <View style={styles.cardsContainer}>
         <TouchableOpacity 
-          style={[styles.card, styles.cardPositive]}
+          style={[styles.card, styles.cardReceita]}
           onPress={() => navigation.navigate('Receita')}
         >
-          <View style={styles.cardIcon}>
-            <Ionicons name="add-circle" size={32} color={colors.success} />
+          <View style={[styles.cardIcon, styles.cardIconReceita]}>
+            <Ionicons name="wallet-outline" size={28} color="#fff" />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Total Receitas</Text>
-            <Text style={styles.cardValue}>{formatarValor(totais.totalReceitas)}</Text>
+            <Text style={[styles.cardValue, styles.cardValueReceita]}>{formatarValor(totais.totalReceitas)}</Text>
             <Text style={styles.cardDescription}>Receitas Recebidas</Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.card, styles.cardNegative]}
+          style={[styles.card, styles.cardDespesa]}
           onPress={() => navigation.navigate('Despesa')}
         >
-          <View style={styles.cardIcon}>
-            <Ionicons name="remove-circle" size={32} color={colors.error} />
+          <View style={[styles.cardIcon, styles.cardIconDespesa]}>
+            <Ionicons name="receipt-outline" size={28} color="#fff" />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Total Despesas</Text>
-            <Text style={styles.cardValue}>{formatarValor(totais.totalDespesas)}</Text>
+            <Text style={[styles.cardValue, styles.cardValueDespesa]}>{formatarValor(totais.totalDespesas)}</Text>
             <Text style={styles.cardDescription}>Despesas Pagas</Text>
           </View>
         </TouchableOpacity>
 
-        <View style={[styles.card, totais.saldoContas >= 0 ? styles.cardPositive : styles.cardNegative]}>
-          <View style={styles.cardIcon}>
-            <Ionicons name="trending-up" size={32} color={totais.saldoContas >= 0 ? colors.success : colors.error} />
+        <View style={[styles.card, totais.saldoContas >= 0 ? styles.cardSaldoPositive : styles.cardSaldoNegative]}>
+          <View style={[styles.cardIcon, totais.saldoContas >= 0 ? styles.cardIconSaldo : styles.cardIconSaldoNeg]}>
+            <Ionicons name="trending-up" size={28} color="#fff" />
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.cardLabel}>Saldo Total</Text>
-            <Text style={styles.cardValue}>{formatarValor(totais.saldoContas)}</Text>
+            <Text style={[styles.cardValue, totais.saldoContas >= 0 ? styles.cardValueSaldo : styles.cardValueDespesa]}>{formatarValor(totais.saldoContas)}</Text>
             <Text style={styles.cardDescription}>Saldo Disponível</Text>
           </View>
         </View>
@@ -348,26 +348,69 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.08)',
   },
-  cardPositive: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.success,
-  },
-  cardNegative: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.error,
-  },
+  cardReceita: {},
+  cardDespesa: {},
+  cardSaldoPositive: {},
+  cardSaldoNegative: {},
   cardIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     marginRight: 16,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardIconReceita: {
+    backgroundColor: '#059669',
+    shadowColor: 'rgba(16, 185, 129, 0.35)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardIconDespesa: {
+    backgroundColor: '#DC2626',
+    shadowColor: 'rgba(239, 68, 68, 0.35)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardIconSaldo: {
+    backgroundColor: '#2563EB',
+    shadowColor: 'rgba(37, 99, 235, 0.35)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardIconSaldoNeg: {
+    backgroundColor: '#DC2626',
+    shadowColor: 'rgba(220, 38, 38, 0.35)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardValueReceita: {
+    color: '#059669',
+  },
+  cardValueDespesa: {
+    color: '#DC2626',
+  },
+  cardValueSaldo: {
+    color: '#2563EB',
   },
   cardContent: {
     flex: 1,

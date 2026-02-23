@@ -8,8 +8,11 @@ import {
   TextInput,
   Switch,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Image
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -55,6 +58,10 @@ export default function ConfiguracoesScreen() {
 
   // Versão do sistema
   const [versao, setVersao] = useState(null);
+
+  // Foto do perfil
+  const [userFoto, setUserFoto] = useState(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
 
   // Configurações de privacidade
   const [privacidadeConfig, setPrivacidadeConfig] = useState({
@@ -108,13 +115,45 @@ export default function ConfiguracoesScreen() {
           email: perfilRes.data.email || '',
           telefone: perfilRes.data.telefone ? formatarTelefone(perfilRes.data.telefone) : ''
         }));
-      } else {
+      }
+      const fotoRes = await axios.get(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`);
+      if (fotoRes.data?.foto) setUserFoto(fotoRes.data.foto);
+      if (!perfilRes.data) {
         console.error('❌ Erro ao buscar perfil: resposta vazia');
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAlterarFoto = async () => {
+    if (!userId) return;
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão', 'É necessário permitir acesso à galeria para alterar a foto.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const uri = result.assets[0].uri;
+      setUploadingFoto(true);
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+      await axios.put(API_ENDPOINTS.USER_FOTO, { userId, foto: base64 });
+      setUserFoto(base64);
+      Alert.alert('Sucesso', 'Foto atualizada!');
+    } catch (err) {
+      console.error('Erro ao alterar foto:', err);
+      Alert.alert('Erro', 'Não foi possível salvar a foto.');
+    } finally {
+      setUploadingFoto(false);
     }
   };
 
@@ -348,6 +387,32 @@ export default function ConfiguracoesScreen() {
           {activeTab === 'perfil' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Informações do Perfil</Text>
+              
+              <View style={styles.fotoContainer}>
+                <TouchableOpacity
+                  onPress={handleAlterarFoto}
+                  disabled={uploadingFoto}
+                  style={styles.fotoButton}
+                >
+                  {userFoto ? (
+                    <Image source={{ uri: userFoto.startsWith('data:') ? userFoto : `data:image/jpeg;base64,${userFoto}` }} style={styles.fotoImage} resizeMode="cover" />
+                  ) : (
+                    <View style={styles.fotoPlaceholder}>
+                      <Ionicons name="person" size={48} color={colors.textSecondary} />
+                    </View>
+                  )}
+                  <View style={styles.fotoOverlay}>
+                    {uploadingFoto ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="camera" size={24} color="#fff" />
+                        <Text style={styles.fotoOverlayText}>Alterar foto</Text>
+                      </>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
               
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Nome Completo:</Text>
@@ -648,6 +713,43 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 20,
+  },
+  fotoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  fotoButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  fotoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  fotoPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fotoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fotoOverlayText: {
+    color: '#fff',
+    fontSize: 11,
   },
   formGroup: {
     marginBottom: 20,

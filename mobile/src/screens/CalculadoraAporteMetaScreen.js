@@ -21,6 +21,13 @@ import { colors } from '../theme/theme';
  */
 export default function CalculadoraAporteMetaScreen() {
   const navigation = useNavigation();
+  const scrollRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (resultado && scrollRef.current) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [resultado]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -91,7 +98,7 @@ export default function CalculadoraAporteMetaScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView ref={scrollRef} style={styles.container}>
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Taxa real mensal (%)</Text>

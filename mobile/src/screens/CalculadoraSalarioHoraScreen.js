@@ -31,9 +31,16 @@ const formatCurrencyInput = (value) => {
 
 export default function CalculadoraSalarioHoraScreen() {
   const navigation = useNavigation();
+  const scrollRef = React.useRef(null);
   const [salarioMensal, setSalarioMensal] = useState('');
   const [horasPorMes, setHorasPorMes] = useState('220');
   const [resultado, setResultado] = useState(null);
+
+  React.useEffect(() => {
+    if (resultado && scrollRef.current) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [resultado]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -76,7 +83,7 @@ export default function CalculadoraSalarioHoraScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.infoBox}>
         <Ionicons name="information-circle" size={20} color={colors.primary} />
         <Text style={styles.infoText}>

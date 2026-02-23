@@ -36,6 +36,7 @@ import CartaoCreditoScreen from './src/screens/CartaoCreditoScreen';
 
 // Auth Context
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 // Theme
 import { theme } from './src/theme/theme';
@@ -87,6 +88,7 @@ function HomeStackNavigator() {
 function DrawerNavigator() {
   return (
     <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={({ navigation }) => ({
         headerStyle: {
           backgroundColor: '#2563EB',
@@ -180,6 +182,25 @@ function DrawerNavigator() {
         })}
       />
       <Drawer.Screen
+        name="Despesa"
+        component={DespesaScreen}
+        options={({ navigation }) => ({
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="trending-down" size={size} color={color} />
+          ),
+          title: 'Despesas',
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Despesa')}
+              style={{ marginRight: 15, padding: 5 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Drawer.Screen
         name="Categorias"
         component={CategoriasScreen}
         options={{
@@ -208,25 +229,6 @@ function DrawerNavigator() {
           ),
           title: 'Cartão de Crédito',
         }}
-      />
-      <Drawer.Screen
-        name="Despesa"
-        component={DespesaScreen}
-        options={({ navigation }) => ({
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="trending-down" size={size} color={color} />
-          ),
-          title: 'Despesas',
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Despesa')}
-              style={{ marginRight: 15, padding: 5 }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add" size={28} color="#fff" />
-            </TouchableOpacity>
-          ),
-        })}
       />
       <Drawer.Screen
         name="Calculadoras"
