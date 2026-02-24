@@ -3,6 +3,7 @@ import '../App.css';
 import { useNavigate } from 'react-router-dom';
 import AuthBanner from '../components/AuthBanner';
 import { FaEnvelope, FaArrowLeft } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../config/api';
 
 function ForgotPassword() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function ForgotPassword() {
     setMessage('');
 
     try {
-      const response = await fetch('${API_ENDPOINTS.FORGOT_PASSWORD}', {
+      const response = await fetch(API_ENDPOINTS.FORGOT_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
