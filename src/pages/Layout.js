@@ -3,7 +3,6 @@ import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaW
 import { useNavigate, Outlet } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
-import AdSense from '../components/AdSense';
 import LembreteEventoProvider from '../components/LembreteEventoProvider';
 
 /*const menuItems = [
@@ -25,8 +24,6 @@ function Layout() {
     <LembreteEventoProvider>
     <div className="home-container">
       <Header />
-      {/* AdSense: crie unidades em AdSense > Anúncios e defina REACT_APP_ADSENSE_SLOT_HEADER no Netlify (Build env) */}
-      <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_HEADER} format="horizontal" className="ad-header" />
       <nav className="sidebar">
         {}
         {/*Home*/}
@@ -154,8 +151,6 @@ function Layout() {
       </nav>
       <main className="main-content">
         <Outlet />
-        {/* Rodapé AdSense: crie outra unidade no AdSense e defina REACT_APP_ADSENSE_SLOT_FOOTER */}
-        <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_FOOTER} format="auto" className="ad-footer" />
       </main>
     </div>
     </LembreteEventoProvider>

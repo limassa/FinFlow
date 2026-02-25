@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
 import GraficosPizza from '../components/GraficosPizza';
 import ModalRelatorio from '../components/ModalRelatorio';
+import AdSense from '../components/AdSense';
 
 function Principal() {
   const navigate = useNavigate();
@@ -273,6 +274,11 @@ function Principal() {
           </div>
         </div>
       </section>
+
+      {/* AdSense: apenas na página Principal (conteúdo editorial - dashboard com dados e gráficos) */}
+      <div className="principal-adsense" style={{ margin: '24px 0', minHeight: 90 }}>
+        <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_HEADER} format="auto" />
+      </div>
 
       {/* Modal de Relatórios */}
       <ModalRelatorio 
