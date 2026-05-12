@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,10 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
-import { formatarValor, formatarData, formatarDataInput, gerarOpcoesMeses } from '../utils/formatters';
+import { formatarValor, formatarData } from '../utils/formatters';
+import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
@@ -52,7 +55,14 @@ export default function DespesaScreen() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [mesFiltro, setMesFiltro] = useState('');
+  const [mesAtual, setMesAtual] = useState(currentMonthYm);
+  const [showMesPicker, setShowMesPicker] = useState(false);
+  const [abaLista, setAbaLista] = useState('atual');
+  const [todasDespesasCache, setTodasDespesasCache] = useState(null);
+  const [loadingTodas, setLoadingTodas] = useState(false);
+  const [buscaLista, setBuscaLista] = useState('');
+  const [listaAvancadaAgruparCategoria, setListaAvancadaAgruparCategoria] = useState(false);
+  const [modalFiltroLista, setModalFiltroLista] = useState(false);
   const [filtroPago, setFiltroPago] = useState('todos');
   
   // Form fields
@@ -70,7 +80,7 @@ export default function DespesaScreen() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
-  const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [exibirAgrupado, setExibirAgrupado] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
   // Metas
   const [metas, setMetas] = useState([]);
@@ -85,14 +95,65 @@ export default function DespesaScreen() {
     return [...padrao, ...custom];
   }, [categoriasCustomizadas]);
 
-  useEffect(() => {
-    if (userId) {
-      fetchDespesas();
-      fetchContas();
-      fetchMetas();
-      fetchCategoriasCustomizadas();
+  const fetchDespesasMes = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const url = `${API_ENDPOINTS.DESPESAS}?userId=${userId}&mes=${mesAtual}`;
+      const res = await axios.get(url);
+      const despesasNormalizadas = (res.data || []).map(despesa => ({
+        ...despesa,
+        despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
+        despesa_descricao: despesa.despesa_descricao || despesa.Despesa_Descricao || despesa.descricao,
+        despesa_valor: despesa.despesa_valor || despesa.Despesa_Valor || despesa.valor || 0,
+        despesa_data: despesa.despesa_data || despesa.Despesa_Data || despesa.data,
+        despesa_dtvencimento: despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
+        despesa_tipo: despesa.despesa_tipo || despesa.Despesa_Tipo || despesa.tipo,
+        despesa_pago: despesa.despesa_pago !== undefined ? despesa.despesa_pago : (despesa.Despesa_Pago !== undefined ? despesa.Despesa_Pago : false),
+        conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id || despesa.contaId || null
+      }));
+      setDespesas(despesasNormalizadas);
+    } catch (err) {
+      console.error('Erro ao buscar despesas:', err);
+      Alert.alert('Erro', 'Erro ao carregar despesas');
+    } finally {
+      setLoading(false);
     }
-  }, [userId, mesFiltro]);
+  }, [userId, mesAtual]);
+
+  const fetchDespesasTodas = useCallback(async () => {
+    if (!userId) return;
+    setLoadingTodas(true);
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`);
+      const despesasNormalizadas = (res.data || []).map(despesa => ({
+        ...despesa,
+        despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
+        despesa_descricao: despesa.despesa_descricao || despesa.Despesa_Descricao || despesa.descricao,
+        despesa_valor: despesa.despesa_valor || despesa.Despesa_Valor || despesa.valor || 0,
+        despesa_data: despesa.despesa_data || despesa.Despesa_Data || despesa.data,
+        despesa_dtvencimento: despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
+        despesa_tipo: despesa.despesa_tipo || despesa.Despesa_Tipo || despesa.tipo,
+        despesa_pago: despesa.despesa_pago !== undefined ? despesa.despesa_pago : (despesa.Despesa_Pago !== undefined ? despesa.Despesa_Pago : false),
+        conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id || despesa.contaId || null
+      }));
+      setTodasDespesasCache(despesasNormalizadas);
+    } catch (err) {
+      console.error('Erro ao buscar todas as despesas:', err);
+      Alert.alert('Erro', 'Erro ao atualizar lista');
+    } finally {
+      setLoadingTodas(false);
+    }
+  }, [userId]);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await fetchDespesasMes();
+    if (abaLista === 'historico' || abaLista === 'futuros') {
+      await fetchDespesasTodas();
+    } else {
+      setTodasDespesasCache(null);
+    }
+  }, [abaLista, fetchDespesasTodas, fetchDespesasMes]);
 
   const fetchCategoriasCustomizadas = async () => {
     if (!userId) return;
@@ -115,35 +176,6 @@ export default function DespesaScreen() {
     }
   };
 
-  const fetchDespesas = async () => {
-    setLoading(true);
-    try {
-      let url = `${API_ENDPOINTS.DESPESAS}?userId=${userId}`;
-      if (mesFiltro) {
-        url += `&mes=${mesFiltro}`;
-      }
-      const res = await axios.get(url);
-      // Normalizar os dados para garantir que os campos estejam em minúscula
-      const despesasNormalizadas = res.data.map(despesa => ({
-        ...despesa,
-        despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
-        despesa_descricao: despesa.despesa_descricao || despesa.Despesa_Descricao || despesa.descricao,
-        despesa_valor: despesa.despesa_valor || despesa.Despesa_Valor || despesa.valor || 0,
-        despesa_data: despesa.despesa_data || despesa.Despesa_Data || despesa.data,
-        despesa_dtvencimento: despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
-        despesa_tipo: despesa.despesa_tipo || despesa.Despesa_Tipo || despesa.tipo,
-        despesa_pago: despesa.despesa_pago !== undefined ? despesa.despesa_pago : (despesa.Despesa_Pago !== undefined ? despesa.Despesa_Pago : false),
-        conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id || despesa.contaId || null
-      }));
-      setDespesas(despesasNormalizadas);
-    } catch (err) {
-      console.error('Erro ao buscar despesas:', err);
-      Alert.alert('Erro', 'Erro ao carregar despesas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchContas = async () => {
     try {
       const res = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
@@ -160,6 +192,125 @@ export default function DespesaScreen() {
     } catch (err) {
       console.error('Erro ao buscar contas:', err);
     }
+  };
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchContas();
+    fetchMetas();
+    fetchCategoriasCustomizadas();
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchDespesasMes();
+  }, [userId, mesAtual, fetchDespesasMes]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (abaLista !== 'historico' && abaLista !== 'futuros') return;
+    if (todasDespesasCache !== null) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingTodas(true);
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`);
+        const despesasNormalizadas = (res.data || []).map(despesa => ({
+          ...despesa,
+          despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
+          despesa_descricao: despesa.despesa_descricao || despesa.Despesa_Descricao || despesa.descricao,
+          despesa_valor: despesa.despesa_valor || despesa.Despesa_Valor || despesa.valor || 0,
+          despesa_data: despesa.despesa_data || despesa.Despesa_Data || despesa.data,
+          despesa_dtvencimento: despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
+          despesa_tipo: despesa.despesa_tipo || despesa.Despesa_Tipo || despesa.tipo,
+          despesa_pago: despesa.despesa_pago !== undefined ? despesa.despesa_pago : (despesa.Despesa_Pago !== undefined ? despesa.Despesa_Pago : false),
+          conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id || despesa.contaId || null
+        }));
+        if (!cancelled) setTodasDespesasCache(despesasNormalizadas);
+      } catch (err) {
+        console.error('Erro ao buscar todas as despesas:', err);
+        if (!cancelled) Alert.alert('Erro', 'Erro ao carregar histórico completo');
+      } finally {
+        if (!cancelled) setLoadingTodas(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, abaLista, todasDespesasCache]);
+
+  const poolDespesas = React.useMemo(() => {
+    const todas = todasDespesasCache;
+    const mes = despesas;
+    if (!todas || todas.length === 0) return mes;
+    const m = new Map(todas.map(d => [d.despesa_id, d]));
+    mes.forEach(d => m.set(d.despesa_id, d));
+    return Array.from(m.values());
+  }, [despesas, todasDespesasCache]);
+
+  const listaPorAba = React.useMemo(() => {
+    if (abaLista === 'atual') return despesas;
+    if (abaLista === 'historico') return todasDespesasCache || [];
+    const hoje = ymdToday();
+    const all = todasDespesasCache || [];
+    return all.filter(d => ymdFromIso(d.despesa_data) > hoje);
+  }, [abaLista, despesas, todasDespesasCache]);
+
+  const listaAposBusca = React.useMemo(() => {
+    let list = listaPorAba;
+    if ((abaLista === 'historico' || abaLista === 'futuros') && buscaLista.trim()) {
+      const q = buscaLista.trim().toLowerCase();
+      list = list.filter(d =>
+        (d.despesa_descricao || '').toLowerCase().includes(q) ||
+        (d.despesa_tipo || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [listaPorAba, abaLista, buscaLista]);
+
+  const despesasFiltradas = React.useMemo(() => {
+    if (filtroPago === 'todos') return listaAposBusca;
+    if (filtroPago === 'pago') return listaAposBusca.filter(d => d.despesa_pago);
+    return listaAposBusca.filter(d => !d.despesa_pago);
+  }, [listaAposBusca, filtroPago]);
+
+  const despesasPorTipo = React.useMemo(() => {
+    const grupos = {};
+    despesasFiltradas.forEach(d => {
+      const tipoKey = d.despesa_tipo || 'Sem tipo';
+      const nomeBase = extrairNomeBaseRecorrente(d.despesa_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(d);
+    });
+    const ordem = [...tiposDespesaPadrao, ...categoriasCustomizadas];
+    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
+    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
+    return ordemFinal.map(tipo => {
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.despesa_data || '').split('T')[0];
+          const dataB = (b.despesa_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
+    });
+  }, [despesasFiltradas, categoriasCustomizadas]);
+
+  const despesasOrdenadasPorData = React.useMemo(() => {
+    return [...despesasFiltradas].sort((a, b) => {
+      const dataA = (a.despesa_data || '').split('T')[0];
+      const dataB = (b.despesa_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [despesasFiltradas]);
+
+  const listarAgrupado = abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria;
+
+  const setAbaListaComLimpeza = (aba) => {
+    setAbaLista(aba);
+    setSelectedIds(new Set());
   };
 
   const handleSubmit = async () => {
@@ -200,7 +351,7 @@ export default function DespesaScreen() {
       };
 
       if (editId) {
-        const despesaEditando = despesas.find(d => d.despesa_id === editId);
+        const despesaEditando = poolDespesas.find(d => d.despesa_id === editId);
         if (despesaEditando && despesaEhRecorrente(despesaEditando)) {
           Alert.alert(
             'Replicar alterações?',
@@ -216,14 +367,13 @@ export default function DespesaScreen() {
         await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, despesaData);
         Alert.alert('Sucesso', 'Despesa atualizada com sucesso');
         resetForm();
-        fetchDespesas();
+        await refreshAfterMutation();
       } else {
         await axios.post(API_ENDPOINTS.DESPESAS, despesaData);
         Alert.alert('Sucesso', recorrente ? 'Despesas recorrentes criadas com sucesso!' : 'Despesa adicionada com sucesso');
+        resetForm();
+        await refreshAfterMutation();
       }
-
-      resetForm();
-      fetchDespesas();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar despesa');
     } finally {
@@ -236,7 +386,7 @@ export default function DespesaScreen() {
       await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, despesaData);
       Alert.alert('Sucesso', 'Despesa atualizada');
       resetForm();
-      fetchDespesas();
+      await refreshAfterMutation();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar despesa');
     } finally {
@@ -247,9 +397,9 @@ export default function DespesaScreen() {
   const salvarDespesaEditReplicar = async (despesaData) => {
     try {
       await axios.put(`${API_ENDPOINTS.DESPESAS}/${editId}`, despesaData);
-      const despesaEditando = despesas.find(d => d.despesa_id === editId);
+      const despesaEditando = poolDespesas.find(d => d.despesa_id === editId);
       const nomeBase = extrairNomeBaseRecorrente(despesaEditando?.despesa_descricao || '');
-      const outrosNaoPagos = despesas.filter(d =>
+      const outrosNaoPagos = poolDespesas.filter(d =>
         d.despesa_id !== editId && !d.despesa_pago &&
         extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
         (d.despesa_tipo || '') === (despesaData.tipo || '')
@@ -267,7 +417,7 @@ export default function DespesaScreen() {
       }
       Alert.alert('Sucesso', outrosNaoPagos.length > 0 ? `${outrosNaoPagos.length} item(ns) também atualizado(s)` : 'Despesa atualizada');
       resetForm();
-      fetchDespesas();
+      await refreshAfterMutation();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar despesa');
     } finally {
@@ -304,7 +454,7 @@ export default function DespesaScreen() {
   const getItensDoGrupo = (despesaRef) => {
     if (!despesaRef) return [];
     const nomeBase = extrairNomeBaseRecorrente(despesaRef.despesa_descricao || '');
-    return despesas.filter(d =>
+    return poolDespesas.filter(d =>
       extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
       (d.despesa_tipo || '') === (despesaRef.despesa_tipo || '')
     );
@@ -318,7 +468,7 @@ export default function DespesaScreen() {
         await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
-      fetchDespesas();
+      await refreshAfterMutation();
       Alert.alert('Sucesso', ids.length === 1 ? 'Despesa excluída' : `${ids.length} despesa(s) excluída(s)`);
     } catch (err) {
       Alert.alert('Erro', 'Erro ao excluir despesas');
@@ -328,7 +478,7 @@ export default function DespesaScreen() {
   };
 
   const handleDelete = (id) => {
-    const despesa = despesas.find(d => d.despesa_id === id);
+    const despesa = poolDespesas.find(d => d.despesa_id === id);
     if (!despesa) return;
     if (despesaEhRecorrente(despesa)) {
       const itensGrupo = getItensDoGrupo(despesa);
@@ -370,7 +520,7 @@ export default function DespesaScreen() {
   const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => despesas.find(d => d.despesa_id === id)).filter(Boolean);
+    const itensSelecionados = [...selectedIds].map(id => poolDespesas.find(d => d.despesa_id === id)).filter(Boolean);
     const temRecorrente = itensSelecionados.some(d => despesaEhRecorrente(d));
     if (temRecorrente) {
       Alert.alert(
@@ -389,46 +539,6 @@ export default function DespesaScreen() {
       ]);
     }
   };
-
-  const despesasFiltradas = React.useMemo(() => {
-    if (filtroPago === 'todos') return despesas;
-    if (filtroPago === 'pago') return despesas.filter(d => d.despesa_pago);
-    return despesas.filter(d => !d.despesa_pago);
-  }, [despesas, filtroPago]);
-
-  const despesasPorTipo = React.useMemo(() => {
-    const grupos = {};
-    despesasFiltradas.forEach(d => {
-      const tipoKey = d.despesa_tipo || 'Sem tipo';
-      const nomeBase = extrairNomeBaseRecorrente(d.despesa_descricao || '');
-      if (!grupos[tipoKey]) grupos[tipoKey] = {};
-      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
-      grupos[tipoKey][nomeBase].push(d);
-    });
-    const ordem = [...tiposDespesaPadrao, ...categoriasCustomizadas];
-    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
-    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
-    return ordemFinal.map(tipo => {
-      const subgruposRaw = grupos[tipo];
-      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
-        const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.despesa_data || '').split('T')[0];
-          const dataB = (b.despesa_data || '').split('T')[0];
-          return dataA.localeCompare(dataB);
-        });
-        return { nomeBase, itens: ordenados };
-      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
-      return { tipo, subgrupos };
-    });
-  }, [despesasFiltradas, categoriasCustomizadas]);
-
-  const despesasOrdenadasPorData = React.useMemo(() => {
-    return [...despesasFiltradas].sort((a, b) => {
-      const dataA = (a.despesa_data || '').split('T')[0];
-      const dataB = (b.despesa_data || '').split('T')[0];
-      return dataA.localeCompare(dataB);
-    });
-  }, [despesasFiltradas]);
 
   const handleDeleteGroup = (labelGrupo, itens) => {
     const qtd = itens.length;
@@ -457,7 +567,7 @@ export default function DespesaScreen() {
       await axios.put(`${API_ENDPOINTS.PARCELA_ATUAL_DESPESA}/${despesa.despesa_id}`, {
         status: !despesa.despesa_pago
       });
-      fetchDespesas();
+      await refreshAfterMutation();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao atualizar status');
     }
@@ -585,13 +695,10 @@ export default function DespesaScreen() {
   const previsaoDespesas = despesasFiltradas
     .reduce((sum, d) => sum + parseFloat(d.despesa_valor || 0), 0);
 
-  const opcoesMeses = gerarOpcoesMeses();
-
-  // Totais por categoria (para metas) - apenas despesas pagas do mês filtrado
+  // Totais por categoria (para metas) — mês navegável em "Atual"
   const totaisPorCategoria = () => {
     const totais = {};
-    const mesAtual = mesFiltro || new Date().toISOString().slice(0, 7);
-    despesasFiltradas
+    despesas
       .filter(d => d.despesa_pago && (d.despesa_data || '').slice(0, 7) === mesAtual)
       .forEach(d => {
         const tipo = d.despesa_tipo || 'Outros';
@@ -651,6 +758,10 @@ export default function DespesaScreen() {
     );
   };
 
+  const showListaLoading = abaLista === 'atual'
+    ? loading
+    : (loadingTodas && todasDespesasCache === null);
+
   return (
     <View style={styles.container}>
       <View style={styles.statsContainer}>
@@ -671,16 +782,77 @@ export default function DespesaScreen() {
       </View>
 
       <View style={styles.filterContainer}>
-        <Text style={styles.filterLabel}>Filtrar por mês:</Text>
-        <Select
-          value={mesFiltro}
-          options={[
-            { label: 'Todos os meses', value: '' },
-            ...opcoesMeses.map(m => ({ label: m.label, value: m.value }))
-          ]}
-          onChange={setMesFiltro}
-          placeholder="Selecione o mês"
-        />
+        <View style={styles.tabRow}>
+          {[
+            { id: 'historico', label: 'Histórico' },
+            { id: 'atual', label: 'Atual' },
+            { id: 'futuros', label: 'Futuros' }
+          ].map(({ id, label }) => (
+            <TouchableOpacity
+              key={id}
+              style={[styles.tabBtn, abaLista === id && styles.tabBtnActive]}
+              onPress={() => setAbaListaComLimpeza(id)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabBtnText, abaLista === id && styles.tabBtnTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {abaLista === 'atual' && (
+          <View style={styles.monthNavRow}>
+            <TouchableOpacity
+              onPress={() => setMesAtual(addMonthsYm(mesAtual, -1))}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chevron-back" size={26} color={colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.monthNavTitle}>{formatMesPtBr(mesAtual)}</Text>
+            <TouchableOpacity
+              onPress={() => setMesAtual(addMonthsYm(mesAtual, 1))}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chevron-forward" size={26} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowMesPicker(true)}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+            {showMesPicker && (
+              <DateTimePicker
+                value={new Date(`${ymPrimeiroDia(mesAtual)}T00:00:00`)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS === 'android') setShowMesPicker(false);
+                  if (event.type === 'dismissed') return;
+                  if (selectedDate) {
+                    const y = selectedDate.getFullYear();
+                    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                    setMesAtual(`${y}-${m}`);
+                    if (Platform.OS === 'ios') setShowMesPicker(false);
+                  }
+                }}
+              />
+            )}
+          </View>
+        )}
+        {(abaLista === 'historico' || abaLista === 'futuros') && (
+          <View style={styles.filterIconRow}>
+            <TouchableOpacity
+              style={styles.filterIconBtn}
+              onPress={() => setModalFiltroLista(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="filter" size={22} color={colors.primary} />
+              <Text style={styles.filterIconLabel}>Buscar / agrupar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <Text style={styles.filterLabel}>Status:</Text>
         <Select
           value={filtroPago}
@@ -692,18 +864,20 @@ export default function DespesaScreen() {
           onChange={setFiltroPago}
           placeholder="Status"
         />
-        <TouchableOpacity
-          style={styles.checkboxRow}
-          onPress={() => setExibirAgrupado(!exibirAgrupado)}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={exibirAgrupado ? 'checkbox' : 'square-outline'}
-            size={22}
-            color={exibirAgrupado ? colors.primary : colors.textSecondary}
-          />
-          <Text style={styles.checkboxLabel}>Agrupar por tipo</Text>
-        </TouchableOpacity>
+        {abaLista === 'atual' && (
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setExibirAgrupado(!exibirAgrupado)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={exibirAgrupado ? 'checkbox' : 'square-outline'}
+              size={22}
+              color={exibirAgrupado ? colors.primary : colors.textSecondary}
+            />
+            <Text style={styles.checkboxLabel}>Agrupar (Categoria)</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Seção de Metas */}
@@ -773,7 +947,7 @@ export default function DespesaScreen() {
         )}
       </View>
 
-      {loading ? (
+      {showListaLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -810,7 +984,7 @@ export default function DespesaScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-              {exibirAgrupado ? (
+              {listarAgrupado ? (
                 despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
                   const tipoKey = `tipo:${tipoGrupo}`;
                   const tipoColapsado = gruposColapsados.has(tipoKey);
@@ -899,6 +1073,46 @@ export default function DespesaScreen() {
           )}
         </ScrollView>
       )}
+
+      <Modal
+        visible={modalFiltroLista}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setModalFiltroLista(false)}
+      >
+        <TouchableOpacity
+          style={styles.filtroListaModalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalFiltroLista(false)}
+        >
+          <View style={styles.filtroListaModalBox} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Buscar e exibição</Text>
+            <Text style={styles.filterLabel}>Nome ou categoria</Text>
+            <TextInput
+              style={styles.input}
+              value={buscaLista}
+              onChangeText={setBuscaLista}
+              placeholder="Digite para filtrar..."
+              placeholderTextColor={colors.placeholder}
+            />
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setListaAvancadaAgruparCategoria(!listaAvancadaAgruparCategoria)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={listaAvancadaAgruparCategoria ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={listaAvancadaAgruparCategoria ? colors.primary : colors.textSecondary}
+              />
+              <Text style={styles.checkboxLabel}>Agrupar por categoria</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.metaAddButton} onPress={() => setModalFiltroLista(false)}>
+              <Text style={styles.metaAddButtonText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={showForm}
@@ -1124,11 +1338,91 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  tabRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  tabBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  tabBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  tabBtnTextActive: {
+    color: '#fff',
+  },
+  monthNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  monthNavArrow: {
+    padding: 4,
+  },
+  monthNavTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    textTransform: 'capitalize',
+  },
+  filterIconRow: {
+    marginBottom: 8,
+  },
+  filterIconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  filterIconLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  filtroListaModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  filtroListaModalBox: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 20,
+  },
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '500',
   },
   metasContainer: {
     backgroundColor: '#fff',

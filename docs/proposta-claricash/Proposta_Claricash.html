@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposta Comercial - Claricash | Liz Software</title>
+  <style>
+    body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; margin: 40px 60px; line-height: 1.5; color: #333; }
+    .capa { text-align: center; padding: 60px 0; border-bottom: 2px solid #2563EB; }
+    .capa .logo { max-width: 180px; max-height: 120px; margin-bottom: 24px; }
+    .capa h1 { font-size: 28pt; color: #1e40af; margin: 0 0 8px 0; }
+    .capa .subtitulo { font-size: 14pt; color: #64748b; margin: 0 0 32px 0; }
+    .capa .data { font-size: 11pt; color: #94a3b8; }
+    h2 { font-size: 14pt; color: #2563EB; margin-top: 32px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+    p { margin: 0 0 12px 0; text-align: justify; }
+    ul { margin: 0 0 16px 0; padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    .destaque { background: #f0f9ff; padding: 16px 20px; border-radius: 8px; border-left: 4px solid #2563EB; margin: 20px 0; }
+    .rodape { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0; font-size: 10pt; color: #64748b; text-align: center; }
+    .contato { margin-top: 24px; }
+    .contato p { margin: 4px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11pt; }
+    table th, table td { border: 1px solid #e2e8f0; padding: 10px 14px; text-align: left; }
+    table th { background: #f8fafc; color: #1e40af; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="capa">
+    <img class="logo" src="logo_nova.png" alt="Liz Software" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+    <div style="display:none; margin-bottom:24px; padding:20px; border:1px dashed #cbd5e1; color:#64748b; font-size:11pt;">Inserir aqui a logo (arquivo logo_nova.png nesta pasta)</div>
+    <h1>Claricash</h1>
+    <p class="subtitulo">Sistema de Controle Financeiro Pessoal</p>
+    <p class="data">Proposta comercial / Descrição do projeto</p>
+    <p class="data">Liz Software</p>
+  </div>
+
+  <h2>1. Apresentação do projeto</h2>
+  <p>O <strong>Claricash</strong> é um sistema completo de controle financeiro pessoal, desenvolvido pela <strong>Liz Software</strong>, que permite ao usuário gerenciar receitas, despesas, contas bancárias, cartões de crédito, orçamento mensal e metas, com interface web e aplicativo mobile (Android), de forma segura e intuitiva.</p>
+  <p>O projeto contempla sincronização entre plataformas, lembretes por e-mail e WhatsApp, relatórios em PDF, calculadoras financeiras e categorias personalizáveis, atendendo tanto ao uso doméstico quanto a necessidades de organização financeira de pequenos negócios.</p>
+
+  <h2>2. Escopo e funcionalidades</h2>
+  <table>
+    <tr><th>Módulo</th><th>Descrição</th></tr>
+    <tr><td>Receitas e despesas</td><td>Cadastro, edição e exclusão; categorias padrão e customizadas (com ícones e cores); filtros por mês e status.</td></tr>
+    <tr><td>Contas</td><td>Gestão de contas bancárias/carteira; saldo por conta e saldo total; vinculação de movimentações.</td></tr>
+    <tr><td>Cartão de crédito</td><td>Cadastro de cartões e faturas; lançamento de compras e parcelas; acompanhamento de gastos.</td></tr>
+    <tr><td>Orçamento mensal</td><td>Definição de orçamento por categoria; acompanhamento do realizado x orçado.</td></tr>
+    <tr><td>Calendário e agenda</td><td>Visualização de vencimentos; eventos com lembretes configuráveis (incl. notificações no app).</td></tr>
+    <tr><td>Relatórios e gráficos</td><td>Evolução mensal; distribuição por categoria; exportação em PDF.</td></tr>
+    <tr><td>Calculadoras</td><td>Juros compostos; retiradas mensais; aporte para metas; salário por hora.</td></tr>
+    <tr><td>Lembretes</td><td>E-mail e WhatsApp configuráveis; dias e horário de envio; eventos na agenda.</td></tr>
+    <tr><td>Categorias</td><td>Categorias customizadas para receita e/ou despesa; ícones e cores; mesma base web e app.</td></tr>
+  </table>
+
+  <h2>3. Plataformas</h2>
+  <ul>
+    <li><strong>Web:</strong> aplicação responsiva (React), acessível por navegador em computadores e tablets.</li>
+    <li><strong>Mobile (Android):</strong> aplicativo nativo (Expo/React Native), disponível para download na Google Play Store.</li>
+  </ul>
+  <p>Os dados são sincronizados entre as plataformas mediante autenticação segura (login único).</p>
+
+  <h2>4. Segurança e privacidade</h2>
+  <p>O sistema utiliza comunicação criptografada (HTTPS), armazenamento seguro de senhas (hash) e tokens de sessão. Os dados financeiros e de conta são tratados com confidencialidade, não sendo compartilhados com terceiros. O usuário pode, a qualquer momento, alterar dados pessoais e solicitar exclusão de conta, em conformidade com boas práticas de proteção de dados.</p>
+
+  <h2>5. Tecnologias</h2>
+  <ul>
+    <li><strong>Front-end web:</strong> React, React Router, Axios.</li>
+    <li><strong>Front-end mobile:</strong> React Native (Expo), React Navigation.</li>
+    <li><strong>Back-end:</strong> Node.js, Express, PostgreSQL.</li>
+    <li><strong>Hospedagem:</strong> Web (Netlify), API e banco (Railway); app distribuído via Google Play (EAS Build).</li>
+  </ul>
+
+  <h2>6. Sobre a Liz Software</h2>
+  <p>A <strong>Liz Software</strong> atua no desenvolvimento de soluções em software sob medida para empresas e usuários finais, com foco em aplicações web e mobile, integração de sistemas e boas práticas de segurança e usabilidade.</p>
+  <div class="destaque">
+    <p><strong>Contato</strong></p>
+    <p>E-mail: contatolizsoftware@gmail.com</p>
+    <p>Site: <a href="https://lizsoftware.com.br">lizsoftware.com.br</a></p>
+    <p>Claricash (web): <a href="https://claricash.com.br">claricash.com.br</a></p>
+  </div>
+
+  <div class="rodape">
+    <p>Documento gerado para envio de proposta e descrição do projeto Claricash.</p>
+    <p>© Liz Software. Todos os direitos reservados.</p>
+  </div>
+
+</body>
+</html>

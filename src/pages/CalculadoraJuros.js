@@ -246,7 +246,7 @@ function CalculadoraJuros() {
     <div className="calculadora-fullscreen">
       <div className="calculadora-header">
         <h1>Calculadora de Juros Compostos</h1>
-        <p>Calcule o crescimento do seu investimento ao longo do tempo</p>
+        <p><strong>O que é:</strong> Simula quanto seu dinheiro cresce com juros compostos ao longo do tempo. Informe valor inicial, taxa e período.</p>
       </div>
 
       <form className="calculadora-form-full">

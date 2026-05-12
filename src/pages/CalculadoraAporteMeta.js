@@ -117,7 +117,7 @@ function CalculadoraAporteMeta() {
     <div className="calculadora-fullscreen">
       <div className="calculadora-header">
         <h1>Aporte para Meta</h1>
-        <p>Quanto investir por mês para atingir um total alvo</p>
+        <p><strong>O que é:</strong> Descobre quanto precisa investir por mês para alcançar um valor-alvo no futuro, considerando juros.</p>
       </div>
 
       <form className="calculadora-form-full" onSubmit={(e) => e.preventDefault()}>

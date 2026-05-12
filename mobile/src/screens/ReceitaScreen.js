@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,10 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
-import { formatarValor, formatarData, formatarDataInput, gerarOpcoesMeses } from '../utils/formatters';
+import { formatarValor, formatarData } from '../utils/formatters';
+import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
@@ -37,7 +40,14 @@ export default function ReceitaScreen() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [mesFiltro, setMesFiltro] = useState('');
+  const [mesAtual, setMesAtual] = useState(currentMonthYm);
+  const [showMesPicker, setShowMesPicker] = useState(false);
+  const [abaLista, setAbaLista] = useState('atual');
+  const [todasReceitasCache, setTodasReceitasCache] = useState(null);
+  const [loadingTodas, setLoadingTodas] = useState(false);
+  const [buscaLista, setBuscaLista] = useState('');
+  const [listaAvancadaAgruparCategoria, setListaAvancadaAgruparCategoria] = useState(false);
+  const [modalFiltroLista, setModalFiltroLista] = useState(false);
   const [filtroRecebido, setFiltroRecebido] = useState('todos');
   
   // Form fields
@@ -54,7 +64,7 @@ export default function ReceitaScreen() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
-  const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [exibirAgrupado, setExibirAgrupado] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
   const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
 
@@ -64,26 +74,13 @@ export default function ReceitaScreen() {
     return [...padrao, ...custom];
   }, [categoriasCustomizadas]);
 
-  useEffect(() => {
-    if (userId) {
-      fetchReceitas();
-      fetchContas();
-      fetchCategoriasCustomizadas();
-    } else {
-      setLoading(false);
-    }
-  }, [userId, mesFiltro]);
-
-  const fetchReceitas = async () => {
+  const fetchReceitasMes = useCallback(async () => {
+    if (!userId) return;
     setLoading(true);
     try {
-      let url = `${API_ENDPOINTS.RECEITAS}?userId=${userId}`;
-      if (mesFiltro) {
-        url += `&mes=${mesFiltro}`;
-      }
+      const url = `${API_ENDPOINTS.RECEITAS}?userId=${userId}&mes=${mesAtual}`;
       const res = await axios.get(url);
-      // Normalizar os dados para garantir que os campos estejam em minúscula
-      const receitasNormalizadas = res.data.map(receita => ({
+      const receitasNormalizadas = (res.data || []).map(receita => ({
         ...receita,
         receita_id: receita.receita_id || receita.Receita_Id || receita.id,
         receita_descricao: receita.receita_descricao || receita.Receita_Descricao || receita.descricao,
@@ -100,7 +97,40 @@ export default function ReceitaScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, mesAtual]);
+
+  const fetchReceitasTodas = useCallback(async () => {
+    if (!userId) return;
+    setLoadingTodas(true);
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`);
+      const receitasNormalizadas = (res.data || []).map(receita => ({
+        ...receita,
+        receita_id: receita.receita_id || receita.Receita_Id || receita.id,
+        receita_descricao: receita.receita_descricao || receita.Receita_Descricao || receita.descricao,
+        receita_valor: receita.receita_valor || receita.Receita_Valor || receita.valor || 0,
+        receita_data: receita.receita_data || receita.Receita_Data || receita.data,
+        receita_tipo: receita.receita_tipo || receita.Receita_Tipo || receita.tipo,
+        receita_recebido: receita.receita_recebido !== undefined ? receita.receita_recebido : (receita.Receita_Recebido !== undefined ? receita.Receita_Recebido : false),
+        conta_id: receita.conta_id || receita.Conta_id || receita.Conta_Id || receita.contaId || null
+      }));
+      setTodasReceitasCache(receitasNormalizadas);
+    } catch (err) {
+      console.error('Erro ao buscar receitas:', err);
+      Alert.alert('Erro', 'Erro ao atualizar lista');
+    } finally {
+      setLoadingTodas(false);
+    }
+  }, [userId]);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await fetchReceitasMes();
+    if (abaLista === 'historico' || abaLista === 'futuros') {
+      await fetchReceitasTodas();
+    } else {
+      setTodasReceitasCache(null);
+    }
+  }, [abaLista, fetchReceitasTodas, fetchReceitasMes]);
 
   const fetchCategoriasCustomizadas = async () => {
     if (!userId) return;
@@ -128,6 +158,127 @@ export default function ReceitaScreen() {
     } catch (err) {
       console.error('Erro ao buscar contas:', err);
     }
+  };
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    fetchContas();
+    fetchCategoriasCustomizadas();
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchReceitasMes();
+  }, [userId, mesAtual, fetchReceitasMes]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (abaLista !== 'historico' && abaLista !== 'futuros') return;
+    if (todasReceitasCache !== null) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingTodas(true);
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`);
+        const receitasNormalizadas = (res.data || []).map(receita => ({
+          ...receita,
+          receita_id: receita.receita_id || receita.Receita_Id || receita.id,
+          receita_descricao: receita.receita_descricao || receita.Receita_Descricao || receita.descricao,
+          receita_valor: receita.receita_valor || receita.Receita_Valor || receita.valor || 0,
+          receita_data: receita.receita_data || receita.Receita_Data || receita.data,
+          receita_tipo: receita.receita_tipo || receita.Receita_Tipo || receita.tipo,
+          receita_recebido: receita.receita_recebido !== undefined ? receita.receita_recebido : (receita.Receita_Recebido !== undefined ? receita.Receita_Recebido : false),
+          conta_id: receita.conta_id || receita.Conta_id || receita.Conta_Id || receita.contaId || null
+        }));
+        if (!cancelled) setTodasReceitasCache(receitasNormalizadas);
+      } catch (err) {
+        console.error('Erro ao buscar receitas:', err);
+        if (!cancelled) Alert.alert('Erro', 'Erro ao carregar histórico completo');
+      } finally {
+        if (!cancelled) setLoadingTodas(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, abaLista, todasReceitasCache]);
+
+  const poolReceitas = React.useMemo(() => {
+    const todas = todasReceitasCache;
+    const mes = receitas;
+    if (!todas || todas.length === 0) return mes;
+    const m = new Map(todas.map(r => [r.receita_id, r]));
+    mes.forEach(r => m.set(r.receita_id, r));
+    return Array.from(m.values());
+  }, [receitas, todasReceitasCache]);
+
+  const listaPorAba = React.useMemo(() => {
+    if (abaLista === 'atual') return receitas;
+    if (abaLista === 'historico') return todasReceitasCache || [];
+    const hoje = ymdToday();
+    const all = todasReceitasCache || [];
+    return all.filter(r => ymdFromIso(r.receita_data) > hoje);
+  }, [abaLista, receitas, todasReceitasCache]);
+
+  const listaAposBusca = React.useMemo(() => {
+    let list = listaPorAba;
+    if ((abaLista === 'historico' || abaLista === 'futuros') && buscaLista.trim()) {
+      const q = buscaLista.trim().toLowerCase();
+      list = list.filter(r =>
+        (r.receita_descricao || '').toLowerCase().includes(q) ||
+        (r.receita_tipo || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [listaPorAba, abaLista, buscaLista]);
+
+  const receitasFiltradas = React.useMemo(() => {
+    const lista = Array.isArray(listaAposBusca) ? listaAposBusca : [];
+    if (filtroRecebido === 'todos') return lista;
+    if (filtroRecebido === 'recebido') return lista.filter(r => r.receita_recebido);
+    return lista.filter(r => !r.receita_recebido);
+  }, [listaAposBusca, filtroRecebido]);
+
+  const receitasPorTipo = React.useMemo(() => {
+    const grupos = {};
+    receitasFiltradas.forEach(r => {
+      const tipoKey = r.receita_tipo || 'Sem tipo';
+      const nomeBase = extrairNomeBaseRecorrente(r.receita_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(r);
+    });
+    const ordem = [...tiposReceitaPadrao, ...categoriasCustomizadas];
+    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
+    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
+    return ordemFinal.map(tipo => {
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.receita_data || '').split('T')[0];
+          const dataB = (b.receita_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
+    });
+  }, [receitasFiltradas, categoriasCustomizadas]);
+
+  const receitasOrdenadasPorData = React.useMemo(() => {
+    return [...receitasFiltradas].sort((a, b) => {
+      const dataA = (a.receita_data || '').split('T')[0];
+      const dataB = (b.receita_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [receitasFiltradas]);
+
+  const listarAgrupado = abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria;
+
+  const setAbaListaComLimpeza = (aba) => {
+    setAbaLista(aba);
+    setSelectedIds(new Set());
   };
 
   const handleSubmit = async () => {
@@ -166,7 +317,7 @@ export default function ReceitaScreen() {
       };
 
       if (editId) {
-        const receitaEditando = receitas.find(r => r.receita_id === editId);
+        const receitaEditando = poolReceitas.find(r => r.receita_id === editId);
         if (receitaEditando && receitaEhRecorrente(receitaEditando)) {
           Alert.alert(
             'Replicar alterações?',
@@ -182,14 +333,13 @@ export default function ReceitaScreen() {
         await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, receitaData);
         Alert.alert('Sucesso', 'Receita atualizada com sucesso');
         resetForm();
-        fetchReceitas();
+        await refreshAfterMutation();
       } else {
         await axios.post(API_ENDPOINTS.RECEITAS, receitaData);
         Alert.alert('Sucesso', recorrente ? 'Receitas recorrentes criadas com sucesso!' : 'Receita adicionada com sucesso');
+        resetForm();
+        await refreshAfterMutation();
       }
-
-      resetForm();
-      fetchReceitas();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar receita');
     } finally {
@@ -202,7 +352,7 @@ export default function ReceitaScreen() {
       await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, receitaData);
       Alert.alert('Sucesso', 'Receita atualizada');
       resetForm();
-      fetchReceitas();
+      await refreshAfterMutation();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar receita');
     } finally {
@@ -213,9 +363,9 @@ export default function ReceitaScreen() {
   const salvarReceitaEditReplicar = async (receitaData) => {
     try {
       await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, receitaData);
-      const receitaEditando = receitas.find(r => r.receita_id === editId);
+      const receitaEditando = poolReceitas.find(r => r.receita_id === editId);
       const nomeBase = extrairNomeBaseRecorrente(receitaEditando?.receita_descricao || '');
-      const outrosNaoRecebidos = receitas.filter(r =>
+      const outrosNaoRecebidos = poolReceitas.filter(r =>
         r.receita_id !== editId && !r.receita_recebido &&
         extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
         (r.receita_tipo || '') === (receitaData.tipo || '')
@@ -232,7 +382,7 @@ export default function ReceitaScreen() {
       }
       Alert.alert('Sucesso', outrosNaoRecebidos.length > 0 ? `${outrosNaoRecebidos.length} item(ns) também atualizado(s)` : 'Receita atualizada');
       resetForm();
-      fetchReceitas();
+      await refreshAfterMutation();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao salvar receita');
     } finally {
@@ -267,7 +417,7 @@ export default function ReceitaScreen() {
   const getItensDoGrupo = (receitaRef) => {
     if (!receitaRef) return [];
     const nomeBase = extrairNomeBaseRecorrente(receitaRef.receita_descricao || '');
-    return receitas.filter(r =>
+    return poolReceitas.filter(r =>
       extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
       (r.receita_tipo || '') === (receitaRef.receita_tipo || '')
     );
@@ -281,7 +431,7 @@ export default function ReceitaScreen() {
         await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
-      fetchReceitas();
+      await refreshAfterMutation();
       Alert.alert('Sucesso', ids.length === 1 ? 'Receita excluída' : `${ids.length} receita(s) excluída(s)`);
     } catch (err) {
       Alert.alert('Erro', 'Erro ao excluir receitas');
@@ -291,7 +441,7 @@ export default function ReceitaScreen() {
   };
 
   const handleDelete = (id) => {
-    const receita = receitas.find(r => r.receita_id === id);
+    const receita = poolReceitas.find(r => r.receita_id === id);
     if (!receita) return;
     if (receitaEhRecorrente(receita)) {
       const itensGrupo = getItensDoGrupo(receita);
@@ -333,7 +483,7 @@ export default function ReceitaScreen() {
   const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => receitas.find(r => r.receita_id === id)).filter(Boolean);
+    const itensSelecionados = [...selectedIds].map(id => poolReceitas.find(r => r.receita_id === id)).filter(Boolean);
     const temRecorrente = itensSelecionados.some(r => receitaEhRecorrente(r));
     if (temRecorrente) {
       Alert.alert(
@@ -352,47 +502,6 @@ export default function ReceitaScreen() {
       ]);
     }
   };
-
-  const receitasFiltradas = React.useMemo(() => {
-    const lista = Array.isArray(receitas) ? receitas : [];
-    if (filtroRecebido === 'todos') return lista;
-    if (filtroRecebido === 'recebido') return lista.filter(r => r.receita_recebido);
-    return lista.filter(r => !r.receita_recebido);
-  }, [receitas, filtroRecebido]);
-
-  const receitasPorTipo = React.useMemo(() => {
-    const grupos = {};
-    receitasFiltradas.forEach(r => {
-      const tipoKey = r.receita_tipo || 'Sem tipo';
-      const nomeBase = extrairNomeBaseRecorrente(r.receita_descricao || '');
-      if (!grupos[tipoKey]) grupos[tipoKey] = {};
-      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
-      grupos[tipoKey][nomeBase].push(r);
-    });
-    const ordem = [...tiposReceitaPadrao, ...categoriasCustomizadas];
-    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
-    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
-    return ordemFinal.map(tipo => {
-      const subgruposRaw = grupos[tipo];
-      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
-        const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.receita_data || '').split('T')[0];
-          const dataB = (b.receita_data || '').split('T')[0];
-          return dataA.localeCompare(dataB);
-        });
-        return { nomeBase, itens: ordenados };
-      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
-      return { tipo, subgrupos };
-    });
-  }, [receitasFiltradas, categoriasCustomizadas]);
-
-  const receitasOrdenadasPorData = React.useMemo(() => {
-    return [...receitasFiltradas].sort((a, b) => {
-      const dataA = (a.receita_data || '').split('T')[0];
-      const dataB = (b.receita_data || '').split('T')[0];
-      return dataA.localeCompare(dataB);
-    });
-  }, [receitasFiltradas]);
 
   const handleDeleteGroup = (labelGrupo, itens) => {
     const qtd = itens.length;
@@ -421,7 +530,7 @@ export default function ReceitaScreen() {
       await axios.put(`${API_ENDPOINTS.PARCELA_ATUAL_RECEITA}/${receita.receita_id}`, {
         status: !receita.receita_recebido
       });
-      fetchReceitas();
+      await refreshAfterMutation();
     } catch (err) {
       Alert.alert('Erro', 'Erro ao atualizar status');
     }
@@ -449,7 +558,9 @@ export default function ReceitaScreen() {
   const previsaoReceitas = receitasFiltradas
     .reduce((sum, r) => sum + parseFloat(r.receita_valor || 0), 0);
 
-  const opcoesMeses = gerarOpcoesMeses();
+  const showListaLoading = abaLista === 'atual'
+    ? loading
+    : (loadingTodas && todasReceitasCache === null);
 
   const renderReceitaCard = (receita) => {
     const conta = contas.find(c => c.conta_id === receita.conta_id);
@@ -579,16 +690,77 @@ export default function ReceitaScreen() {
       </View>
 
       <View style={styles.filterContainer}>
-        <Text style={styles.filterLabel}>Filtrar por mês:</Text>
-        <Select
-          value={mesFiltro}
-          options={[
-            { label: 'Todos os meses', value: '' },
-            ...opcoesMeses.map(m => ({ label: m.label, value: m.value }))
-          ]}
-          onChange={setMesFiltro}
-          placeholder="Selecione o mês"
-        />
+        <View style={styles.tabRow}>
+          {[
+            { id: 'historico', label: 'Histórico' },
+            { id: 'atual', label: 'Atual' },
+            { id: 'futuros', label: 'Futuros' }
+          ].map(({ id, label }) => (
+            <TouchableOpacity
+              key={id}
+              style={[styles.tabBtn, abaLista === id && styles.tabBtnActive]}
+              onPress={() => setAbaListaComLimpeza(id)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabBtnText, abaLista === id && styles.tabBtnTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {abaLista === 'atual' && (
+          <View style={styles.monthNavRow}>
+            <TouchableOpacity
+              onPress={() => setMesAtual(addMonthsYm(mesAtual, -1))}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chevron-back" size={26} color={colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.monthNavTitle}>{formatMesPtBr(mesAtual)}</Text>
+            <TouchableOpacity
+              onPress={() => setMesAtual(addMonthsYm(mesAtual, 1))}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="chevron-forward" size={26} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowMesPicker(true)}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+            {showMesPicker && (
+              <DateTimePicker
+                value={new Date(`${ymPrimeiroDia(mesAtual)}T00:00:00`)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS === 'android') setShowMesPicker(false);
+                  if (event.type === 'dismissed') return;
+                  if (selectedDate) {
+                    const y = selectedDate.getFullYear();
+                    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                    setMesAtual(`${y}-${m}`);
+                    if (Platform.OS === 'ios') setShowMesPicker(false);
+                  }
+                }}
+              />
+            )}
+          </View>
+        )}
+        {(abaLista === 'historico' || abaLista === 'futuros') && (
+          <View style={styles.filterIconRow}>
+            <TouchableOpacity
+              style={styles.filterIconBtn}
+              onPress={() => setModalFiltroLista(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="filter" size={22} color={colors.primary} />
+              <Text style={styles.filterIconLabel}>Buscar / agrupar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <Text style={styles.filterLabel}>Status:</Text>
         <Select
           value={filtroRecebido}
@@ -600,21 +772,23 @@ export default function ReceitaScreen() {
           onChange={setFiltroRecebido}
           placeholder="Status"
         />
-        <TouchableOpacity
-          style={styles.checkboxRow}
-          onPress={() => setExibirAgrupado(!exibirAgrupado)}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={exibirAgrupado ? 'checkbox' : 'square-outline'}
-            size={22}
-            color={exibirAgrupado ? colors.primary : colors.textSecondary}
-          />
-          <Text style={styles.checkboxLabel}>Agrupar por tipo</Text>
-        </TouchableOpacity>
+        {abaLista === 'atual' && (
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setExibirAgrupado(!exibirAgrupado)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={exibirAgrupado ? 'checkbox' : 'square-outline'}
+              size={22}
+              color={exibirAgrupado ? colors.primary : colors.textSecondary}
+            />
+            <Text style={styles.checkboxLabel}>Agrupar (Categoria)</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {loading ? (
+      {showListaLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -651,7 +825,7 @@ export default function ReceitaScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-              {exibirAgrupado ? (
+              {listarAgrupado ? (
                 receitasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
                   const tipoKey = `tipo:${tipoGrupo}`;
                   const tipoColapsado = gruposColapsados.has(tipoKey);
@@ -740,6 +914,49 @@ export default function ReceitaScreen() {
           )}
         </ScrollView>
       )}
+
+      <Modal
+        visible={modalFiltroLista}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setModalFiltroLista(false)}
+      >
+        <TouchableOpacity
+          style={styles.filtroListaModalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalFiltroLista(false)}
+        >
+          <View style={styles.filtroListaModalBox} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Buscar e exibição</Text>
+            <Text style={styles.filterLabel}>Nome ou categoria</Text>
+            <TextInput
+              style={styles.input}
+              value={buscaLista}
+              onChangeText={setBuscaLista}
+              placeholder="Digite para filtrar..."
+              placeholderTextColor={colors.placeholder}
+            />
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setListaAvancadaAgruparCategoria(!listaAvancadaAgruparCategoria)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={listaAvancadaAgruparCategoria ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={listaAvancadaAgruparCategoria ? colors.primary : colors.textSecondary}
+              />
+              <Text style={styles.checkboxLabel}>Agrupar por categoria</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.formButton, styles.formButtonSave, { marginTop: 16 }]}
+              onPress={() => setModalFiltroLista(false)}
+            >
+              <Text style={styles.formButtonTextSave}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={showForm}
@@ -949,6 +1166,75 @@ const styles = StyleSheet.create({
   filterContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  tabBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  tabBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  tabBtnTextActive: {
+    color: '#fff',
+  },
+  monthNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  monthNavArrow: {
+    padding: 4,
+  },
+  monthNavTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    textTransform: 'capitalize',
+  },
+  filterIconRow: {
+    marginBottom: 8,
+  },
+  filterIconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  filterIconLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  filtroListaModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  filtroListaModalBox: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 20,
   },
   checkboxRow: {
     flexDirection: 'row',

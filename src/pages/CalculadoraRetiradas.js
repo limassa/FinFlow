@@ -240,7 +240,7 @@ function CalculadoraRetiradas() {
     <div className="calculadora-fullscreen">
       <div className="calculadora-header">
         <h1>Simular Retiradas Mensais</h1>
-        <p>Calcule quanto você pode retirar mensalmente do seu investimento</p>
+        <p><strong>O que é:</strong> Calcula quanto você pode sacar por mês de um investimento sem zerar o saldo. Ideal para planejar aposentadoria.</p>
       </div>
 
       <form className="calculadora-form-full">

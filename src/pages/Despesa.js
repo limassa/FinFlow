@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight, FaCreditCard } from 'react-icons/fa';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight, FaChevronLeft, FaCreditCard, FaCalendarAlt } from 'react-icons/fa';
 import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
@@ -12,6 +12,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { normalizarDataInput, formatarValorInput, valorParaNumero } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
+import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymdToYm, ymPrimeiroDia } from '../utils/abaListaFinanceira';
 import '../App.css';
 
 function Despesa() {
@@ -25,7 +26,13 @@ function Despesa() {
   const [contas, setContas] = useState([]);
   const [editId, setEditId] = useState(null);
   const [totalDespesas, setTotalDespesas] = useState(0);
-  const [mesFiltro, setMesFiltro] = useState('');
+  const [mesAtual, setMesAtual] = useState(currentMonthYm);
+  const [abaLista, setAbaLista] = useState('atual');
+  const [todasDespesasCache, setTodasDespesasCache] = useState(null);
+  const [loadingTodas, setLoadingTodas] = useState(false);
+  const [buscaLista, setBuscaLista] = useState('');
+  const [listaAvancadaAgruparCategoria, setListaAvancadaAgruparCategoria] = useState(false);
+  const [modalFiltroLista, setModalFiltroLista] = useState(false);
   const [filtroPago, setFiltroPago] = useState('todos');
   const [loading, setLoading] = useState(true); // Mudando para true para forçar o carregamento
   const [pago, setPago] = useState(false);
@@ -76,7 +83,7 @@ function Despesa() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
-  const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [exibirAgrupado, setExibirAgrupado] = useState(false);
   const [modalExclusao, setModalExclusao] = useState(null);
   const [modalEditarRecorrente, setModalEditarRecorrente] = useState(null);
   
@@ -95,49 +102,6 @@ function Despesa() {
       window.scrollTo(0, 0);
     }, 100);
   };
-
-  // Gerar opções dos meses (6 futuros + 12 passados)
-  const gerarOpcoesMeses = () => {
-    const opcoes = [];
-    const hoje = new Date();
-    
-    // 6 meses futuros
-    for (let i = 6; i >= 1; i--) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-      const mesAno = data.toLocaleDateString('pt-BR', { 
-        year: 'numeric', 
-        month: 'long' 
-      });
-      const valor = data.toISOString().slice(0, 7);
-      opcoes.push({ label: mesAno, value: valor });
-    }
-    
-    // Mês atual + 12 meses passados
-    for (let i = 0; i < 12; i++) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const mesAno = data.toLocaleDateString('pt-BR', { 
-        year: 'numeric', 
-        month: 'long' 
-      });
-      const valor = data.toISOString().slice(0, 7);
-      opcoes.push({ label: mesAno, value: valor });
-    }
-    return opcoes;
-  };
-
-  const opcoesMeses = gerarOpcoesMeses();
-
-  useEffect(() => {
-    console.log('🔄 useEffect executado - userId:', userId, 'mesFiltro:', mesFiltro);
-    if (userId) {
-      console.log('🔄 Chamando fetchDespesas...');
-      fetchDespesas();
-      fetchContas();
-      fetchMetas();
-      fetchCategoriasCustomizadas();
-      fetchFaturasCartao();
-    }
-  }, [userId, mesFiltro]);
 
   const fetchContas = async () => {
     try {
@@ -160,7 +124,7 @@ function Despesa() {
   const fetchFaturasCartao = async () => {
     try {
       // Se não tiver filtro de mês, busca todas as compras
-      const mesParam = mesFiltro ? `&mes=${mesFiltro}` : '';
+      const mesParam = `&mes=${mesAtual}`;
       const [cartoesRes, comprasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.CARTOES}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.COMPRAS_CARTAO}?userId=${userId}${mesParam}`)
@@ -232,21 +196,17 @@ function Despesa() {
     }
   };
 
-  const fetchDespesas = async () => {
+  const fetchDespesasMes = useCallback(async () => {
+    if (!userId) return;
     setLoading(true);
     try {
-      let url = `${API_ENDPOINTS.DESPESAS}?userId=${userId}`;
-      if (mesFiltro) {
-        url += `&mes=${mesFiltro}`;
-      }
-      
+      const url = `${API_ENDPOINTS.DESPESAS}?userId=${userId}&mes=${mesAtual}`;
       const res = await axios.get(url);
-      setDespesas(res.data);
-      
-      // Calcular total apenas das despesas pagas
-      const total = res.data
+      const rows = res.data || [];
+      setDespesas(rows);
+      const total = rows
         .filter(despesa => despesa.despesa_pago)
-        .reduce((sum, despesa) => sum + parseFloat(despesa.valor), 0);
+        .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || despesa.valor || 0), 0);
       setTotalDespesas(total);
     } catch (err) {
       console.error('❌ Erro ao buscar Despesas:', err);
@@ -254,6 +214,136 @@ function Despesa() {
     } finally {
       setLoading(false);
     }
+  }, [userId, mesAtual]);
+
+  const fetchDespesasTodas = useCallback(async () => {
+    if (!userId) return;
+    setLoadingTodas(true);
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`);
+      setTodasDespesasCache(res.data || []);
+    } catch (err) {
+      console.error('Erro ao buscar todas as despesas:', err);
+    } finally {
+      setLoadingTodas(false);
+    }
+  }, [userId]);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await fetchDespesasMes();
+    if (abaLista === 'historico' || abaLista === 'futuros') {
+      await fetchDespesasTodas();
+    } else {
+      setTodasDespesasCache(null);
+    }
+    await fetchFaturasCartao();
+  }, [abaLista, fetchDespesasMes, fetchDespesasTodas]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchContas();
+    fetchMetas();
+    fetchCategoriasCustomizadas();
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchDespesasMes();
+    fetchFaturasCartao();
+  }, [userId, mesAtual, fetchDespesasMes]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (abaLista !== 'historico' && abaLista !== 'futuros') return;
+    if (todasDespesasCache !== null) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingTodas(true);
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`);
+        if (!cancelled) setTodasDespesasCache(res.data || []);
+      } catch (err) {
+        console.error('Erro ao carregar histórico:', err);
+      } finally {
+        if (!cancelled) setLoadingTodas(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, abaLista, todasDespesasCache]);
+
+  const poolDespesas = useMemo(() => {
+    const todas = todasDespesasCache;
+    const mes = despesas;
+    if (!todas || todas.length === 0) return mes;
+    const m = new Map(todas.map(d => [d.despesa_id, d]));
+    mes.forEach(d => m.set(d.despesa_id, d));
+    return Array.from(m.values());
+  }, [despesas, todasDespesasCache]);
+
+  const listaPorAba = useMemo(() => {
+    if (abaLista === 'atual') return despesas;
+    if (abaLista === 'historico') return todasDespesasCache || [];
+    const hoje = ymdToday();
+    return (todasDespesasCache || []).filter(d => ymdFromIso(d.despesa_data) > hoje);
+  }, [abaLista, despesas, todasDespesasCache]);
+
+  const listaAposBusca = useMemo(() => {
+    let list = listaPorAba;
+    if ((abaLista === 'historico' || abaLista === 'futuros') && buscaLista.trim()) {
+      const q = buscaLista.trim().toLowerCase();
+      list = list.filter(d =>
+        (d.despesa_descricao || '').toLowerCase().includes(q) ||
+        (d.despesa_tipo || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [listaPorAba, abaLista, buscaLista]);
+
+  const despesasFiltradas = useMemo(() => {
+    if (filtroPago === 'todos') return listaAposBusca;
+    if (filtroPago === 'pago') return listaAposBusca.filter(d => d.despesa_pago);
+    return listaAposBusca.filter(d => !d.despesa_pago);
+  }, [listaAposBusca, filtroPago]);
+
+  const despesasPorTipo = useMemo(() => {
+    const grupos = {};
+    despesasFiltradas.forEach(d => {
+      const tipoKey = d.despesa_tipo || 'Sem tipo';
+      const nomeBase = extrairNomeBaseRecorrente(d.despesa_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(d);
+    });
+    const ordem = [...tiposDespesa];
+    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
+    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
+    return ordemFinal.map(tipo => {
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
+          const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
+    });
+  }, [despesasFiltradas, tiposDespesa]);
+
+  const despesasOrdenadasPorVencimento = useMemo(() => {
+    return [...despesasFiltradas].sort((a, b) => {
+      const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
+      const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [despesasFiltradas]);
+
+  const listarAgrupado = abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria;
+
+  const setAbaListaComLimpeza = (aba) => {
+    setAbaLista(aba);
+    setSelectedIds(new Set());
   };
 
   const handleSubmit = async (e) => {
@@ -290,7 +380,7 @@ function Despesa() {
       setRecorrente(false);
       setFrequencia('mensal');
       setProximasParcelas(12);
-      fetchDespesas();
+      await refreshAfterMutation();
       alert(recorrente ? 'Despesas recorrentes criadas com sucesso!' : 'Despesa adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar despesa');
@@ -320,14 +410,14 @@ function Despesa() {
   const getItensDoGrupo = (despesaRef) => {
     if (!despesaRef) return [];
     const nomeBase = extrairNomeBaseRecorrente(despesaRef.despesa_descricao || '');
-    return despesas.filter(d => 
+    return poolDespesas.filter(d =>
       extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
       (d.despesa_tipo || '') === (despesaRef.despesa_tipo || '')
     );
   };
 
   const handleDelete = (id) => {
-    const despesa = despesas.find(d => d.despesa_id === id);
+    const despesa = poolDespesas.find(d => d.despesa_id === id);
     if (!despesa) return;
     if (despesaEhRecorrente(despesa)) {
       const itensGrupo = getItensDoGrupo(despesa);
@@ -359,7 +449,7 @@ function Despesa() {
         await axios.delete(`${API_ENDPOINTS.DESPESAS}/${id}`);
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
-      fetchDespesas();
+      await refreshAfterMutation();
       alert(ids.length === 1 ? 'Despesa excluída com sucesso!' : `${ids.length} despesa(s) excluída(s) com sucesso!`);
     } catch (err) {
       console.error('Erro ao excluir despesas:', err);
@@ -389,7 +479,7 @@ function Despesa() {
   const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => despesas.find(d => d.despesa_id === id)).filter(Boolean);
+    const itensSelecionados = [...selectedIds].map(id => poolDespesas.find(d => d.despesa_id === id)).filter(Boolean);
     const temRecorrente = itensSelecionados.some(d => despesaEhRecorrente(d));
     if (temRecorrente) {
       setModalExclusao({
@@ -414,46 +504,6 @@ function Despesa() {
       }
     }
   };
-
-  const despesasFiltradas = React.useMemo(() => {
-    if (filtroPago === 'todos') return despesas;
-    if (filtroPago === 'pago') return despesas.filter(d => d.despesa_pago);
-    return despesas.filter(d => !d.despesa_pago);
-  }, [despesas, filtroPago]);
-
-  const despesasPorTipo = React.useMemo(() => {
-    const grupos = {};
-    despesasFiltradas.forEach(d => {
-      const tipoKey = d.despesa_tipo || 'Sem tipo';
-      const nomeBase = extrairNomeBaseRecorrente(d.despesa_descricao || '');
-      if (!grupos[tipoKey]) grupos[tipoKey] = {};
-      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
-      grupos[tipoKey][nomeBase].push(d);
-    });
-    const ordem = [...tiposDespesa];
-    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
-    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
-    return ordemFinal.map(tipo => {
-      const subgruposRaw = grupos[tipo];
-      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
-        const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
-          const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
-          return dataA.localeCompare(dataB);
-        });
-        return { nomeBase, itens: ordenados };
-      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
-      return { tipo, subgrupos };
-    });
-  }, [despesasFiltradas, tiposDespesa]);
-
-  const despesasOrdenadasPorVencimento = React.useMemo(() => {
-    return [...despesasFiltradas].sort((a, b) => {
-      const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
-      const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
-      return dataA.localeCompare(dataB);
-    });
-  }, [despesasFiltradas]);
 
   const handleDeleteGroup = (tipoGrupo, itens) => {
     const qtd = itens.length;
@@ -494,7 +544,7 @@ function Despesa() {
       await axios.put(`${API_ENDPOINTS.PARCELA_ATUAL_DESPESA}/${despesa.despesa_id}`, {
         status: !despesa.despesa_pago
       });
-      fetchDespesas();
+      await refreshAfterMutation();
     } catch (err) {
       console.log('Erro ao atualizar status de pago:', err);
       alert('Erro ao atualizar status de pago');
@@ -508,7 +558,7 @@ function Despesa() {
       return;
     }
     if (submitting) return;
-    const despesaEditando = despesas.find(d => d.despesa_id === editId);
+    const despesaEditando = poolDespesas.find(d => d.despesa_id === editId);
     const payload = { descricao, valor: valorParaNumero(valor), data, dataVencimento, tipo, pago, conta_id: contaId || null };
     if (despesaEditando && despesaEhRecorrente(despesaEditando)) {
       setModalEditarRecorrente({
@@ -531,7 +581,7 @@ function Despesa() {
         pago: payload.pago,
         conta_id: payload.conta_id
       });
-      finalizarEdicao();
+      await finalizarEdicao();
       alert('Despesa atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar despesa');
@@ -554,9 +604,9 @@ function Despesa() {
         conta_id: payload.conta_id
       });
       if (replicar) {
-        const despesaEditando = despesas.find(d => d.despesa_id === editId);
+        const despesaEditando = poolDespesas.find(d => d.despesa_id === editId);
         const nomeBase = extrairNomeBaseRecorrente(despesaEditando?.despesa_descricao || '');
-        const outrosNaoPagos = despesas.filter(d =>
+        const outrosNaoPagos = poolDespesas.filter(d =>
           d.despesa_id !== editId &&
           !d.despesa_pago &&
           extrairNomeBaseRecorrente(d.despesa_descricao || '') === nomeBase &&
@@ -581,7 +631,7 @@ function Despesa() {
       } else {
         alert('Despesa atualizada com sucesso');
       }
-      finalizarEdicao();
+      await finalizarEdicao();
     } catch (err) {
       alert('Erro ao atualizar despesa');
     } finally {
@@ -589,7 +639,7 @@ function Despesa() {
     }
   };
 
-  const finalizarEdicao = () => {
+  const finalizarEdicao = async () => {
     setDescricao('');
     setValor('');
     setData('');
@@ -598,7 +648,7 @@ function Despesa() {
     setPago(false);
     setContaId('');
     setEditId(null);
-    fetchDespesas();
+    await refreshAfterMutation();
   };
 
   const handleCancel = () => {
@@ -687,9 +737,6 @@ function Despesa() {
   // Calcular totais por categoria e comparar com metas
   const calcularTotaisPorCategoria = () => {
     const totais = {};
-    const hoje = new Date();
-    const mesAtual = mesFiltro || hoje.toISOString().slice(0, 7);
-    
     despesas
       .filter(d => d.despesa_pago && d.despesa_data?.slice(0, 7) === mesAtual)
       .forEach(despesa => {
@@ -704,9 +751,6 @@ function Despesa() {
 
   // Calcular total geral de despesas do mês
   const calcularTotalGeral = () => {
-    const hoje = new Date();
-    const mesAtual = mesFiltro || hoje.toISOString().slice(0, 7);
-    
     return despesas
       .filter(d => d.despesa_pago && d.despesa_data?.slice(0, 7) === mesAtual)
       .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
@@ -715,6 +759,10 @@ function Despesa() {
   if (!userId) {
     return <div>Usuário não logado</div>;
   }
+
+  const showListaLoading = abaLista === 'atual'
+    ? loading
+    : (loadingTodas && todasDespesasCache === null);
 
   return (
     <div className="receita-container">
@@ -1137,26 +1185,72 @@ function Despesa() {
         </div>
       )}
 
+      {modalFiltroLista && (
+        <div className="modal-overlay" onClick={() => setModalFiltroLista(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h3>Buscar e exibição</h3>
+              <button type="button" className="modal-close" onClick={() => setModalFiltroLista(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div className="form-group">
+                <label>Nome ou categoria</label>
+                <input
+                  type="text"
+                  value={buscaLista}
+                  onChange={(e) => setBuscaLista(e.target.value)}
+                  placeholder="Digite para filtrar..."
+                />
+              </div>
+              <label className="filtro-checkbox-label" style={{ display: 'block', marginTop: '12px' }}>
+                <input
+                  type="checkbox"
+                  checked={listaAvancadaAgruparCategoria}
+                  onChange={(e) => setListaAvancadaAgruparCategoria(e.target.checked)}
+                />
+                Agrupar por categoria
+              </label>
+              <button type="button" className="btn-primary" style={{ marginTop: '16px' }} onClick={() => setModalFiltroLista(false)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Grid de Despesas */}
       <div className="grid-container">
         <div className="grid-header-row">
           <h3>Lista de Despesas</h3>
           <div className="filtro-container filtro-row filtro-above-grid">
-            <div className="filtro-group">
-              <FaFilter className="filtro-icon" />
-              <select 
-                value={mesFiltro} 
-                onChange={(e) => setMesFiltro(e.target.value)}
-                className="filtro-select"
-              >
-                <option value="">Todos os meses</option>
-                {opcoesMeses.map(opcao => (
-                  <option key={opcao.value} value={opcao.value}>
-                    {opcao.label}
-                  </option>
-                ))}
-              </select>
+            <div className="filtro-group filtro-tabs">
+              <button type="button" className={`filtro-tab ${abaLista === 'historico' ? 'filtro-tab-active' : ''}`} onClick={() => setAbaListaComLimpeza('historico')}>Histórico</button>
+              <button type="button" className={`filtro-tab ${abaLista === 'atual' ? 'filtro-tab-active' : ''}`} onClick={() => setAbaListaComLimpeza('atual')}>Atual</button>
+              <button type="button" className={`filtro-tab ${abaLista === 'futuros' ? 'filtro-tab-active' : ''}`} onClick={() => setAbaListaComLimpeza('futuros')}>Futuros</button>
             </div>
+            {abaLista === 'atual' && (
+              <div className="filtro-group filtro-mes-nav">
+                <button type="button" className="filtro-mes-seta" onClick={() => setMesAtual(addMonthsYm(mesAtual, -1))} aria-label="Mês anterior"><FaChevronLeft /></button>
+                <span className="filtro-mes-titulo">{formatMesPtBr(mesAtual)}</span>
+                <button type="button" className="filtro-mes-seta" onClick={() => setMesAtual(addMonthsYm(mesAtual, 1))} aria-label="Próximo mês"><FaChevronRight /></button>
+                <label className="filtro-mes-seta filtro-mes-calendario" title="Escolher mês">
+                  <FaCalendarAlt />
+                  <input
+                    type="date"
+                    value={ymPrimeiroDia(mesAtual)}
+                    onChange={(e) => {
+                      const novo = ymdToYm(e.target.value);
+                      if (novo) setMesAtual(novo);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+            {(abaLista === 'historico' || abaLista === 'futuros') && (
+              <div className="filtro-group">
+                <button type="button" className="btn-secondary" onClick={() => setModalFiltroLista(true)} title="Buscar e agrupar">
+                  <FaFilter /> Buscar / agrupar
+                </button>
+              </div>
+            )}
             <div className="filtro-group">
               <label className="filtro-label">Status:</label>
               <select 
@@ -1169,16 +1263,18 @@ function Despesa() {
                 <option value="nao_pago">Não pago</option>
               </select>
             </div>
-            <div className="filtro-group">
-              <label className="filtro-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={exibirAgrupado}
-                  onChange={(e) => setExibirAgrupado(e.target.checked)}
-                />
-                Agrupar por tipo
-              </label>
-            </div>
+            {abaLista === 'atual' && (
+              <div className="filtro-group">
+                <label className="filtro-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={exibirAgrupado}
+                    onChange={(e) => setExibirAgrupado(e.target.checked)}
+                  />
+                  Agrupar (Categoria)
+                </label>
+              </div>
+            )}
           </div>
         </div>
         {selectedIds.size > 0 && (
@@ -1194,7 +1290,7 @@ function Despesa() {
             </button>
           </div>
         )}
-        {loading ? (
+        {showListaLoading ? (
           <div className="loading">Carregando...</div>
             ) : despesasFiltradas.length === 0 ? (
           <div className="no-data">Nenhuma despesa encontrada{filtroPago !== 'todos' ? ' com esse filtro' : ''}</div>
@@ -1218,7 +1314,7 @@ function Despesa() {
               <div className="grid-cell">Pago</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {exibirAgrupado ? despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
+            {listarAgrupado ? despesasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
               const tipoKey = `tipo:${tipoGrupo}`;
               const tipoColapsado = gruposColapsados.has(tipoKey);
               const toggleTipo = () => {

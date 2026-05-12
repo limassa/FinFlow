@@ -1,0 +1,24 @@
+COMO GERAR O DOCUMENTO WORD (.docx)
+=====================================
+
+1. Incluir a logo (opcional mas recomendado):
+   - Copie o arquivo "logo_nova.png" da pasta do projeto (mobile/assets/logo_nova.png)
+   - Cole na mesma pasta que este LEIA-ME (docs/proposta-claricash/).
+   - Ao abrir o Proposta_Claricash.html no Word, a logo aparecerá no topo.
+
+2. Abrir no Word:
+   - Abra o arquivo "Proposta_Claricash.html" com o Microsoft Word.
+   - O Word abrirá o conteúdo formatado.
+
+3. Salvar como Word:
+   - No Word: Arquivo > Salvar como
+   - Escolha o formato "Documento do Word (*.docx)"
+   - Salve com o nome desejado (ex.: Proposta_Claricash.docx).
+
+4. Editar (opcional):
+   - Você pode alterar datas, valores, contatos e textos diretamente no Word antes de enviar.
+
+Arquivos nesta pasta:
+- Proposta_Claricash.html  = documento para abrir no Word
+- logo_nova.png            = colar aqui (cópia de mobile/assets/logo_nova.png) para a logo aparecer
+- LEIA-ME.txt              = este arquivo

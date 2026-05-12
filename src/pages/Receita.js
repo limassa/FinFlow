@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight, FaChevronLeft, FaCalendarAlt } from 'react-icons/fa';
 import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
@@ -12,6 +12,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { normalizarDataInput, formatarValorInput, valorParaNumero } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
+import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymdToYm, ymPrimeiroDia } from '../utils/abaListaFinanceira';
 import '../App.css';
 
 function Receita() {
@@ -24,7 +25,13 @@ function Receita() {
   const [contas, setContas] = useState([]);
   const [editId, setEditId] = useState(null);
   const [totalReceitas, setTotalReceitas] = useState(0);
-  const [mesFiltro, setMesFiltro] = useState('');
+  const [mesAtual, setMesAtual] = useState(currentMonthYm);
+  const [abaLista, setAbaLista] = useState('atual');
+  const [todasReceitasCache, setTodasReceitasCache] = useState(null);
+  const [loadingTodas, setLoadingTodas] = useState(false);
+  const [buscaLista, setBuscaLista] = useState('');
+  const [listaAvancadaAgruparCategoria, setListaAvancadaAgruparCategoria] = useState(false);
+  const [modalFiltroLista, setModalFiltroLista] = useState(false);
   const [filtroRecebido, setFiltroRecebido] = useState('todos');
   const [loading, setLoading] = useState(false);
   
@@ -62,7 +69,7 @@ function Receita() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingInProgress, setDeletingInProgress] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
-  const [exibirAgrupado, setExibirAgrupado] = useState(true);
+  const [exibirAgrupado, setExibirAgrupado] = useState(false);
   const [modalExclusao, setModalExclusao] = useState(null);
   const [modalEditarRecorrente, setModalEditarRecorrente] = useState(null);
   
@@ -81,33 +88,6 @@ function Receita() {
       window.scrollTo(0, 0);
     }, 100);
   };
-
-  // Gerar opções dos últimos 12 meses
-  const gerarOpcoesMeses = () => {
-    const opcoes = [];
-    const hoje = new Date();
-    
-    for (let i = 0; i < 12; i++) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const mesAno = data.toLocaleDateString('pt-BR', { 
-        year: 'numeric', 
-        month: 'long' 
-      });
-      const valor = data.toISOString().slice(0, 7); // YYYY-MM
-      opcoes.push({ label: mesAno, value: valor });
-    }
-    return opcoes;
-  };
-
-  const opcoesMeses = gerarOpcoesMeses();
-
-  useEffect(() => {
-    if (userId) {
-      fetchReceitas();
-      fetchContas();
-      fetchCategoriasCustomizadas();
-    }
-  }, [userId, mesFiltro]);
 
   const fetchContas = async () => {
     try {
@@ -167,29 +147,151 @@ function Receita() {
     }
   };
 
-  const fetchReceitas = async () => {
+  const fetchReceitasMes = useCallback(async () => {
+    if (!userId) return;
     setLoading(true);
     try {
-      let url = `${API_ENDPOINTS.RECEITAS}?userId=${userId}`;
-      if (mesFiltro) {
-        url += `&mes=${mesFiltro}`;
-      }
-      
-      console.log('Buscando receitas com URL:', url);
+      const url = `${API_ENDPOINTS.RECEITAS}?userId=${userId}&mes=${mesAtual}`;
       const res = await axios.get(url);
-      console.log('Receitas recebidas:', res.data);
-      setReceitas(res.data);
-      
-      // Calcular total
-      const total = res.data
-      .filter(receita => receita.receita_recebido)
-      .reduce((sum, receita) => sum + parseFloat(receita.receita_valor), 0);
+      const rows = res.data || [];
+      setReceitas(rows);
+      const total = rows
+        .filter(receita => receita.receita_recebido)
+        .reduce((sum, receita) => sum + parseFloat(receita.receita_valor || receita.valor || 0), 0);
       setTotalReceitas(total);
     } catch (err) {
       console.log('Erro ao buscar receitas:', err);
     } finally {
       setLoading(false);
     }
+  }, [userId, mesAtual]);
+
+  const fetchReceitasTodas = useCallback(async () => {
+    if (!userId) return;
+    setLoadingTodas(true);
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`);
+      setTodasReceitasCache(res.data || []);
+    } catch (err) {
+      console.log('Erro ao buscar receitas:', err);
+    } finally {
+      setLoadingTodas(false);
+    }
+  }, [userId]);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await fetchReceitasMes();
+    if (abaLista === 'historico' || abaLista === 'futuros') {
+      await fetchReceitasTodas();
+    } else {
+      setTodasReceitasCache(null);
+    }
+  }, [abaLista, fetchReceitasMes, fetchReceitasTodas]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchContas();
+    fetchCategoriasCustomizadas();
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchReceitasMes();
+  }, [userId, mesAtual, fetchReceitasMes]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (abaLista !== 'historico' && abaLista !== 'futuros') return;
+    if (todasReceitasCache !== null) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingTodas(true);
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`);
+        if (!cancelled) setTodasReceitasCache(res.data || []);
+      } catch (err) {
+        console.log('Erro ao carregar histórico:', err);
+      } finally {
+        if (!cancelled) setLoadingTodas(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, abaLista, todasReceitasCache]);
+
+  const poolReceitas = useMemo(() => {
+    const todas = todasReceitasCache;
+    const mes = receitas;
+    if (!todas || todas.length === 0) return mes;
+    const m = new Map(todas.map(r => [r.receita_id, r]));
+    mes.forEach(r => m.set(r.receita_id, r));
+    return Array.from(m.values());
+  }, [receitas, todasReceitasCache]);
+
+  const listaPorAba = useMemo(() => {
+    if (abaLista === 'atual') return receitas;
+    if (abaLista === 'historico') return todasReceitasCache || [];
+    const hoje = ymdToday();
+    return (todasReceitasCache || []).filter(r => ymdFromIso(r.receita_data) > hoje);
+  }, [abaLista, receitas, todasReceitasCache]);
+
+  const listaAposBusca = useMemo(() => {
+    let list = listaPorAba;
+    if ((abaLista === 'historico' || abaLista === 'futuros') && buscaLista.trim()) {
+      const q = buscaLista.trim().toLowerCase();
+      list = list.filter(r =>
+        (r.receita_descricao || '').toLowerCase().includes(q) ||
+        (r.receita_tipo || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [listaPorAba, abaLista, buscaLista]);
+
+  const receitasFiltradas = useMemo(() => {
+    const lista = Array.isArray(listaAposBusca) ? listaAposBusca : [];
+    if (filtroRecebido === 'todos') return lista;
+    if (filtroRecebido === 'recebido') return lista.filter(r => r.receita_recebido);
+    return lista.filter(r => !r.receita_recebido);
+  }, [listaAposBusca, filtroRecebido]);
+
+  const receitasPorTipo = useMemo(() => {
+    const grupos = {};
+    receitasFiltradas.forEach(r => {
+      const tipoKey = r.receita_tipo || 'Sem tipo';
+      const nomeBase = extrairNomeBaseRecorrente(r.receita_descricao || '');
+      if (!grupos[tipoKey]) grupos[tipoKey] = {};
+      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
+      grupos[tipoKey][nomeBase].push(r);
+    });
+    const ordem = [...tiposReceita];
+    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
+    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
+    return ordemFinal.map(tipo => {
+      const subgruposRaw = grupos[tipo];
+      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
+        const ordenados = [...itens].sort((a, b) => {
+          const dataA = (a.receita_data || '').split('T')[0];
+          const dataB = (b.receita_data || '').split('T')[0];
+          return dataA.localeCompare(dataB);
+        });
+        return { nomeBase, itens: ordenados };
+      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
+      return { tipo, subgrupos };
+    });
+  }, [receitasFiltradas, tiposReceita]);
+
+  const receitasOrdenadasPorData = useMemo(() => {
+    return [...receitasFiltradas].sort((a, b) => {
+      const dataA = (a.receita_data || '').split('T')[0];
+      const dataB = (b.receita_data || '').split('T')[0];
+      return dataA.localeCompare(dataB);
+    });
+  }, [receitasFiltradas]);
+
+  const listarAgrupado = abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria;
+
+  const setAbaListaComLimpeza = (aba) => {
+    setAbaLista(aba);
+    setSelectedIds(new Set());
   };
 
   const handleSubmit = async (e) => {
@@ -224,7 +326,7 @@ function Receita() {
       setRecorrente(false);
       setFrequencia('mensal');
       setProximasParcelas(12);
-      fetchReceitas();
+      await refreshAfterMutation();
       alert(recorrente ? 'Receitas recorrentes criadas com sucesso!' : 'Receita adicionada com sucesso');
     } catch (err) {
       alert('Erro ao adicionar receita');
@@ -256,7 +358,7 @@ function Receita() {
       return;
     }
     if (submitting) return;
-    const receitaEditando = receitas.find(r => r.receita_id === editId);
+    const receitaEditando = poolReceitas.find(r => r.receita_id === editId);
     const payload = { descricao, valor: valorParaNumero(valor), data, tipo, recebido, conta_id: contaId || null };
     if (receitaEditando && receitaEhRecorrente(receitaEditando)) {
       setModalEditarRecorrente({
@@ -275,7 +377,7 @@ function Receita() {
     setSubmitting(true);
     try {
       await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, payload);
-      finalizarEdicao();
+      await finalizarEdicao();
       alert('Receita atualizada com sucesso');
     } catch (err) {
       alert('Erro ao atualizar receita');
@@ -290,9 +392,9 @@ function Receita() {
     try {
       await axios.put(`${API_ENDPOINTS.RECEITAS}/${editId}`, payload);
       if (replicar) {
-        const receitaEditando = receitas.find(r => r.receita_id === editId);
+        const receitaEditando = poolReceitas.find(r => r.receita_id === editId);
         const nomeBase = extrairNomeBaseRecorrente(receitaEditando?.receita_descricao || '');
-        const outrosNaoRecebidos = receitas.filter(r =>
+        const outrosNaoRecebidos = poolReceitas.filter(r =>
           r.receita_id !== editId &&
           !r.receita_recebido &&
           extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
@@ -316,7 +418,7 @@ function Receita() {
       } else {
         alert('Receita atualizada com sucesso');
       }
-      finalizarEdicao();
+      await finalizarEdicao();
     } catch (err) {
       alert('Erro ao atualizar receita');
     } finally {
@@ -324,7 +426,7 @@ function Receita() {
     }
   };
 
-  const finalizarEdicao = () => {
+  const finalizarEdicao = async () => {
     setDescricao('');
     setValor('');
     setData('');
@@ -332,7 +434,7 @@ function Receita() {
     setRecebido(false);
     setContaId('');
     setEditId(null);
-    fetchReceitas();
+    await refreshAfterMutation();
   };
   const handleTogglePago = async (receita) => {
     try {
@@ -340,7 +442,7 @@ function Receita() {
       await axios.put(`${API_ENDPOINTS.PARCELA_ATUAL_RECEITA}/${receita.receita_id}`, {
         status: !receita.receita_recebido
       });
-      fetchReceitas();
+      await refreshAfterMutation();
     } catch (err) {
       console.log('Erro ao atualizar status de recebimento:', err);
       alert('Erro ao atualizar status de recebimento');
@@ -360,7 +462,7 @@ function Receita() {
   const getItensDoGrupo = (receitaRef) => {
     if (!receitaRef) return [];
     const nomeBase = extrairNomeBaseRecorrente(receitaRef.receita_descricao || '');
-    return receitas.filter(r =>
+    return poolReceitas.filter(r =>
       extrairNomeBaseRecorrente(r.receita_descricao || '') === nomeBase &&
       (r.receita_tipo || '') === (receitaRef.receita_tipo || '')
     );
@@ -374,7 +476,7 @@ function Receita() {
         await axios.delete(`${API_ENDPOINTS.RECEITAS}/${id}`);
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
-      fetchReceitas();
+      await refreshAfterMutation();
       alert(ids.length === 1 ? 'Receita excluída com sucesso!' : `${ids.length} receita(s) excluída(s) com sucesso!`);
     } catch (err) {
       alert(err.response?.data?.error || err.message || 'Erro ao excluir receitas.');
@@ -384,7 +486,7 @@ function Receita() {
   };
 
   const handleDelete = (id) => {
-    const receita = receitas.find(r => r.receita_id === id);
+    const receita = poolReceitas.find(r => r.receita_id === id);
     if (!receita) return;
     if (receitaEhRecorrente(receita)) {
       const itensGrupo = getItensDoGrupo(receita);
@@ -417,12 +519,6 @@ function Receita() {
     });
   };
 
-  const receitasFiltradas = React.useMemo(() => {
-    if (filtroRecebido === 'todos') return receitas;
-    if (filtroRecebido === 'recebido') return receitas.filter(r => r.receita_recebido);
-    return receitas.filter(r => !r.receita_recebido);
-  }, [receitas, filtroRecebido]);
-
   const toggleSelectAll = () => {
     if (selectedIds.size === receitasFiltradas.length) {
       setSelectedIds(new Set());
@@ -434,7 +530,7 @@ function Receita() {
   const handleDeleteSelected = () => {
     const qtd = selectedIds.size;
     if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => receitas.find(r => r.receita_id === id)).filter(Boolean);
+    const itensSelecionados = [...selectedIds].map(id => poolReceitas.find(r => r.receita_id === id)).filter(Boolean);
     const temRecorrente = itensSelecionados.some(r => receitaEhRecorrente(r));
     if (temRecorrente) {
       setModalExclusao({
@@ -459,40 +555,6 @@ function Receita() {
       }
     }
   };
-
-  const receitasPorTipo = React.useMemo(() => {
-    const grupos = {};
-    receitasFiltradas.forEach(r => {
-      const tipoKey = r.receita_tipo || 'Sem tipo';
-      const nomeBase = extrairNomeBaseRecorrente(r.receita_descricao || '');
-      if (!grupos[tipoKey]) grupos[tipoKey] = {};
-      if (!grupos[tipoKey][nomeBase]) grupos[tipoKey][nomeBase] = [];
-      grupos[tipoKey][nomeBase].push(r);
-    });
-    const ordem = [...tiposReceita];
-    const outrosTipos = Object.keys(grupos).filter(t => !ordem.includes(t)).sort();
-    const ordemFinal = [...ordem.filter(t => grupos[t]), ...outrosTipos];
-    return ordemFinal.map(tipo => {
-      const subgruposRaw = grupos[tipo];
-      const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
-        const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.receita_data || '').split('T')[0];
-          const dataB = (b.receita_data || '').split('T')[0];
-          return dataA.localeCompare(dataB);
-        });
-        return { nomeBase, itens: ordenados };
-      }).sort((a, b) => (a.nomeBase || '').localeCompare(b.nomeBase || ''));
-      return { tipo, subgrupos };
-    });
-  }, [receitasFiltradas, tiposReceita]);
-
-  const receitasOrdenadasPorData = React.useMemo(() => {
-    return [...receitasFiltradas].sort((a, b) => {
-      const dataA = (a.receita_data || '').split('T')[0];
-      const dataB = (b.receita_data || '').split('T')[0];
-      return dataA.localeCompare(dataB);
-    });
-  }, [receitasFiltradas]);
 
   const handleDeleteGroup = (tipoGrupo, itens) => {
     const qtd = itens.length;
@@ -559,6 +621,10 @@ function Receita() {
   if (!userId) {
     return <div>Usuário não logado</div>;
   }
+
+  const showListaLoading = abaLista === 'atual'
+    ? loading
+    : (loadingTodas && todasReceitasCache === null);
 
   return (
     <div className="receita-container">
@@ -805,26 +871,72 @@ function Receita() {
         </form>
       </div>
 
+      {modalFiltroLista && (
+        <div className="modal-overlay" onClick={() => setModalFiltroLista(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h3>Buscar e exibição</h3>
+              <button type="button" className="modal-close" onClick={() => setModalFiltroLista(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div className="form-group">
+                <label>Nome ou categoria</label>
+                <input
+                  type="text"
+                  value={buscaLista}
+                  onChange={(e) => setBuscaLista(e.target.value)}
+                  placeholder="Digite para filtrar..."
+                />
+              </div>
+              <label className="filtro-checkbox-label" style={{ display: 'block', marginTop: '12px' }}>
+                <input
+                  type="checkbox"
+                  checked={listaAvancadaAgruparCategoria}
+                  onChange={(e) => setListaAvancadaAgruparCategoria(e.target.checked)}
+                />
+                Agrupar por categoria
+              </label>
+              <button type="button" className="btn-primary" style={{ marginTop: '16px' }} onClick={() => setModalFiltroLista(false)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Grid de Receitas */}
       <div className="grid-container">
         <div className="grid-header-row">
           <h3>Lista de Receitas</h3>
           <div className="filtro-container filtro-row filtro-above-grid">
-            <div className="filtro-group">
-              <FaFilter className="filtro-icon" />
-              <select 
-                value={mesFiltro} 
-                onChange={(e) => setMesFiltro(e.target.value)}
-                className="filtro-select"
-              >
-                <option value="">Todos os meses</option>
-                {opcoesMeses.map(opcao => (
-                  <option key={opcao.value} value={opcao.value}>
-                    {opcao.label}
-                  </option>
-                ))}
-              </select>
+            <div className="filtro-group filtro-tabs">
+              <button type="button" className={`filtro-tab ${abaLista === 'historico' ? 'filtro-tab-active' : ''}`} onClick={() => setAbaListaComLimpeza('historico')}>Histórico</button>
+              <button type="button" className={`filtro-tab ${abaLista === 'atual' ? 'filtro-tab-active' : ''}`} onClick={() => setAbaListaComLimpeza('atual')}>Atual</button>
+              <button type="button" className={`filtro-tab ${abaLista === 'futuros' ? 'filtro-tab-active' : ''}`} onClick={() => setAbaListaComLimpeza('futuros')}>Futuros</button>
             </div>
+            {abaLista === 'atual' && (
+              <div className="filtro-group filtro-mes-nav">
+                <button type="button" className="filtro-mes-seta" onClick={() => setMesAtual(addMonthsYm(mesAtual, -1))} aria-label="Mês anterior"><FaChevronLeft /></button>
+                <span className="filtro-mes-titulo">{formatMesPtBr(mesAtual)}</span>
+                <button type="button" className="filtro-mes-seta" onClick={() => setMesAtual(addMonthsYm(mesAtual, 1))} aria-label="Próximo mês"><FaChevronRight /></button>
+                <label className="filtro-mes-seta filtro-mes-calendario" title="Escolher mês">
+                  <FaCalendarAlt />
+                  <input
+                    type="date"
+                    value={ymPrimeiroDia(mesAtual)}
+                    onChange={(e) => {
+                      const novo = ymdToYm(e.target.value);
+                      if (novo) setMesAtual(novo);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+            {(abaLista === 'historico' || abaLista === 'futuros') && (
+              <div className="filtro-group">
+                <button type="button" className="btn-secondary" onClick={() => setModalFiltroLista(true)} title="Buscar e agrupar">
+                  <FaFilter /> Buscar / agrupar
+                </button>
+              </div>
+            )}
             <div className="filtro-group">
               <label className="filtro-label">Status:</label>
               <select 
@@ -837,16 +949,18 @@ function Receita() {
                 <option value="nao_recebido">Não recebido</option>
               </select>
             </div>
-            <div className="filtro-group">
-              <label className="filtro-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={exibirAgrupado}
-                  onChange={(e) => setExibirAgrupado(e.target.checked)}
-                />
-                Agrupar por tipo
-              </label>
-            </div>
+            {abaLista === 'atual' && (
+              <div className="filtro-group">
+                <label className="filtro-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={exibirAgrupado}
+                    onChange={(e) => setExibirAgrupado(e.target.checked)}
+                  />
+                  Agrupar (Categoria)
+                </label>
+              </div>
+            )}
           </div>
         </div>
         {selectedIds.size > 0 && (
@@ -862,7 +976,7 @@ function Receita() {
             </button>
           </div>
         )}
-        {loading ? (
+        {showListaLoading ? (
           <div className="loading">Carregando...</div>
         ) : receitasFiltradas.length === 0 ? (
           <div className="no-data">Nenhuma receita encontrada{filtroRecebido !== 'todos' ? ' com esse filtro' : ''}</div>
@@ -885,7 +999,7 @@ function Receita() {
               <div className="grid-cell">Recebido</div>
               <div className="grid-cell">Ações</div>
             </div>
-            {exibirAgrupado ? receitasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
+            {listarAgrupado ? receitasPorTipo.map(({ tipo: tipoGrupo, subgrupos }) => {
               const tipoKey = `tipo:${tipoGrupo}`;
               const tipoColapsado = gruposColapsados.has(tipoKey);
               const toggleTipo = () => {
@@ -1010,7 +1124,7 @@ function Receita() {
                                 recebido: e.target.checked,
                                 conta_id: receita.conta_id
                               });
-                              fetchReceitas();
+                              await refreshAfterMutation();
                             } catch (err) {
                               alert('Erro ao atualizar status de recebimento');
                             }

@@ -420,7 +420,7 @@
   align-items: center;
   gap: 10px;
   background: var(--white);
-  padding: 15px 20px;
+  padding: 10px 14px;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(30, 58, 95, 0.08);
   margin-bottom: 20px;
@@ -434,14 +434,14 @@
 }
 
 .filtro-select {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 2px solid var(--grey-300);
   border-radius: 8px;
   background: var(--white);
   color: var(--black);
   font-size: var(--font-size-sm);
   font-family: var(--font-family);
-  min-width: 200px;
+  min-width: 110px;
   transition: border-color 0.2s;
 }
 .filtro-select:focus {
@@ -451,13 +451,13 @@
 
 .filtro-row {
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 10px;
 }
 
 .filtro-row .filtro-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .filtro-label {
@@ -471,12 +471,13 @@
 .filtro-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--black);
   cursor: pointer;
   font-family: var(--font-family);
+  white-space: nowrap;
 }
 
 /* Barra de "processando exclusão" (fixa embaixo) */
@@ -797,6 +798,71 @@
 }
 .filtro-above-grid {
   margin-left: auto;
+}
+.filtro-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--border-color, #dee2e6);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.filtro-tab {
+  border: none;
+  background: #fff;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary, #6c757d);
+  white-space: nowrap;
+}
+.filtro-tab + .filtro-tab {
+  border-left: 1px solid var(--border-color, #dee2e6);
+}
+.filtro-tab-active {
+  background: var(--primary-color, #0d6efd);
+  color: #fff;
+}
+.filtro-mes-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.filtro-mes-seta {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 6px;
+  color: var(--primary-color, #0d6efd);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+}
+.filtro-mes-titulo {
+  font-weight: 700;
+  text-transform: capitalize;
+  min-width: 100px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.filtro-mes-calendario {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.filtro-mes-calendario input[type="date"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  padding: 0;
+  border: none;
 }
 .grid-group-header {
   cursor: pointer;
