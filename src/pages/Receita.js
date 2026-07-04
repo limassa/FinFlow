@@ -875,26 +875,44 @@ function Receita() {
         <div className="modal-overlay" onClick={() => setModalFiltroLista(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
             <div className="modal-header">
-              <h3>Buscar e exibição</h3>
+              <h3>Filtros</h3>
               <button type="button" className="modal-close" onClick={() => setModalFiltroLista(false)}>×</button>
             </div>
             <div style={{ padding: '20px' }}>
+              {(abaLista === 'historico' || abaLista === 'futuros') && (
+                <div className="form-group">
+                  <label>Nome ou categoria</label>
+                  <input
+                    type="text"
+                    value={buscaLista}
+                    onChange={(e) => setBuscaLista(e.target.value)}
+                    placeholder="Digite para filtrar..."
+                  />
+                </div>
+              )}
               <div className="form-group">
-                <label>Nome ou categoria</label>
-                <input
-                  type="text"
-                  value={buscaLista}
-                  onChange={(e) => setBuscaLista(e.target.value)}
-                  placeholder="Digite para filtrar..."
-                />
+                <label>Status</label>
+                <select
+                  value={filtroRecebido}
+                  onChange={(e) => setFiltroRecebido(e.target.value)}
+                  className="filtro-select"
+                  style={{ width: '100%' }}
+                >
+                  <option value="todos">Todos</option>
+                  <option value="recebido">Recebido</option>
+                  <option value="nao_recebido">Não recebido</option>
+                </select>
               </div>
               <label className="filtro-checkbox-label" style={{ display: 'block', marginTop: '12px' }}>
                 <input
                   type="checkbox"
-                  checked={listaAvancadaAgruparCategoria}
-                  onChange={(e) => setListaAvancadaAgruparCategoria(e.target.checked)}
+                  checked={abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria}
+                  onChange={(e) => {
+                    if (abaLista === 'atual') setExibirAgrupado(e.target.checked);
+                    else setListaAvancadaAgruparCategoria(e.target.checked);
+                  }}
                 />
-                Agrupar por categoria
+                Agrupar (Categoria)
               </label>
               <button type="button" className="btn-primary" style={{ marginTop: '16px' }} onClick={() => setModalFiltroLista(false)}>Fechar</button>
             </div>
@@ -930,37 +948,15 @@ function Receita() {
                 </label>
               </div>
             )}
-            {(abaLista === 'historico' || abaLista === 'futuros') && (
-              <div className="filtro-group">
-                <button type="button" className="btn-secondary" onClick={() => setModalFiltroLista(true)} title="Buscar e agrupar">
-                  <FaFilter /> Buscar / agrupar
-                </button>
-              </div>
-            )}
-            <div className="filtro-group">
-              <label className="filtro-label">Status:</label>
-              <select 
-                value={filtroRecebido} 
-                onChange={(e) => setFiltroRecebido(e.target.value)}
-                className="filtro-select"
-              >
-                <option value="todos">Todos</option>
-                <option value="recebido">Recebido</option>
-                <option value="nao_recebido">Não recebido</option>
-              </select>
-            </div>
-            {abaLista === 'atual' && (
-              <div className="filtro-group">
-                <label className="filtro-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={exibirAgrupado}
-                    onChange={(e) => setExibirAgrupado(e.target.checked)}
-                  />
-                  Agrupar (Categoria)
-                </label>
-              </div>
-            )}
+            <button
+              type="button"
+              className="filtro-icon-btn"
+              onClick={() => setModalFiltroLista(true)}
+              title="Filtros"
+              aria-label="Filtros"
+            >
+              <FaFilter />
+            </button>
           </div>
         </div>
         {selectedIds.size > 0 && (

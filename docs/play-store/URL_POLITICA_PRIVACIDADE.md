@@ -8,9 +8,19 @@ A página de Política de Privacidade foi criada e está disponível no site.
 
 ## 📍 URL para o Play Store
 
+Use esta URL (com conteúdo estático, visível para o rastreador do Google):
+
 ```
 https://claricash.com.br/privacy-policy
 ```
+
+**Alternativa (redireciona para claricash.com.br):**
+```
+https://finflow.lizsoftware.com.br/privacy-policy
+```
+
+> **Importante:** A página é um arquivo HTML estático em `public/privacy-policy/index.html`.
+> O rastreador automático do Google Play **não executa JavaScript** — por isso a versão React (SPA) era rejeitada.
 
 ---
 

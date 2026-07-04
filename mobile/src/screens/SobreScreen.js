@@ -120,6 +120,22 @@ export default function SobreScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+
+          <TouchableOpacity
+            style={styles.contactButton}
+            onPress={() => Linking.openURL('https://claricash.com.br/privacy-policy')}
+          >
+            <Ionicons name="shield-checkmark" size={24} color={colors.primary} />
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Política de Privacidade</Text>
+              <Text style={styles.contactValue}>Como tratamos seus dados</Text>
+            </View>
+            <Ionicons name="open-outline" size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Direitos Reservados</Text>
           <Text style={styles.copyright}>
             © 2026 Liz Software. Todos os direitos reservados.

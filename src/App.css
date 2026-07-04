@@ -864,6 +864,24 @@
   padding: 0;
   border: none;
 }
+.filtro-icon-btn {
+  border: 1px solid var(--grey-300, #dee2e6);
+  background: var(--white);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--primary-color, #2563EB);
+  font-size: 16px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.filtro-icon-btn:hover {
+  background: var(--grey-100, #f3f4f6);
+  border-color: var(--primary-color, #2563EB);
+}
 .grid-group-header {
   cursor: pointer;
 }

@@ -822,6 +822,13 @@ export default function DespesaScreen() {
             >
               <Ionicons name="calendar-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setModalFiltroLista(true)}
+              style={styles.monthNavArrow}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="filter" size={22} color={colors.primary} />
+            </TouchableOpacity>
             {showMesPicker && (
               <DateTimePicker
                 value={new Date(`${ymPrimeiroDia(mesAtual)}T00:00:00`)}
@@ -844,39 +851,14 @@ export default function DespesaScreen() {
         {(abaLista === 'historico' || abaLista === 'futuros') && (
           <View style={styles.filterIconRow}>
             <TouchableOpacity
-              style={styles.filterIconBtn}
+              style={styles.filterIconBtnOnly}
               onPress={() => setModalFiltroLista(true)}
               activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="filter" size={22} color={colors.primary} />
-              <Text style={styles.filterIconLabel}>Buscar / agrupar</Text>
             </TouchableOpacity>
           </View>
-        )}
-        <Text style={styles.filterLabel}>Status:</Text>
-        <Select
-          value={filtroPago}
-          options={[
-            { label: 'Todos', value: 'todos' },
-            { label: 'Pago', value: 'pago' },
-            { label: 'Não pago', value: 'nao_pago' }
-          ]}
-          onChange={setFiltroPago}
-          placeholder="Status"
-        />
-        {abaLista === 'atual' && (
-          <TouchableOpacity
-            style={styles.checkboxRow}
-            onPress={() => setExibirAgrupado(!exibirAgrupado)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={exibirAgrupado ? 'checkbox' : 'square-outline'}
-              size={22}
-              color={exibirAgrupado ? colors.primary : colors.textSecondary}
-            />
-            <Text style={styles.checkboxLabel}>Agrupar (Categoria)</Text>
-          </TouchableOpacity>
         )}
       </View>
 
@@ -1086,26 +1068,44 @@ export default function DespesaScreen() {
           onPress={() => setModalFiltroLista(false)}
         >
           <View style={styles.filtroListaModalBox} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>Buscar e exibição</Text>
-            <Text style={styles.filterLabel}>Nome ou categoria</Text>
-            <TextInput
-              style={styles.input}
-              value={buscaLista}
-              onChangeText={setBuscaLista}
-              placeholder="Digite para filtrar..."
-              placeholderTextColor={colors.placeholder}
+            <Text style={styles.modalTitle}>Filtros</Text>
+            {(abaLista === 'historico' || abaLista === 'futuros') && (
+              <>
+                <Text style={styles.filterLabel}>Nome ou categoria</Text>
+                <TextInput
+                  style={styles.input}
+                  value={buscaLista}
+                  onChangeText={setBuscaLista}
+                  placeholder="Digite para filtrar..."
+                  placeholderTextColor={colors.placeholder}
+                />
+              </>
+            )}
+            <Text style={styles.filterLabel}>Status</Text>
+            <Select
+              value={filtroPago}
+              options={[
+                { label: 'Todos', value: 'todos' },
+                { label: 'Pago', value: 'pago' },
+                { label: 'Não pago', value: 'nao_pago' }
+              ]}
+              onChange={setFiltroPago}
+              placeholder="Status"
             />
             <TouchableOpacity
               style={styles.checkboxRow}
-              onPress={() => setListaAvancadaAgruparCategoria(!listaAvancadaAgruparCategoria)}
+              onPress={() => {
+                if (abaLista === 'atual') setExibirAgrupado(!exibirAgrupado);
+                else setListaAvancadaAgruparCategoria(!listaAvancadaAgruparCategoria);
+              }}
               activeOpacity={0.7}
             >
               <Ionicons
-                name={listaAvancadaAgruparCategoria ? 'checkbox' : 'square-outline'}
+                name={(abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria) ? 'checkbox' : 'square-outline'}
                 size={22}
-                color={listaAvancadaAgruparCategoria ? colors.primary : colors.textSecondary}
+                color={(abaLista === 'atual' ? exibirAgrupado : listaAvancadaAgruparCategoria) ? colors.primary : colors.textSecondary}
               />
-              <Text style={styles.checkboxLabel}>Agrupar por categoria</Text>
+              <Text style={styles.checkboxLabel}>Agrupar (Categoria)</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.metaAddButton} onPress={() => setModalFiltroLista(false)}>
               <Text style={styles.metaAddButtonText}>Fechar</Text>
@@ -1381,12 +1381,24 @@ const styles = StyleSheet.create({
   },
   filterIconRow: {
     marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   filterIconBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 8,
+  },
+  filterIconBtnOnly: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterIconLabel: {
     fontSize: 14,

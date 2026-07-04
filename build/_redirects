@@ -1,5 +1,7 @@
 # Servir ads.txt (AdSense) e robots.txt como arquivos estáticos antes do SPA
 /ads.txt    /ads.txt    200
 /robots.txt /robots.txt 200
+/privacy-policy    /privacy-policy/index.html    200
+/privacy-policy/   /privacy-policy/index.html    200
 /api/*      https://finflow-production-e4b3.up.railway.app/api/:splat    200!
 /*          /index.html 200 

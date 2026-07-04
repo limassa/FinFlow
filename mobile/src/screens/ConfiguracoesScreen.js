@@ -9,7 +9,8 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
-  Image
+  Image,
+  Linking
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -588,6 +589,18 @@ export default function ConfiguracoesScreen() {
           {activeTab === 'privacidade' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Privacidade e Dados</Text>
+
+              <TouchableOpacity
+                style={styles.privacyPolicyLink}
+                onPress={() => Linking.openURL('https://claricash.com.br/privacy-policy')}
+              >
+                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                <View style={styles.privacyPolicyLinkText}>
+                  <Text style={styles.privacyPolicyLinkTitle}>Política de Privacidade</Text>
+                  <Text style={styles.privacyPolicyLinkSubtitle}>Leia como tratamos seus dados</Text>
+                </View>
+                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
               
               <View style={styles.switchGroup}>
                 <View style={styles.switchRow}>
@@ -821,6 +834,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  privacyPolicyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  privacyPolicyLinkText: {
+    flex: 1,
+  },
+  privacyPolicyLinkTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  privacyPolicyLinkSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   logoutSection: {
     marginHorizontal: 16,

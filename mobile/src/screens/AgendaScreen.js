@@ -52,22 +52,25 @@ async function agendarNotificacaoEvento(evento) {
 
     const data = String(evento.evento_data || '').slice(0, 10);
     const hinicio = String(evento.evento_hora_inicio || '00:00').slice(0, 5);
-    const mins = parseInt(evento.evento_lembrete_minutos || 30, 10);
 
-    const [h, m] = hinicio.split(':').map(Number);
     const lembreteDate = new Date(data + 'T' + hinicio + ':00');
-    lembreteDate.setMinutes(lembreteDate.getMinutes() - mins);
+    lembreteDate.setMinutes(lembreteDate.getMinutes() - 30);
 
-    if (lembreteDate <= new Date()) return;
+    const agora = new Date();
+    const segundos = Math.floor((lembreteDate.getTime() - agora.getTime()) / 1000);
+    if (segundos <= 0) return;
 
-    await Notifications.cancelAllScheduledNotificationsAsync();
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '🔔 Lembrete de evento',
         body: `${evento.evento_titulo || evento.evento_Titulo || 'Evento'} - ${data} às ${hinicio}`,
         data: { evento_id: evento.evento_id || evento.evento_Id },
       },
-      trigger: { date: lembreteDate },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: segundos,
+        repeats: false,
+      },
     });
   } catch (err) {
     console.error('Erro ao agendar notificação:', err);
