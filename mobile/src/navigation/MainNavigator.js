@@ -1,0 +1,141 @@
+import React from 'react';
+import { TouchableOpacity } from 'react-native';
+import { CommonActions, NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { Ionicons } from '@expo/vector-icons';
+
+import HomeScreen from '../screens/HomeScreen';
+import ReceitaScreen from '../screens/ReceitaScreen';
+import DespesaScreen from '../screens/DespesaScreen';
+import ContasScreen from '../screens/ContasScreen';
+import CalendarioScreen from '../screens/CalendarioScreen';
+import AgendaScreen from '../screens/AgendaScreen';
+import ConfiguracoesScreen from '../screens/ConfiguracoesScreen';
+import CalculadoraJurosScreen from '../screens/CalculadoraJurosScreen';
+import CalculadoraRetiradasScreen from '../screens/CalculadoraRetiradasScreen';
+import CalculadoraAporteMetaScreen from '../screens/CalculadoraAporteMetaScreen';
+import SobreScreen from '../screens/SobreScreen';
+import FaleConoscoScreen from '../screens/FaleConoscoScreen';
+import SairScreen from '../screens/SairScreen';
+import CalculadorasScreen from '../screens/CalculadorasScreen';
+import CalculadoraSalarioHoraScreen from '../screens/CalculadoraSalarioHoraScreen';
+import CategoriasScreen from '../screens/CategoriasScreen';
+import OrcamentoScreen from '../screens/OrcamentoScreen';
+import CartaoCreditoScreen from '../screens/CartaoCreditoScreen';
+import CustomDrawerContent from '../components/CustomDrawerContent';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
+
+function DrawerNavigator() {
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={({ navigation }) => ({
+        headerStyle: { backgroundColor: '#2563EB' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.openDrawer()}
+            style={{ marginLeft: 15, padding: 5 }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="menu" size={28} color="#fff" />
+          </TouchableOpacity>
+        ),
+        drawerActiveTintColor: '#2563EB',
+        drawerInactiveTintColor: '#666',
+        drawerStyle: { backgroundColor: '#fff' },
+      })}
+    >
+      <Drawer.Screen name="Home" component={HomeScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />, headerShown: false }} />
+      <Drawer.Screen name="Calendario" component={CalendarioScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />, title: 'Calendário' }} />
+      <Drawer.Screen name="Agenda" component={AgendaScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />, title: 'Agenda' }} />
+      <Drawer.Screen name="Contas" component={ContasScreen} options={({ navigation }) => ({ drawerIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} />, title: 'Contas', headerRight: () => (<TouchableOpacity onPress={() => navigation.navigate('Contas')} style={{ marginRight: 15, padding: 5 }} activeOpacity={0.7}><Ionicons name="add" size={28} color="#fff" /></TouchableOpacity>) })} />
+      <Drawer.Screen name="Receita" component={ReceitaScreen} options={({ navigation }) => ({ drawerIcon: ({ color, size }) => <Ionicons name="trending-up" size={size} color={color} />, title: 'Receitas', headerRight: () => (<TouchableOpacity onPress={() => navigation.navigate('Receita')} style={{ marginRight: 15, padding: 5 }} activeOpacity={0.7}><Ionicons name="add" size={28} color="#fff" /></TouchableOpacity>) })} />
+      <Drawer.Screen name="Despesa" component={DespesaScreen} options={({ navigation }) => ({ drawerIcon: ({ color, size }) => <Ionicons name="trending-down" size={size} color={color} />, title: 'Despesas', headerRight: () => (<TouchableOpacity onPress={() => navigation.navigate('Despesa')} style={{ marginRight: 15, padding: 5 }} activeOpacity={0.7}><Ionicons name="add" size={28} color="#fff" /></TouchableOpacity>) })} />
+      <Drawer.Screen name="Categorias" component={CategoriasScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="pricetags" size={size} color={color} />, title: 'Categorias' }} />
+      <Drawer.Screen name="Orcamento" component={OrcamentoScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="pie-chart" size={size} color={color} />, title: 'Orçamento' }} />
+      <Drawer.Screen name="CartaoCredito" component={CartaoCreditoScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="card" size={size} color={color} />, title: 'Cartão de Crédito' }} />
+      <Drawer.Screen name="Calculadoras" component={CalculadorasScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="calculator" size={size} color={color} />, title: 'Calculadoras' }} />
+      <Drawer.Screen name="Sobre" component={SobreScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="information-circle" size={size} color={color} />, title: 'Sobre' }} />
+      <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />, title: 'Configurações' }} />
+    </Drawer.Navigator>
+  );
+}
+
+function HomeStackNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }}>
+      <Stack.Screen name="Drawer" component={DrawerNavigator} options={{ headerShown: false }} />
+      <Stack.Screen name="CalculadoraJuros" component={CalculadoraJurosScreen} options={{ title: 'Calculadora de Juros' }} />
+      <Stack.Screen name="CalculadoraRetiradas" component={CalculadoraRetiradasScreen} options={{ title: 'Calculadora de Retiradas' }} />
+      <Stack.Screen name="CalculadoraSalarioHora" component={CalculadoraSalarioHoraScreen} options={{ title: 'Salário por Hora' }} />
+      <Stack.Screen name="CalculadoraAporteMeta" component={CalculadoraAporteMetaScreen} options={{ title: 'Aporte para Meta' }} />
+    </Stack.Navigator>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'Contas') iconName = focused ? 'wallet' : 'wallet-outline';
+          else if (route.name === 'Configurações') iconName = focused ? 'settings' : 'settings-outline';
+          else if (route.name === 'Sair') iconName = 'log-out-outline';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#2563EB',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: true,
+        headerStyle: { backgroundColor: '#2563EB' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+      })}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeStackNavigator}
+        options={{ headerShown: false }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            const parent = navigation.getParent();
+            if (parent) {
+              parent.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Home', state: { routes: [{ name: 'Drawer' }], index: 0 } }] }));
+            }
+          },
+        })}
+      />
+      <Tab.Screen name="Contas" component={ContasScreen} options={({ navigation }) => ({ headerShown: true, title: 'Contas', headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' }, headerLeft: () => (<TouchableOpacity onPress={() => navigation.navigate('Home')} style={{ marginLeft: 15 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="menu" size={28} color="#fff" /></TouchableOpacity>) })} />
+      <Tab.Screen name="Configurações" component={ConfiguracoesScreen} options={({ navigation }) => ({ headerShown: true, title: 'Configurações', headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' }, headerLeft: () => (<TouchableOpacity onPress={() => navigation.navigate('Home')} style={{ marginLeft: 15 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="menu" size={28} color="#fff" /></TouchableOpacity>) })} />
+      <Tab.Screen name="Sair" component={SairScreen} options={{ title: 'Sair', headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
+    </Tab.Navigator>
+  );
+}
+
+function MainStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="DrawerNavigator" component={DrawerNavigator} />
+      <Stack.Screen name="Receita" component={ReceitaScreen} />
+      <Stack.Screen name="Despesa" component={DespesaScreen} />
+      <Stack.Screen name="FaleConosco" component={FaleConoscoScreen} />
+    </Stack.Navigator>
+  );
+}
+
+export default function MainNavigator() {
+  return (
+    <NavigationContainer>
+      <MainStack />
+    </NavigationContainer>
+  );
+}

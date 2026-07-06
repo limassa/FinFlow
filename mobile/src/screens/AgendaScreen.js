@@ -38,15 +38,22 @@ const gerarHorarios = () => {
 };
 const HORARIOS = gerarHorarios();
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-  }),
-});
+let notificationHandlerConfigured = false;
+
+function ensureNotificationHandler() {
+  if (notificationHandlerConfigured) return;
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+    }),
+  });
+  notificationHandlerConfigured = true;
+}
 
 async function agendarNotificacaoEvento(evento) {
   try {
+    ensureNotificationHandler();
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') return;
 
@@ -146,6 +153,10 @@ export default function AgendaScreen() {
   const dias = getDiasDaSemana();
   const dataInicio = dias[0]?.data;
   const dataFim = dias[6]?.data;
+
+  useEffect(() => {
+    ensureNotificationHandler();
+  }, []);
 
   useEffect(() => {
     if (userId && dataInicio && dataFim) {
