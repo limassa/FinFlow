@@ -1,8 +1,10 @@
 // IMPORTANTE: gesture-handler DEVE ser importado ANTES de tudo
 import 'react-native-gesture-handler';
+import 'react-native-reanimated';
 
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -375,7 +377,11 @@ function AppNavigator() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return null; // Você pode adicionar um componente de loading aqui
+    return (
+      <View style={styles.bootContainer}>
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
   }
 
   return (
@@ -403,11 +409,22 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <PaperProvider theme={theme}>
-      <AuthProvider>
-        <StatusBar style="auto" />
-        <AppNavigator />
-      </AuthProvider>
-    </PaperProvider>
+    <SafeAreaProvider>
+      <PaperProvider theme={theme}>
+        <AuthProvider>
+          <StatusBar style="auto" />
+          <AppNavigator />
+        </AuthProvider>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  bootContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+  },
+});

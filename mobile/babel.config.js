@@ -3,8 +3,8 @@ module.exports = function(api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // IMPORTANTE: react-native-reanimated/plugin DEVE ser o ÚLTIMO plugin
-      'react-native-reanimated/plugin',
+      // Reanimated 4: usar worklets plugin (substitui reanimated/plugin)
+      'react-native-worklets/plugin',
     ],
   };
 };
