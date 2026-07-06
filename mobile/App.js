@@ -1,6 +1,5 @@
 // IMPORTANTE: gesture-handler DEVE ser importado ANTES de tudo
 import 'react-native-gesture-handler';
-import 'react-native-reanimated';
 
 import React from 'react';
 import { TouchableOpacity, View, ActivityIndicator, StyleSheet } from 'react-native';

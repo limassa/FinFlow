@@ -24,7 +24,7 @@
       },
       "ios": {
         "simulator": false,
-        "image": "sdk-54"
+        "image": "macos-sequoia-15.6-xcode-26.2"
       }
     }
   },
