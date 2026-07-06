@@ -38,7 +38,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lizsoftwares.finflow"
+      "bundleIdentifier": "com.lizsoftwares.finflow",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "O Claricash precisa acessar suas fotos para definir sua foto de perfil.",
+        "NSCameraUsageDescription": "O Claricash precisa acessar a câmera para tirar sua foto de perfil.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "icon": "./assets/icon.png",
@@ -46,8 +51,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#2563EB"
       },
-      "package": "com.lizsoftwares.finflow",
-      "label": "Claricash"
+      "package": "com.lizsoftwares.finflow"
     },
     "extra": {
       "eas": {

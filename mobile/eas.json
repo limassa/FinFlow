@@ -16,12 +16,25 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://www.claricash.com.br"
+      },
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "simulator": false,
+        "image": "sdk-54"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "moreira.joaoneto@icloud.com",
+        "ascAppId": "6787544258",
+        "appleTeamId": "46WWMAQDWV"
+      }
+    }
   }
 }

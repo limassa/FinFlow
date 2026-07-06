@@ -1,37 +1,23 @@
 // Configuração da API
 // IMPORTANTE: Para dispositivos físicos, use o IP da sua máquina, não localhost
 
+const PRODUCTION_API_URL = 'https://www.claricash.com.br';
+
 // Função para obter o IP da máquina (para desenvolvimento)
 // Em produção, use a URL do seu backend
 const getApiUrl = () => {
   // Se estiver em produção, use a URL de produção
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
   }
 
-  // Para builds de release (APK), sempre usar produção
+  // Para builds de release (TestFlight / App Store / APK), sempre usar produção
   // __DEV__ é false em builds de release
   if (!__DEV__) {
-    return 'https://finflow-production-e4b3.up.railway.app';
+    return PRODUCTION_API_URL;
   }
 
-  // TEMPORÁRIO: Para testar no emulador apontando para produção
-  // Descomente a linha abaixo para testar com produção no emulador
-  return 'https://finflow-production-e4b3.up.railway.app';
-  
-  // Para desenvolvimento local, detecta o ambiente
-  // Para emulador Android, use 10.0.2.2
-  // Para emulador iOS, use localhost
-  // Para dispositivo físico, você precisa configurar manualmente
-  
-  // Opção 1: Use o IP da sua máquina na rede local
-  // return 'http://192.168.100.11:3001';
-  
-  // Opção 2: Para emulador Android, use 10.0.2.2
-  // return 'http://10.0.2.2:3001';
-  
-  // Opção 3: Para emulador iOS, use localhost
-  // return 'http://localhost:3001';
+  return PRODUCTION_API_URL;
 };
 
 const API_BASE_URL = getApiUrl();
