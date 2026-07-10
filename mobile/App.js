@@ -1,8 +1,7 @@
-// IMPORTANTE: gesture-handler e reanimated DEVEM ser importados ANTES de tudo
+// IMPORTANTE: gesture-handler DEVE ser importado ANTES de tudo
 import 'react-native-gesture-handler';
-import 'react-native-reanimated';
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -11,10 +10,8 @@ import { Provider as PaperProvider } from 'react-native-paper';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AuthStack from './src/navigation/AuthStack';
+import MainNavigator from './src/navigation/MainNavigator';
 import { theme } from './src/theme/theme';
-
-// Drawer/Reanimated só carrega após login — evita crash nativo na abertura
-const MainNavigator = React.lazy(() => import('./src/navigation/MainNavigator'));
 
 function AppNavigator() {
   const { user, loading } = useAuth();
@@ -28,17 +25,7 @@ function AppNavigator() {
   }
 
   if (user) {
-    return (
-      <Suspense
-        fallback={
-          <View style={styles.bootContainer}>
-            <ActivityIndicator size="large" color="#2563EB" />
-          </View>
-        }
-      >
-        <MainNavigator />
-      </Suspense>
-    );
+    return <MainNavigator />;
   }
 
   return (

@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { CommonActions, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -24,54 +23,109 @@ import CalculadoraSalarioHoraScreen from '../screens/CalculadoraSalarioHoraScree
 import CategoriasScreen from '../screens/CategoriasScreen';
 import OrcamentoScreen from '../screens/OrcamentoScreen';
 import CartaoCreditoScreen from '../screens/CartaoCreditoScreen';
-import CustomDrawerContent from '../components/CustomDrawerContent';
+import AppMenuModal from '../components/AppMenuModal';
+import { MenuProvider, useMenu } from '../context/MenuContext';
+import { getMenuScreenOptions } from './menuHeaderOptions';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-const Drawer = createDrawerNavigator();
 
-function DrawerNavigator() {
+function AddHeaderButton({ navigation, target }) {
   return (
-    <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={({ navigation }) => ({
-        headerStyle: { backgroundColor: '#2563EB' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.openDrawer()}
-            style={{ marginLeft: 15, padding: 5 }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="menu" size={28} color="#fff" />
-          </TouchableOpacity>
-        ),
-        drawerActiveTintColor: '#2563EB',
-        drawerInactiveTintColor: '#666',
-        drawerStyle: { backgroundColor: '#fff' },
-      })}
+    <TouchableOpacity
+      onPress={() => navigation.navigate(target)}
+      style={{ marginRight: 15, padding: 5 }}
+      activeOpacity={0.7}
     >
-      <Drawer.Screen name="Home" component={HomeScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />, headerShown: false }} />
-      <Drawer.Screen name="Calendario" component={CalendarioScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />, title: 'Calendário' }} />
-      <Drawer.Screen name="Agenda" component={AgendaScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />, title: 'Agenda' }} />
-      <Drawer.Screen name="Contas" component={ContasScreen} options={({ navigation }) => ({ drawerIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} />, title: 'Contas', headerRight: () => (<TouchableOpacity onPress={() => navigation.navigate('Contas')} style={{ marginRight: 15, padding: 5 }} activeOpacity={0.7}><Ionicons name="add" size={28} color="#fff" /></TouchableOpacity>) })} />
-      <Drawer.Screen name="Receita" component={ReceitaScreen} options={({ navigation }) => ({ drawerIcon: ({ color, size }) => <Ionicons name="trending-up" size={size} color={color} />, title: 'Receitas', headerRight: () => (<TouchableOpacity onPress={() => navigation.navigate('Receita')} style={{ marginRight: 15, padding: 5 }} activeOpacity={0.7}><Ionicons name="add" size={28} color="#fff" /></TouchableOpacity>) })} />
-      <Drawer.Screen name="Despesa" component={DespesaScreen} options={({ navigation }) => ({ drawerIcon: ({ color, size }) => <Ionicons name="trending-down" size={size} color={color} />, title: 'Despesas', headerRight: () => (<TouchableOpacity onPress={() => navigation.navigate('Despesa')} style={{ marginRight: 15, padding: 5 }} activeOpacity={0.7}><Ionicons name="add" size={28} color="#fff" /></TouchableOpacity>) })} />
-      <Drawer.Screen name="Categorias" component={CategoriasScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="pricetags" size={size} color={color} />, title: 'Categorias' }} />
-      <Drawer.Screen name="Orcamento" component={OrcamentoScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="pie-chart" size={size} color={color} />, title: 'Orçamento' }} />
-      <Drawer.Screen name="CartaoCredito" component={CartaoCreditoScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="card" size={size} color={color} />, title: 'Cartão de Crédito' }} />
-      <Drawer.Screen name="Calculadoras" component={CalculadorasScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="calculator" size={size} color={color} />, title: 'Calculadoras' }} />
-      <Drawer.Screen name="Sobre" component={SobreScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="information-circle" size={size} color={color} />, title: 'Sobre' }} />
-      <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} options={{ drawerIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />, title: 'Configurações' }} />
-    </Drawer.Navigator>
+      <Ionicons name="add" size={28} color="#fff" />
+    </TouchableOpacity>
+  );
+}
+
+function MainMenuStack() {
+  const { openMenu } = useMenu();
+
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Calendario"
+        component={CalendarioScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Calendário' }))}
+      />
+      <Stack.Screen
+        name="Agenda"
+        component={AgendaScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Agenda' }))}
+      />
+      <Stack.Screen
+        name="Contas"
+        component={ContasScreen}
+        options={getMenuScreenOptions(openMenu, ({ navigation }) => ({
+          title: 'Contas',
+          headerRight: () => <AddHeaderButton navigation={navigation} target="Contas" />,
+        }))}
+      />
+      <Stack.Screen
+        name="Receita"
+        component={ReceitaScreen}
+        options={getMenuScreenOptions(openMenu, ({ navigation }) => ({
+          title: 'Receitas',
+          headerRight: () => <AddHeaderButton navigation={navigation} target="Receita" />,
+        }))}
+      />
+      <Stack.Screen
+        name="Despesa"
+        component={DespesaScreen}
+        options={getMenuScreenOptions(openMenu, ({ navigation }) => ({
+          title: 'Despesas',
+          headerRight: () => <AddHeaderButton navigation={navigation} target="Despesa" />,
+        }))}
+      />
+      <Stack.Screen
+        name="Categorias"
+        component={CategoriasScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Categorias' }))}
+      />
+      <Stack.Screen
+        name="Orcamento"
+        component={OrcamentoScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Orçamento' }))}
+      />
+      <Stack.Screen
+        name="CartaoCredito"
+        component={CartaoCreditoScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Cartão de Crédito' }))}
+      />
+      <Stack.Screen
+        name="Calculadoras"
+        component={CalculadorasScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Calculadoras' }))}
+      />
+      <Stack.Screen
+        name="Sobre"
+        component={SobreScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Sobre' }))}
+      />
+      <Stack.Screen
+        name="Configuracoes"
+        component={ConfiguracoesScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Configurações' }))}
+      />
+    </Stack.Navigator>
   );
 }
 
 function HomeStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }}>
-      <Stack.Screen name="Drawer" component={DrawerNavigator} options={{ headerShown: false }} />
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#2563EB' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+      }}
+    >
+      <Stack.Screen name="MainMenu" component={MainMenuStack} options={{ headerShown: false }} />
       <Stack.Screen name="CalculadoraJuros" component={CalculadoraJurosScreen} options={{ title: 'Calculadora de Juros' }} />
       <Stack.Screen name="CalculadoraRetiradas" component={CalculadoraRetiradasScreen} options={{ title: 'Calculadora de Retiradas' }} />
       <Stack.Screen name="CalculadoraSalarioHora" component={CalculadoraSalarioHoraScreen} options={{ title: 'Salário por Hora' }} />
@@ -81,6 +135,8 @@ function HomeStackNavigator() {
 }
 
 function MainTabs() {
+  const { openMenu } = useMenu();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -108,14 +164,60 @@ function MainTabs() {
           tabPress: () => {
             const parent = navigation.getParent();
             if (parent) {
-              parent.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Home', state: { routes: [{ name: 'Drawer' }], index: 0 } }] }));
+              parent.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'Home',
+                      state: { routes: [{ name: 'MainMenu', state: { routes: [{ name: 'Home' }], index: 0 } }], index: 0 },
+                    },
+                  ],
+                })
+              );
             }
           },
         })}
       />
-      <Tab.Screen name="Contas" component={ContasScreen} options={({ navigation }) => ({ headerShown: true, title: 'Contas', headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' }, headerLeft: () => (<TouchableOpacity onPress={() => navigation.navigate('Home')} style={{ marginLeft: 15 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="menu" size={28} color="#fff" /></TouchableOpacity>) })} />
-      <Tab.Screen name="Configurações" component={ConfiguracoesScreen} options={({ navigation }) => ({ headerShown: true, title: 'Configurações', headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' }, headerLeft: () => (<TouchableOpacity onPress={() => navigation.navigate('Home')} style={{ marginLeft: 15 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="menu" size={28} color="#fff" /></TouchableOpacity>) })} />
-      <Tab.Screen name="Sair" component={SairScreen} options={{ title: 'Sair', headerStyle: { backgroundColor: '#2563EB' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
+      <Tab.Screen
+        name="Contas"
+        component={ContasScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          title: 'Contas',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={openMenu}
+              style={{ marginLeft: 15 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="menu" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Tab.Screen
+        name="Configurações"
+        component={ConfiguracoesScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          title: 'Configurações',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={openMenu}
+              style={{ marginLeft: 15 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="menu" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Tab.Screen
+        name="Sair"
+        component={SairScreen}
+        options={{ title: 'Sair' }}
+      />
     </Tab.Navigator>
   );
 }
@@ -124,7 +226,6 @@ function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="DrawerNavigator" component={DrawerNavigator} />
       <Stack.Screen name="Receita" component={ReceitaScreen} />
       <Stack.Screen name="Despesa" component={DespesaScreen} />
       <Stack.Screen name="FaleConosco" component={FaleConoscoScreen} />
@@ -132,10 +233,23 @@ function MainStack() {
   );
 }
 
-export default function MainNavigator() {
+function MainNavigationTree() {
   return (
-    <NavigationContainer>
+    <>
       <MainStack />
+      <AppMenuModal />
+    </>
+  );
+}
+
+export default function MainNavigator() {
+  const navigationRef = useRef(null);
+
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <MenuProvider navigationRef={navigationRef}>
+        <MainNavigationTree />
+      </MenuProvider>
     </NavigationContainer>
   );
 }

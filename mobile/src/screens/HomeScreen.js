@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { DrawerActions } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useMenu } from '../context/MenuContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { colors } from '../theme/theme';
@@ -23,6 +23,7 @@ import GraficosPizza from '../components/GraficosPizza';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { openMenu } = useMenu();
   const { getUserId } = useAuth();
   const userId = getUserId();
   const [totais, setTotais] = useState({
@@ -192,7 +193,7 @@ export default function HomeScreen() {
       >
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          onPress={openMenu}
           style={styles.menuButton}
         >
           <Ionicons name="menu" size={28} color="#fff" />

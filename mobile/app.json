@@ -3,6 +3,7 @@
     "name": "Claricash",
     "slug": "finflow-mobile",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -29,6 +30,9 @@
             "targetSdkVersion": 35,
             "compileSdkVersion": 35,
             "ndkVersion": "27.1.12297006"
+          },
+          "ios": {
+            "newArchEnabled": false
           }
         }
       ],

@@ -67,7 +67,11 @@ export function AuthProvider({ children }) {
     try {
       const userData = await SecureStore.getItemAsync('user');
       if (userData) {
-        setUser(JSON.parse(userData));
+        try {
+          setUser(JSON.parse(userData));
+        } catch {
+          await SecureStore.deleteItemAsync('user');
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error);
