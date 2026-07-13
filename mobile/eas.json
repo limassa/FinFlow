@@ -20,7 +20,8 @@
         "EXPO_PUBLIC_API_URL": "https://www.claricash.com.br"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "image": "sdk-54"
       },
       "ios": {
         "simulator": false,
