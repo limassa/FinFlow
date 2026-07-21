@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity } from 'react-native';
 import { CommonActions, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -24,23 +23,12 @@ import CategoriasScreen from '../screens/CategoriasScreen';
 import OrcamentoScreen from '../screens/OrcamentoScreen';
 import CartaoCreditoScreen from '../screens/CartaoCreditoScreen';
 import AppMenuModal from '../components/AppMenuModal';
+import { HeaderIconButton } from '../components/HeaderIconButton';
 import { MenuProvider, useMenu } from '../context/MenuContext';
 import { getMenuScreenOptions } from './menuHeaderOptions';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-
-function AddHeaderButton({ navigation, target }) {
-  return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate(target)}
-      style={{ marginRight: 15, padding: 5 }}
-      activeOpacity={0.7}
-    >
-      <Ionicons name="add" size={28} color="#fff" />
-    </TouchableOpacity>
-  );
-}
 
 function MainMenuStack() {
   const { openMenu } = useMenu();
@@ -61,25 +49,22 @@ function MainMenuStack() {
       <Stack.Screen
         name="Contas"
         component={ContasScreen}
-        options={getMenuScreenOptions(openMenu, ({ navigation }) => ({
+        options={getMenuScreenOptions(openMenu, () => ({
           title: 'Contas',
-          headerRight: () => <AddHeaderButton navigation={navigation} target="Contas" />,
         }))}
       />
       <Stack.Screen
         name="Receita"
         component={ReceitaScreen}
-        options={getMenuScreenOptions(openMenu, ({ navigation }) => ({
+        options={getMenuScreenOptions(openMenu, () => ({
           title: 'Receitas',
-          headerRight: () => <AddHeaderButton navigation={navigation} target="Receita" />,
         }))}
       />
       <Stack.Screen
         name="Despesa"
         component={DespesaScreen}
-        options={getMenuScreenOptions(openMenu, ({ navigation }) => ({
+        options={getMenuScreenOptions(openMenu, () => ({
           title: 'Despesas',
-          headerRight: () => <AddHeaderButton navigation={navigation} target="Despesa" />,
         }))}
       />
       <Stack.Screen
@@ -182,36 +167,24 @@ function MainTabs() {
       <Tab.Screen
         name="Contas"
         component={ContasScreen}
-        options={({ navigation }) => ({
+        options={{
           headerShown: true,
           title: 'Contas',
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={openMenu}
-              style={{ marginLeft: 15 }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="menu" size={28} color="#fff" />
-            </TouchableOpacity>
+            <HeaderIconButton name="menu" side="left" onPress={openMenu} />
           ),
-        })}
+        }}
       />
       <Tab.Screen
         name="Configurações"
         component={ConfiguracoesScreen}
-        options={({ navigation }) => ({
+        options={{
           headerShown: true,
           title: 'Configurações',
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={openMenu}
-              style={{ marginLeft: 15 }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="menu" size={28} color="#fff" />
-            </TouchableOpacity>
+            <HeaderIconButton name="menu" side="left" onPress={openMenu} />
           ),
-        })}
+        }}
       />
       <Tab.Screen
         name="Sair"

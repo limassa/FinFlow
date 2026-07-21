@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Modal
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
+import { HeaderIconButton } from '../components/HeaderIconButton';
 import { colors } from '../theme/theme';
 import Select from '../components/Select';
 import BankSelector from '../components/BankSelector';
@@ -79,6 +82,11 @@ export default function ContasScreen() {
       return;
     }
 
+    if (!userId) {
+      Alert.alert('Erro', 'Sessão inválida. Faça login novamente.');
+      return;
+    }
+
     try {
       const saldoNum = parseCurrencyToNumber(saldo) || 0;
       const contaData = {
@@ -91,7 +99,12 @@ export default function ContasScreen() {
       };
 
       if (editId) {
-        await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, { nome, tipo, banco: contaData.banco, saldo: saldoNum });
+        await axios.put(`${API_ENDPOINTS.CONTAS}/${editId}`, {
+          nome,
+          tipo,
+          banco: contaData.banco,
+          saldo: saldoNum,
+        });
         Alert.alert('Sucesso', 'Conta atualizada com sucesso');
       } else {
         await axios.post(API_ENDPOINTS.CONTAS, contaData);
@@ -101,7 +114,11 @@ export default function ContasScreen() {
       resetForm();
       fetchContas();
     } catch (err) {
-      Alert.alert('Erro', 'Erro ao salvar conta');
+      console.error('Erro ao salvar conta:', err);
+      Alert.alert(
+        'Erro',
+        err.response?.data?.error || err.message || 'Erro ao salvar conta'
+      );
     }
   };
 
@@ -109,6 +126,7 @@ export default function ContasScreen() {
     const contaId = conta.conta_id || conta.Conta_Id || conta.id;
     setNome(conta.conta_nome || conta.Conta_Nome || conta.nome || '');
     setTipo(conta.conta_tipo || conta.Conta_Tipo || conta.tipo || '');
+    setBanco(conta.conta_banco || conta.Conta_Banco || conta.banco || '');
     const saldoNum = parseFloat(conta.conta_saldo || conta.Conta_Saldo || conta.saldo || 0);
     setSaldo(formatCurrency(Math.round(saldoNum * 100).toString()));
     setEditId(contaId);
@@ -156,16 +174,14 @@ export default function ContasScreen() {
     setShowForm(false);
   };
 
-  // Configurar header do Drawer com botão de adicionar
+  // Configurar header com botão de adicionar (sem círculo no iOS)
   useLayoutEffect(() => {
     if (navigation) {
       navigation.setOptions({
         headerRight: () => (
-          <Ionicons
+          <HeaderIconButton
             name="add"
-            size={28}
-            color="#fff"
-            style={{ marginRight: 15 }}
+            side="right"
             onPress={() => {
               resetForm();
               setShowForm(true);
@@ -252,7 +268,11 @@ export default function ContasScreen() {
         transparent={true}
         onRequestClose={resetForm}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -263,7 +283,12 @@ export default function ContasScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.formContainer}>
+            <ScrollView
+              style={styles.formContainer}
+              contentContainerStyle={styles.formContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.label}>Nome da Conta *</Text>
               <TextInput
                 style={styles.input}
@@ -317,7 +342,7 @@ export default function ContasScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -484,6 +509,9 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     maxHeight: 500,
+  },
+  formContent: {
+    paddingBottom: 40,
   },
   label: {
     fontSize: 14,

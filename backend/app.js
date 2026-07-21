@@ -688,11 +688,17 @@ app.post('/api/contas', async (req, res) => {
   const bancoVal = (banco !== undefined && banco !== null && String(banco).trim() !== '') ? String(banco).trim() : null;
   console.log('[contas POST] banco recebido:', JSON.stringify(banco), '-> bancoVal:', JSON.stringify(bancoVal));
   try {
+    if (!usuario_id) {
+      return res.status(400).json({ error: 'usuario_id é obrigatório' });
+    }
+    if (!nome || !tipo) {
+      return res.status(400).json({ error: 'nome e tipo são obrigatórios' });
+    }
     const conta = await userRepository.createConta({ nome, tipo, saldo, incrementarSaldoTotal, usuario_id, banco: bancoVal });
     res.status(201).json(conta);
   } catch (err) {
     console.error('Erro ao criar conta:', err);
-    res.status(500).json({ error: 'Erro ao criar conta' });
+    res.status(500).json({ error: 'Erro ao criar conta', details: err.message });
   }
 });
 

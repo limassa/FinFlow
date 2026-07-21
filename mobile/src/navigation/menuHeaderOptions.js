@@ -1,6 +1,5 @@
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { HeaderIconButton } from '../components/HeaderIconButton';
 
 export function getMenuScreenOptions(openMenu, overrides = {}) {
   return ({ navigation, route }) => ({
@@ -8,13 +7,7 @@ export function getMenuScreenOptions(openMenu, overrides = {}) {
     headerTintColor: '#fff',
     headerTitleStyle: { fontWeight: 'bold' },
     headerLeft: () => (
-      <TouchableOpacity
-        onPress={openMenu}
-        style={{ marginLeft: 15, padding: 5 }}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="menu" size={28} color="#fff" />
-      </TouchableOpacity>
+      <HeaderIconButton name="menu" side="left" onPress={openMenu} />
     ),
     ...overrides({ navigation, route }),
   });

@@ -9,7 +9,9 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  Switch
+  Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -18,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor, formatarData } from '../utils/formatters';
 import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
@@ -670,20 +673,18 @@ export default function DespesaScreen() {
     setShowForm(false);
   };
 
-  // Configurar header do Drawer com botão de adicionar
+  // Configurar header com botão de adicionar
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
+        <HeaderIconButton
+          name="add"
+          side="right"
           onPress={() => {
             resetForm();
             setShowForm(true);
           }}
-          style={{ marginRight: 15, padding: 5 }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+        />
       ),
     });
   }, [navigation]);
@@ -1120,7 +1121,11 @@ export default function DespesaScreen() {
         transparent={true}
         onRequestClose={resetForm}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -1131,7 +1136,12 @@ export default function DespesaScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.formContainer}>
+            <ScrollView
+              style={styles.formContainer}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.label}>Descrição *</Text>
               <TextInput
                 style={styles.input}
@@ -1249,7 +1259,7 @@ export default function DespesaScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {deletingInProgress && (

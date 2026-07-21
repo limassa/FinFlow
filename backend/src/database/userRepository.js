@@ -369,74 +369,89 @@ const userRepository = {
 
   async createConta({ nome, tipo, saldo, incrementarSaldoTotal = true, usuario_id, banco }) {
     const bancoVal = (banco && String(banco).trim()) ? String(banco).trim() : null;
+    const saldoVal = saldo != null && saldo !== '' ? Number(saldo) : 0;
     let result;
+
+    // Produção usa tabela lowercase "conta"; tentar PascalCase primeiro por compatibilidade
     try {
       result = await pool.query(
         'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id", "Conta_Banco") VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [nome, tipo, saldo || 0, usuario_id, bancoVal]
+        [nome, tipo, saldoVal, usuario_id, bancoVal]
       );
-    } catch (err) {
-      if (err.message && (err.message.includes('Conta_Banco') || err.message.includes('does not exist'))) {
+    } catch (errPascalWithBanco) {
+      try {
         result = await pool.query(
           'INSERT INTO "Conta" ("Conta_Nome", "Conta_Tipo", "Conta_Saldo", "Usuario_Id") VALUES ($1, $2, $3, $4) RETURNING *',
-          [nome, tipo, saldo || 0, usuario_id]
+          [nome, tipo, saldoVal, usuario_id]
         );
-      } else {
+      } catch (errPascal) {
         try {
           result = await pool.query(
             'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id, conta_banco) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [nome, tipo, saldo || 0, usuario_id, bancoVal]
+            [nome, tipo, saldoVal, usuario_id, bancoVal]
           );
-        } catch (err2) {
-          if (err2.message && err2.message.includes('conta_banco')) {
+        } catch (errLowerWithBanco) {
+          try {
             result = await pool.query(
               'INSERT INTO conta (conta_nome, conta_tipo, conta_saldo, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *',
-              [nome, tipo, saldo || 0, usuario_id]
+              [nome, tipo, saldoVal, usuario_id]
             );
-          } else {
-            throw err2;
+          } catch (errLower) {
+            console.error('createConta falhou:', {
+              errPascalWithBanco: errPascalWithBanco.message,
+              errPascal: errPascal.message,
+              errLowerWithBanco: errLowerWithBanco.message,
+              errLower: errLower.message,
+            });
+            throw errLower;
           }
         }
       }
     }
-    
-    // Nota: Funcionalidade de saldo total removida pois a coluna não existe na tabela Usuario
-    // Se incrementarSaldoTotal for true e houver saldo, apenas logar (não atualizar banco)
-    if (incrementarSaldoTotal && saldo && parseFloat(saldo) > 0) {
-      console.log(`💰 Saldo inicial de R$ ${parseFloat(saldo).toFixed(2)} adicionado à conta "${nome}"`);
+
+    if (incrementarSaldoTotal && saldoVal > 0) {
+      console.log(`💰 Saldo inicial de R$ ${saldoVal.toFixed(2)} adicionado à conta "${nome}"`);
     }
-    
+
     return result.rows[0];
   },
 
   async updateConta(id, { nome, tipo, saldo, banco }) {
     const bancoVal = (banco !== undefined && banco !== null && String(banco).trim()) ? String(banco).trim() : null;
+    const saldoVal = saldo != null && saldo !== '' ? Number(saldo) : 0;
     let result;
+
     try {
       result = await pool.query(
         'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3, "Conta_Banco" = $4 WHERE "Conta_Id" = $5 RETURNING *',
-        [nome, tipo, saldo || 0, bancoVal, id]
+        [nome, tipo, saldoVal, bancoVal, id]
       );
-    } catch (err) {
-      if (err.message && (err.message.includes('Conta_Banco') || err.message.includes('does not exist'))) {
+    } catch (errPascalWithBanco) {
+      try {
         result = await pool.query(
           'UPDATE "Conta" SET "Conta_Nome" = $1, "Conta_Tipo" = $2, "Conta_Saldo" = $3 WHERE "Conta_Id" = $4 RETURNING *',
-          [nome, tipo, saldo || 0, id]
+          [nome, tipo, saldoVal, id]
         );
-      } else {
+      } catch (errPascal) {
         try {
           result = await pool.query(
             'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3, conta_banco = $4 WHERE conta_id = $5 RETURNING *',
-            [nome, tipo, saldo || 0, bancoVal, id]
+            [nome, tipo, saldoVal, bancoVal, id]
           );
-        } catch (err2) {
-          if (err2.message && err2.message.includes('conta_banco')) {
+        } catch (errLowerWithBanco) {
+          try {
             result = await pool.query(
               'UPDATE conta SET conta_nome = $1, conta_tipo = $2, conta_saldo = $3 WHERE conta_id = $4 RETURNING *',
-              [nome, tipo, saldo || 0, id]
+              [nome, tipo, saldoVal, id]
             );
-          } else {
-            throw err2;
+          } catch (errLower) {
+            console.error('updateConta falhou:', {
+              errPascalWithBanco: errPascalWithBanco.message,
+              errPascal: errPascal.message,
+              errLowerWithBanco: errLowerWithBanco.message,
+              errLower: errLower.message,
+            });
+            throw errLower;
           }
         }
       }
