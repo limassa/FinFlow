@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { colors } from '../theme/theme';
 import * as Notifications from 'expo-notifications';
+import { ensureNotificationHandler, cancelEventoNotifications, EVENTO_NOTIFICATION_TYPE } from '../services/despesasNotifications';
 
 const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const tiposEvento = [
@@ -37,19 +38,6 @@ const gerarHorarios = () => {
   return horarios;
 };
 const HORARIOS = gerarHorarios();
-
-let notificationHandlerConfigured = false;
-
-function ensureNotificationHandler() {
-  if (notificationHandlerConfigured) return;
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-    }),
-  });
-  notificationHandlerConfigured = true;
-}
 
 async function agendarNotificacaoEvento(evento) {
   try {
@@ -71,7 +59,10 @@ async function agendarNotificacaoEvento(evento) {
       content: {
         title: '🔔 Lembrete de evento',
         body: `${evento.evento_titulo || evento.evento_Titulo || 'Evento'} - ${data} às ${hinicio}`,
-        data: { evento_id: evento.evento_id || evento.evento_Id },
+        data: {
+          type: EVENTO_NOTIFICATION_TYPE,
+          evento_id: evento.evento_id || evento.evento_Id,
+        },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
@@ -86,7 +77,7 @@ async function agendarNotificacaoEvento(evento) {
 
 async function agendarNotificacoesEventos(eventos) {
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    await cancelEventoNotifications();
     const comLembrete = eventos.filter(
       e => (e.evento_lembrete || e.evento_Lembrete) !== false
     );

@@ -11,6 +11,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AuthStack from './src/navigation/AuthStack';
 import MainNavigator from './src/navigation/MainNavigator';
+import DespesasNotificationSync from './src/components/DespesasNotificationSync';
 import { theme } from './src/theme/theme';
 
 function AppNavigator() {
@@ -25,7 +26,12 @@ function AppNavigator() {
   }
 
   if (user) {
-    return <MainNavigator />;
+    return (
+      <>
+        <DespesasNotificationSync />
+        <MainNavigator />
+      </>
+    );
   }
 
   return (

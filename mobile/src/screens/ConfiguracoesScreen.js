@@ -22,6 +22,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { colors } from '../theme/theme';
 import { formatarTelefone, removerFormatacaoTelefone } from '../utils/formatters';
 import TimePicker from '../components/TimePicker';
+import { syncDespesasNaoPagasNotifications } from '../services/despesasNotifications';
 
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
@@ -261,6 +262,7 @@ export default function ConfiguracoesScreen() {
 
       if (response.data) {
         console.log('✅ Configurações salvas:', response.data);
+        await syncDespesasNaoPagasNotifications(userId);
         Alert.alert('Sucesso', 'Configurações de lembretes salvas!');
         // Recarregar configurações para garantir sincronização
         await carregarConfiguracoes();
@@ -518,6 +520,9 @@ export default function ConfiguracoesScreen() {
                     onValueChange={(value) => setLembretesConfig({ ...lembretesConfig, lembretesAtivos: value })}
                   />
                 </View>
+                <Text style={styles.helperText}>
+                  Com lembretes ativos e permissão de notificação do celular, o app avisa todos os dias (no horário abaixo) se houver despesas não pagas.
+                </Text>
               </View>
 
               <View style={styles.switchGroup}>
@@ -819,6 +824,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     flex: 1,
+  },
+  helperText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 8,
+    lineHeight: 18,
   },
   saveButton: {
     flexDirection: 'row',

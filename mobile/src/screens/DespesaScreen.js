@@ -28,6 +28,7 @@ import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
 import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
+import { syncDespesasNaoPagasNotifications } from '../services/despesasNotifications';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 
@@ -155,7 +156,10 @@ export default function DespesaScreen() {
     } else {
       setTodasDespesasCache(null);
     }
-  }, [abaLista, fetchDespesasTodas, fetchDespesasMes]);
+    if (userId) {
+      syncDespesasNaoPagasNotifications(userId);
+    }
+  }, [abaLista, fetchDespesasTodas, fetchDespesasMes, userId]);
 
   const fetchCategoriasCustomizadas = async () => {
     if (!userId) return;
