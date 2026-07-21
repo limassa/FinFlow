@@ -50,10 +50,31 @@ export default function AppMenuModal() {
 
   const navigateTo = (screen) => {
     closeMenu();
-    navigationRef?.current?.navigate('Home', {
-      screen: 'MainMenu',
-      params: { screen },
-    });
+
+    // No iOS o Modal precisa fechar antes da navegação; caminho raiz: MainTabs > Home > MainMenu
+    setTimeout(() => {
+      const nav = navigationRef?.current;
+      if (!nav) return;
+
+      if (screen === 'Home') {
+        nav.navigate('MainTabs', {
+          screen: 'Home',
+          params: {
+            screen: 'MainMenu',
+            params: { screen: 'Home' },
+          },
+        });
+        return;
+      }
+
+      nav.navigate('MainTabs', {
+        screen: 'Home',
+        params: {
+          screen: 'MainMenu',
+          params: { screen },
+        },
+      });
+    }, 150);
   };
 
   const abrirConfiguracoes = () => {
@@ -62,8 +83,9 @@ export default function AppMenuModal() {
 
   return (
     <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={closeMenu}>
-      <Pressable style={styles.overlay} onPress={closeMenu}>
-        <Pressable style={styles.panel} onPress={(e) => e.stopPropagation()}>
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={closeMenu} />
+        <View style={styles.panel}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.fotoWrapper} onPress={abrirConfiguracoes} activeOpacity={0.8}>
               {userFoto ? (
@@ -85,7 +107,7 @@ export default function AppMenuModal() {
             </Text>
           </View>
 
-          <ScrollView style={styles.list}>
+          <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
             {MENU_ITEMS.map((item) => (
               <TouchableOpacity
                 key={item.screen}
@@ -98,8 +120,8 @@ export default function AppMenuModal() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -107,14 +129,17 @@ export default function AppMenuModal() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
     flexDirection: 'row',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   panel: {
     width: '82%',
     maxWidth: 320,
     backgroundColor: '#fff',
-    flex: 1,
+    zIndex: 1,
   },
   header: {
     padding: 20,
