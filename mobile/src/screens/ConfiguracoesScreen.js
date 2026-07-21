@@ -521,7 +521,7 @@ export default function ConfiguracoesScreen() {
                   />
                 </View>
                 <Text style={styles.helperText}>
-                  Com lembretes ativos e permissão de notificação do celular, o app avisa todos os dias (no horário abaixo) se houver despesas não pagas.
+                  Com lembretes ativos e permissão de notificação do celular, o app avisa todos os dias (no horário abaixo) cada despesa não paga, com descrição e valor — uma notificação por vez.
                 </Text>
               </View>
 
