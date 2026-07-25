@@ -16,11 +16,25 @@ export const formatarData = (data) => {
   }
 };
 
+/** YYYY-MM-DD no fuso local (evita mudar o dia com toISOString). */
+export const formatDateLocalYmd = (data) => {
+  if (!data) return '';
+  try {
+    const date = data instanceof Date ? data : new Date(data);
+    if (Number.isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  } catch (error) {
+    return '';
+  }
+};
+
 export const formatarDataInput = (data) => {
   if (!data) return '';
   try {
-    const date = new Date(data);
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    return formatDateLocalYmd(data);
   } catch (error) {
     return '';
   }

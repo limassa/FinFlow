@@ -7,19 +7,30 @@ import { formatarData } from '../utils/formatters';
 
 export default function DatePicker({ value, onChange, placeholder = 'Selecione a data', mode = 'date' }) {
   const [show, setShow] = useState(false);
+  const [tempDate, setTempDate] = useState(null);
+
+  const handleOpen = () => {
+    setTempDate(value || new Date());
+    setShow(true);
+  };
+
+  const handleConfirm = () => {
+    const dateToSave = tempDate || value || new Date();
+    if (onChange) {
+      onChange(dateToSave);
+    }
+    setShow(false);
+  };
 
   const handleChange = (event, selectedDate) => {
-    // No Android, o picker fecha automaticamente
     if (Platform.OS === 'android') {
       setShow(false);
     }
-    
-    // Se o usuário cancelou (Android)
+
     if (event.type === 'dismissed') {
       return;
     }
-    
-    // Se uma data foi selecionada
+
     if (selectedDate && onChange) {
       onChange(selectedDate);
     }
@@ -27,15 +38,14 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
 
   const formatDateForInput = (date) => {
     if (!date) return '';
-    return formatarData(date); // DD/MM/YYYY
+    return formatarData(date);
   };
+
+  const pickerValue = tempDate || value || new Date();
 
   return (
     <View>
-      <TouchableOpacity
-        style={styles.input}
-        onPress={() => setShow(true)}
-      >
+      <TouchableOpacity style={styles.input} onPress={handleOpen}>
         <Text style={[styles.text, !value && styles.placeholder]}>
           {value ? formatDateForInput(value) : placeholder}
         </Text>
@@ -55,22 +65,17 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
                 <TouchableOpacity onPress={() => setShow(false)}>
                   <Text style={styles.iosPickerButton}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => {
-                  if (onChange && value) {
-                    onChange(value);
-                  }
-                  setShow(false);
-                }}>
+                <TouchableOpacity onPress={handleConfirm}>
                   <Text style={[styles.iosPickerButton, styles.iosPickerButtonConfirm]}>Confirmar</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
-                value={value || new Date()}
+                value={pickerValue}
                 mode={mode}
                 display="spinner"
                 onChange={(event, selectedDate) => {
-                  if (selectedDate && onChange) {
-                    onChange(selectedDate);
+                  if (selectedDate && event.type !== 'dismissed') {
+                    setTempDate(selectedDate);
                   }
                 }}
                 locale="pt-BR"
@@ -80,7 +85,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
           </View>
         </Modal>
       )}
-      
+
       {Platform.OS === 'android' && show && (
         <DateTimePicker
           value={value || new Date()}
@@ -146,4 +151,3 @@ const styles = StyleSheet.create({
     height: 200,
   },
 });
-

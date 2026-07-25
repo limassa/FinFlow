@@ -20,7 +20,9 @@ const whatsappService = require('./src/services/whatsappService');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Fotos de perfil em base64 precisam de limite maior que o padrão (~100kb)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rota de teste simples
 app.get('/api/test', (req, res) => {
@@ -400,8 +402,8 @@ app.get('/api/debug/tables', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-  const { email, senha } = req.body;
-  console.log('🔍 Tentativa de login:', { email, senha });
+  const { email, senha, origem } = req.body;
+  console.log('🔍 Tentativa de login:', { email, senha: senha ? '***' : undefined, origem });
   
   try {
     console.log('📡 Chamando userRepository.loginUser...');
@@ -413,25 +415,76 @@ app.post('/api/login', async (req, res) => {
       const userId = user.usuario_id || user.Usuario_Id || user.id;
       const userNome = user.usuario_nome || user.Usuario_Nome || user.nome;
       const userEmail = user.usuario_email || user.Usuario_Email || user.email;
+      const userTipo = (user.usuario_tipo || user.Usuario_Tipo || 'user').toString().toLowerCase();
+
+      // Registrar acesso (não bloqueia login se falhar)
+      try {
+        await userRepository.recordUserAccess(userId, origem || 'web');
+      } catch (accessErr) {
+        console.warn('⚠️ Falha ao registrar acesso:', accessErr.message);
+      }
+
+      const allowlist = userRepository.getAdminEmailsAllowlist();
+      const isAdmin =
+        userTipo === 'admin' ||
+        allowlist.includes(String(userEmail || '').toLowerCase());
       
       const userResponse = {
         success: true,
         user: {
           id: userId,
           usuario_nome: userNome, 
-          usuario_email: userEmail
+          usuario_email: userEmail,
+          usuario_tipo: isAdmin ? 'admin' : userTipo,
+          isAdmin
         },
         token: 'dummy-token' // Token temporário
       };
-      console.log('✅ Login bem-sucedido:', userResponse);
+      console.log('✅ Login bem-sucedido:', { id: userId, email: userEmail, isAdmin });
       res.json(userResponse);
     } else {
       console.log('❌ Login falhou - usuário não encontrado ou senha incorreta');
       res.status(401).json({ error: 'E-mail ou senha inválidos' });
     }
   } catch (err) {
-    console.error('💥 Erro no login:', err);
+    console.error('💥 Erro ao fazer login:', err);
     res.status(500).json({ error: 'Erro ao fazer login' });
+  }
+});
+
+// =====================================================
+// ADMIN DASHBOARD (somente usuários admin)
+// =====================================================
+app.get('/api/admin/stats', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) {
+    return res.status(400).json({ error: 'userId é obrigatório' });
+  }
+
+  try {
+    const isAdmin = await userRepository.isAdminUser(userId);
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+    }
+
+    const stats = await userRepository.getAdminDashboardStats();
+    res.json({ success: true, stats });
+  } catch (err) {
+    console.error('Erro ao buscar stats admin:', err);
+    res.status(500).json({ error: 'Erro ao carregar dashboard admin' });
+  }
+});
+
+app.get('/api/admin/me', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) {
+    return res.status(400).json({ error: 'userId é obrigatório' });
+  }
+  try {
+    const isAdmin = await userRepository.isAdminUser(userId);
+    res.json({ success: true, isAdmin });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao verificar admin' });
   }
 });
 
@@ -870,7 +923,7 @@ app.get('/api/user/lembretes', async (req, res) => {
     
     const lembretesDiasAntes = user.usuario_lembretesdiasantes !== undefined 
       ? user.usuario_lembretesdiasantes 
-      : (user.Usuario_LembretesDiasAntes !== undefined ? user.Usuario_LembretesDiasAntes : 5);
+      : (user.Usuario_LembretesDiasAntes !== undefined ? user.Usuario_LembretesDiasAntes : 0);
     
     const lembretesHorario = user.usuario_lembreteshorario || user.Usuario_LembretesHorario || '18:15';
     
@@ -2445,4 +2498,8 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`🔍 Healthcheck: http://localhost:${PORT}/health`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+
+  userRepository.ensureAdminSchema()
+    .then(() => console.log('✅ Schema admin verificado'))
+    .catch((err) => console.warn('⚠️ Schema admin:', err.message));
 });

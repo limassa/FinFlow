@@ -13,7 +13,6 @@ import {
   Linking
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -53,8 +52,8 @@ export default function ConfiguracoesScreen() {
   const [lembretesConfig, setLembretesConfig] = useState({
     lembretesAtivos: true,
     lembretesEmail: true,
-    lembretesWhatsApp: false,
-    lembretesDiasAntes: 5,
+    lembretesWhatsApp: false, // UI oculta por enquanto; backend mantém suporte
+    lembretesDiasAntes: 0,
     lembretesHorario: '18:15'
   });
 
@@ -99,12 +98,18 @@ export default function ConfiguracoesScreen() {
       }
 
       if (lembretesRes.data) {
+        const diasCarregados = lembretesRes.data.lembretesDiasAntes;
         setLembretesConfig(prev => ({
           ...prev,
           lembretesAtivos: lembretesRes.data.lembretesAtivos ?? true,
           lembretesEmail: lembretesRes.data.lembretesEmail ?? true,
-          lembretesWhatsApp: lembretesRes.data.lembretesWhatsApp ?? false, // Campo preparado para futuro
-          lembretesDiasAntes: lembretesRes.data.lembretesDiasAntes || 5,
+          lembretesWhatsApp: false,
+          lembretesDiasAntes:
+            diasCarregados === 0 || diasCarregados === '0'
+              ? 0
+              : Number.isFinite(Number(diasCarregados))
+                ? Number(diasCarregados)
+                : 0,
           lembretesHorario: lembretesRes.data.lembretesHorario || '18:15'
         }));
       }
@@ -138,22 +143,51 @@ export default function ConfiguracoesScreen() {
         Alert.alert('Permissão', 'É necessário permitir acesso à galeria para alterar a foto.');
         return;
       }
+
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7,
+        base64: true,
       });
+
       if (result.canceled || !result.assets?.[0]) return;
-      const uri = result.assets[0].uri;
+
+      const asset = result.assets[0];
+      let base64 = asset.base64;
+
+      // Fallback: se base64 não veio, tenta via FileSystem legacy (SDK 54+)
+      if (!base64 && asset.uri) {
+        try {
+          const FileSystem = require('expo-file-system/legacy');
+          base64 = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        } catch (fsErr) {
+          console.error('Fallback FileSystem falhou:', fsErr);
+        }
+      }
+
+      if (!base64) {
+        Alert.alert('Erro', 'Não foi possível ler a imagem selecionada.');
+        return;
+      }
+
+      const mime = asset.mimeType || 'image/jpeg';
+      const dataUri = base64.startsWith('data:') ? base64 : `data:${mime};base64,${base64}`;
+
       setUploadingFoto(true);
-      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-      await axios.put(API_ENDPOINTS.USER_FOTO, { userId, foto: base64 });
-      setUserFoto(base64);
+      await axios.put(API_ENDPOINTS.USER_FOTO, { userId, foto: dataUri });
+      setUserFoto(dataUri);
       Alert.alert('Sucesso', 'Foto atualizada!');
     } catch (err) {
       console.error('Erro ao alterar foto:', err);
-      Alert.alert('Erro', 'Não foi possível salvar a foto.');
+      const msg =
+        err.response?.data?.error ||
+        err.message ||
+        'Não foi possível salvar a foto.';
+      Alert.alert('Erro', msg);
     } finally {
       setUploadingFoto(false);
     }
@@ -235,20 +269,21 @@ export default function ConfiguracoesScreen() {
       return;
     }
 
-    // Validar dias antes do vencimento
+    // Validar dias antes do vencimento (0 = só no dia do vencimento)
     const dias = typeof lembretesConfig.lembretesDiasAntes === 'string' 
-      ? parseInt(lembretesConfig.lembretesDiasAntes) 
+      ? parseInt(lembretesConfig.lembretesDiasAntes, 10) 
       : lembretesConfig.lembretesDiasAntes;
     
-    if (!dias || dias < 1) {
-      Alert.alert('Erro', 'O número de dias antes do vencimento deve ser maior ou igual a 1');
+    if (dias === null || dias === undefined || Number.isNaN(dias) || dias < 0) {
+      Alert.alert('Erro', 'O número de dias deve ser 0 ou maior (0 = só no dia do vencimento)');
       return;
     }
 
-    // Garantir que dias seja um número válido
+    // Garantir que dias seja um número válido (WhatsApp oculto no app por enquanto)
     const configToSave = {
       ...lembretesConfig,
-      lembretesDiasAntes: dias
+      lembretesDiasAntes: dias,
+      lembretesWhatsApp: false,
     };
 
     setLoading(true);
@@ -264,7 +299,6 @@ export default function ConfiguracoesScreen() {
         console.log('✅ Configurações salvas:', response.data);
         await syncDespesasNaoPagasNotifications(userId);
         Alert.alert('Sucesso', 'Configurações de lembretes salvas!');
-        // Recarregar configurações para garantir sincronização
         await carregarConfiguracoes();
       }
     } catch (error) {
@@ -521,7 +555,7 @@ export default function ConfiguracoesScreen() {
                   />
                 </View>
                 <Text style={styles.helperText}>
-                  Com lembretes ativos e permissão de notificação do celular, o app avisa todos os dias (no horário abaixo) cada despesa não paga, com descrição e valor — uma notificação por vez.
+                  Com lembretes ativos e permissão do sistema, o app notifica no horário configurado as despesas em aberto que estão na janela de lembrete (ver “Dias antes” abaixo). Recorrentes: só a parcela do período atual (ex.: mensal dia 05 → só a do mês corrente).
                 </Text>
               </View>
 
@@ -536,20 +570,6 @@ export default function ConfiguracoesScreen() {
                 </View>
               </View>
 
-              <View style={styles.switchGroup}>
-                <View style={styles.switchRow}>
-                  <View style={styles.switchLabelContainer}>
-                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" style={styles.whatsappIcon} />
-                    <Text style={styles.switchLabel}>Receber lembretes por WhatsApp</Text>
-                  </View>
-                  <Switch
-                    value={lembretesConfig.lembretesWhatsApp}
-                    onValueChange={(value) => setLembretesConfig({ ...lembretesConfig, lembretesWhatsApp: value })}
-                    disabled={!lembretesConfig.lembretesAtivos}
-                  />
-                </View>
-              </View>
-
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Dias antes do vencimento:</Text>
                 <TextInput
@@ -558,20 +578,23 @@ export default function ConfiguracoesScreen() {
                   onChangeText={(text) => {
                     // Remover tudo que não é dígito
                     const numbers = text.replace(/\D/g, '');
-                    // Se estiver vazio, definir como string vazia temporariamente
+                    // Se estiver vazio, definir como 0
                     if (numbers === '') {
                       setLembretesConfig({ ...lembretesConfig, lembretesDiasAntes: 0 });
                       return;
                     }
                     // Converter para número e atualizar
-                    const num = parseInt(numbers);
+                    const num = parseInt(numbers, 10);
                     if (!isNaN(num)) {
                       setLembretesConfig({ ...lembretesConfig, lembretesDiasAntes: num });
                     }
                   }}
                   keyboardType="number-pad"
-                  placeholder="5"
+                  placeholder="0"
                 />
+                <Text style={styles.helperText}>
+                  0 = só no dia do vencimento. Ex.: 5 = avisa a partir de 5 dias antes até o vencimento.
+                </Text>
               </View>
 
               <View style={styles.formGroup}>
@@ -581,6 +604,9 @@ export default function ConfiguracoesScreen() {
                   onChange={(time) => setLembretesConfig({ ...lembretesConfig, lembretesHorario: time })}
                   placeholder="Selecione o horário"
                 />
+                <Text style={styles.helperText}>
+                  Horário em que a notificação do celular (e o e-mail no servidor) é disparada.
+                </Text>
               </View>
 
               <TouchableOpacity style={styles.saveButton} onPress={handleSalvarLembretes}>

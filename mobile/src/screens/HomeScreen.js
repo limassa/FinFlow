@@ -192,12 +192,9 @@ export default function HomeScreen() {
         }
       >
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={openMenu}
-          style={styles.menuButton}
-        >
-          <Ionicons name="menu" size={28} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.menuButton}>
+          <Ionicons name="menu" size={28} color="#fff" onPress={openMenu} />
+        </View>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Claricash</Text>
           <Text style={styles.headerSubtitle}>Controle Financeiro</Text>

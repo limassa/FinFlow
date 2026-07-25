@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
-import { formatarValor, formatarData } from '../utils/formatters';
+import { formatarValor, formatarData, formatDateLocalYmd } from '../utils/formatters';
 import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -303,7 +303,7 @@ export default function ReceitaScreen() {
       // Converter valor formatado para número (já validado acima)
       const valorNumerico = parseCurrencyToNumber(valorDisplay || formatCurrency(valor));
       // Converter data para formato YYYY-MM-DD
-      const dataFormatada = data ? data.toISOString().split('T')[0] : '';
+      const dataFormatada = data ? formatDateLocalYmd(data) : '';
 
       const receitaData = {
         descricao,

@@ -15,7 +15,7 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "plugins": [
+      "plugins": [
       [
         "expo-notifications",
         {
@@ -23,6 +23,12 @@
         }
       ],
       "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Claricash precisa acessar suas fotos para definir a foto de perfil."
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -47,6 +53,7 @@
       "bundleIdentifier": "com.lizsoftwares.finflow",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "O Claricash precisa acessar suas fotos para definir sua foto de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "O Claricash precisa acessar suas fotos para definir sua foto de perfil.",
         "NSCameraUsageDescription": "O Claricash precisa acessar a câmera para tirar sua foto de perfil.",
         "ITSAppUsesNonExemptEncryption": false
       }

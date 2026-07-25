@@ -4,7 +4,7 @@ const isDevelopment = process.env.NODE_ENV === 'development' || window.location.
 
 const API_BASE_URL = isDevelopment 
   ? 'http://localhost:3001' 
-  : (process.env.REACT_APP_API_URL || 'https://finflow-production-e4b3.up.railway.app');
+  : (process.env.REACT_APP_API_URL || 'https://www.claricash.com.br');
 
 // Debug: Log da URL da API
 console.log('🔗 API_BASE_URL configurada:', API_BASE_URL);
@@ -57,6 +57,10 @@ export const API_ENDPOINTS = {
   
   // Foto do Usuário
   USER_FOTO: `${API_BASE_URL}/api/user/foto`,
+
+  // Admin
+  ADMIN_STATS: `${API_BASE_URL}/api/admin/stats`,
+  ADMIN_ME: `${API_BASE_URL}/api/admin/me`,
 };
 
 export default API_BASE_URL; 

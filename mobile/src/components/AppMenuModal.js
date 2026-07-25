@@ -67,6 +67,16 @@ export default function AppMenuModal() {
         return;
       }
 
+      // Contas / Configurações: mesma tela do rodapé (header JS, ícones soltos)
+      if (screen === 'Contas') {
+        nav.navigate('MainTabs', { screen: 'Contas' });
+        return;
+      }
+      if (screen === 'Configuracoes') {
+        nav.navigate('MainTabs', { screen: 'Configurações' });
+        return;
+      }
+
       nav.navigate('MainTabs', {
         screen: 'Home',
         params: {

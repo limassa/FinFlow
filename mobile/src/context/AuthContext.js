@@ -6,7 +6,7 @@ import httpClient from '../config/httpClient';
 const AuthContext = createContext({});
 
 async function requestLogin(email, senha) {
-  const payload = { email, senha };
+  const payload = { email, senha, origem: 'mobile' };
 
   try {
     return await httpClient.post(API_ENDPOINTS.LOGIN, payload);

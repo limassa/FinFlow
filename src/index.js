@@ -26,6 +26,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CartaoCredito from './pages/CartaoCredito';
 import Orcamento from './pages/Orcamento';
 import Categorias from './pages/Categorias';
+import Admin from './pages/Admin';
 
 import reportWebVitals from './reportWebVitals';
 
@@ -46,6 +47,7 @@ root.render(
         <Route path="/calculadora-juros" element={<CalculadoraJuros />} />
         <Route path="/calculadora-retiradas" element={<CalculadoraRetiradas />} />
         <Route path="/calculadora-aporte-meta" element={<CalculadoraAporteMeta />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="/app" element={<App />}/>
         <Route path="/layout" element={<Layout />}>
           <Route path="principal" element={<Principal />} />

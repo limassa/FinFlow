@@ -89,21 +89,28 @@ const userRepository = {
     let result;
     try {
       result = await pool.query(
-        'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha" FROM "Usuario" WHERE "Usuario_Email" = $1 AND "Usuario_Ativo" = TRUE',
+        'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha", "Usuario_Tipo" FROM "Usuario" WHERE "Usuario_Email" = $1 AND "Usuario_Ativo" = TRUE',
         [email]
       );
       if (result.rows.length === 0) {
         result = await pool.query(
-          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
+          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha, usuario_tipo FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
           [email]
         );
       }
     } catch (err) {
+      // Coluna Tipo pode não existir ainda — tentar sem ela
       try {
         result = await pool.query(
-          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
+          'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha" FROM "Usuario" WHERE "Usuario_Email" = $1 AND "Usuario_Ativo" = TRUE',
           [email]
         );
+        if (result.rows.length === 0) {
+          result = await pool.query(
+            'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
+            [email]
+          );
+        }
       } catch (err2) {
         console.error('Erro ao buscar usuário:', err2.message);
         return null;
@@ -122,6 +129,7 @@ const userRepository = {
     const usuarioId = user.usuario_id || user.Usuario_Id || user.USUARIO_ID;
     const usuarioEmail = user.usuario_email || user.Usuario_Email || user.USUARIO_EMAIL;
     const usuarioNome = user.usuario_nome || user.Usuario_Nome || user.USUARIO_NOME;
+    const usuarioTipo = (user.usuario_tipo || user.Usuario_Tipo || 'user').toString().toLowerCase();
     
     console.log('📊 Campos normalizados:', {
       temSenha: !!usuarioSenha,
@@ -156,7 +164,8 @@ const userRepository = {
     return {
       usuario_id: usuarioId,
       usuario_email: usuarioEmail,
-      usuario_nome: usuarioNome
+      usuario_nome: usuarioNome,
+      usuario_tipo: usuarioTipo
     };
   },
 
@@ -804,7 +813,7 @@ const userRepository = {
       ? parseInt(user.usuario_lembretesdiasantes) 
       : (user.Usuario_LembretesDiasAntes !== undefined 
           ? parseInt(user.Usuario_LembretesDiasAntes) 
-          : 5); // Padrão: 5 dias
+          : 0); // Padrão: 0 = só no dia do vencimento
     
     console.log(`📅 Buscando vencimentos para os próximos ${diasAntes} dias...`);
     
@@ -1073,6 +1082,240 @@ const userRepository = {
       );
     }
     return parseFloat(result.rows[0].saldo_total || 0);
+  },
+
+  /**
+   * Garante colunas/tabelas usadas pelo painel admin (idempotente).
+   */
+  async ensureAdminSchema() {
+    const statements = [
+      `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "Usuario_Tipo" VARCHAR(20) DEFAULT 'user'`,
+      `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "Usuario_UltimoAcesso" TIMESTAMP`,
+      `CREATE TABLE IF NOT EXISTS "Usuario_Acesso_Log" (
+        "Acesso_Id" SERIAL PRIMARY KEY,
+        "Usuario_Id" INTEGER NOT NULL,
+        "Acesso_Data" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "Acesso_Origem" VARCHAR(20) DEFAULT 'web'
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_usuario_acesso_log_data ON "Usuario_Acesso_Log" ("Acesso_Data")`,
+      `CREATE INDEX IF NOT EXISTS idx_usuario_acesso_log_user ON "Usuario_Acesso_Log" ("Usuario_Id")`,
+    ];
+
+    for (const sql of statements) {
+      try {
+        await pool.query(sql);
+      } catch (err) {
+        // Fallback minúsculas (alguns ambientes)
+        try {
+          const lower = sql
+            .replace(/"Usuario"/g, 'usuario')
+            .replace(/"Usuario_Tipo"/g, 'usuario_tipo')
+            .replace(/"Usuario_UltimoAcesso"/g, 'usuario_ultimoacesso')
+            .replace(/"Usuario_Acesso_Log"/g, 'usuario_acesso_log')
+            .replace(/"Acesso_Id"/g, 'acesso_id')
+            .replace(/"Usuario_Id"/g, 'usuario_id')
+            .replace(/"Acesso_Data"/g, 'acesso_data')
+            .replace(/"Acesso_Origem"/g, 'acesso_origem')
+            .replace(/idx_usuario_acesso_log_data/g, 'idx_usuario_acesso_log_data')
+            .replace(/idx_usuario_acesso_log_user/g, 'idx_usuario_acesso_log_user');
+          await pool.query(lower);
+        } catch (err2) {
+          console.warn('⚠️ ensureAdminSchema:', err2.message);
+        }
+      }
+    }
+
+    // Promove e-mails listados em ADMIN_EMAILS para tipo admin
+    const emails = String(process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    for (const email of emails) {
+      try {
+        await pool.query(
+          `UPDATE "Usuario" SET "Usuario_Tipo" = 'admin' WHERE LOWER("Usuario_Email") = $1`,
+          [email]
+        );
+      } catch {
+        try {
+          await pool.query(
+            `UPDATE usuario SET usuario_tipo = 'admin' WHERE LOWER(usuario_email) = $1`,
+            [email]
+          );
+        } catch {
+          // ignore
+        }
+      }
+    }
+  },
+
+  getAdminEmailsAllowlist() {
+    return String(process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  },
+
+  async isAdminUser(userId) {
+    if (!userId) return false;
+    await this.ensureAdminSchema();
+
+    let row;
+    try {
+      const result = await pool.query(
+        `SELECT "Usuario_Email" as email, "Usuario_Tipo" as tipo FROM "Usuario" WHERE "Usuario_Id" = $1`,
+        [userId]
+      );
+      row = result.rows[0];
+    } catch {
+      const result = await pool.query(
+        `SELECT usuario_email as email, usuario_tipo as tipo FROM usuario WHERE usuario_id = $1`,
+        [userId]
+      );
+      row = result.rows[0];
+    }
+
+    if (!row) return false;
+    const email = String(row.email || '').toLowerCase();
+    const tipo = String(row.tipo || 'user').toLowerCase();
+    if (tipo === 'admin') return true;
+    return this.getAdminEmailsAllowlist().includes(email);
+  },
+
+  /** Registra acesso (último acesso + log para contagem). */
+  async recordUserAccess(userId, origem = 'web') {
+    if (!userId) return;
+    await this.ensureAdminSchema();
+    const origemNorm = String(origem || 'web').slice(0, 20);
+
+    try {
+      await pool.query(
+        `UPDATE "Usuario" SET "Usuario_UltimoAcesso" = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $1`,
+        [userId]
+      );
+    } catch {
+      try {
+        await pool.query(
+          `UPDATE usuario SET usuario_ultimoacesso = CURRENT_TIMESTAMP WHERE usuario_id = $1`,
+          [userId]
+        );
+      } catch (err) {
+        console.warn('⚠️ recordUserAccess update:', err.message);
+      }
+    }
+
+    try {
+      await pool.query(
+        `INSERT INTO "Usuario_Acesso_Log" ("Usuario_Id", "Acesso_Origem") VALUES ($1, $2)`,
+        [userId, origemNorm]
+      );
+    } catch {
+      try {
+        await pool.query(
+          `INSERT INTO usuario_acesso_log (usuario_id, acesso_origem) VALUES ($1, $2)`,
+          [userId, origemNorm]
+        );
+      } catch (err) {
+        console.warn('⚠️ recordUserAccess log:', err.message);
+      }
+    }
+  },
+
+  async getAdminDashboardStats() {
+    await this.ensureAdminSchema();
+
+    const stats = {
+      totalUsuarios: 0,
+      usuariosAtivos: 0,
+      acessosUltimos90Dias: 0,
+      usuariosQueAcessaram90Dias: 0,
+      ultimosAcessos: [],
+    };
+
+    try {
+      const totalRes = await pool.query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE "Usuario_Ativo" = TRUE)::int AS ativos
+        FROM "Usuario"
+      `);
+      stats.totalUsuarios = totalRes.rows[0]?.total || 0;
+      stats.usuariosAtivos = totalRes.rows[0]?.ativos || 0;
+    } catch {
+      const totalRes = await pool.query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE usuario_ativo = TRUE)::int AS ativos
+        FROM usuario
+      `);
+      stats.totalUsuarios = totalRes.rows[0]?.total || 0;
+      stats.usuariosAtivos = totalRes.rows[0]?.ativos || 0;
+    }
+
+    try {
+      const acessosRes = await pool.query(`
+        SELECT
+          COUNT(*)::int AS total_acessos,
+          COUNT(DISTINCT "Usuario_Id")::int AS usuarios_unicos
+        FROM "Usuario_Acesso_Log"
+        WHERE "Acesso_Data" >= (CURRENT_TIMESTAMP - INTERVAL '90 days')
+      `);
+      stats.acessosUltimos90Dias = acessosRes.rows[0]?.total_acessos || 0;
+      stats.usuariosQueAcessaram90Dias = acessosRes.rows[0]?.usuarios_unicos || 0;
+    } catch {
+      try {
+        const acessosRes = await pool.query(`
+          SELECT
+            COUNT(*)::int AS total_acessos,
+            COUNT(DISTINCT usuario_id)::int AS usuarios_unicos
+          FROM usuario_acesso_log
+          WHERE acesso_data >= (CURRENT_TIMESTAMP - INTERVAL '90 days')
+        `);
+        stats.acessosUltimos90Dias = acessosRes.rows[0]?.total_acessos || 0;
+        stats.usuariosQueAcessaram90Dias = acessosRes.rows[0]?.usuarios_unicos || 0;
+      } catch {
+        // log ainda não disponível
+      }
+    }
+
+    try {
+      const ultimosRes = await pool.query(`
+        SELECT
+          u."Usuario_Id" as id,
+          u."Usuario_Nome" as nome,
+          u."Usuario_Email" as email,
+          u."Usuario_UltimoAcesso" as ultimo_acesso,
+          u."Usuario_Ativo" as ativo,
+          u."Usuario_DtCriacao" as criado_em
+        FROM "Usuario" u
+        WHERE u."Usuario_UltimoAcesso" IS NOT NULL
+        ORDER BY u."Usuario_UltimoAcesso" DESC NULLS LAST
+        LIMIT 30
+      `);
+      stats.ultimosAcessos = ultimosRes.rows;
+    } catch {
+      try {
+        const ultimosRes = await pool.query(`
+          SELECT
+            u.usuario_id as id,
+            u.usuario_nome as nome,
+            u.usuario_email as email,
+            u.usuario_ultimoacesso as ultimo_acesso,
+            u.usuario_ativo as ativo,
+            u.usuario_dtcriacao as criado_em
+          FROM usuario u
+          WHERE u.usuario_ultimoacesso IS NOT NULL
+          ORDER BY u.usuario_ultimoacesso DESC NULLS LAST
+          LIMIT 30
+        `);
+        stats.ultimosAcessos = ultimosRes.rows;
+      } catch {
+        stats.ultimosAcessos = [];
+      }
+    }
+
+    return stats;
   },
 
   // Outras funções reutilizáveis...

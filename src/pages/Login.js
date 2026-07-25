@@ -35,7 +35,8 @@ function Login() {
       console.log('Enviando requisição para:', API_ENDPOINTS.LOGIN);
       const response = await axios.post(API_ENDPOINTS.LOGIN, {
         email,
-        senha
+        senha,
+        origem: 'web'
       });
 
       console.log('Resposta recebida:', response.data);
@@ -46,14 +47,18 @@ function Login() {
           id: response.data.user.id,
           nome: response.data.user.usuario_nome,
           email: response.data.user.usuario_email,
-          token: response.data.token
+          token: response.data.token,
+          tipo: response.data.user.usuario_tipo || 'user',
+          isAdmin: !!response.data.user.isAdmin
         };
         
         console.log('Salvando dados do usuário:', userData);
         localStorage.setItem('user', JSON.stringify(userData));
         
-        console.log('Redirecionando para /layout/principal');
-        navigate('/layout/principal');
+        console.log('Redirecionando...');
+        navigate(userData.isAdmin && window.location.search.includes('redirect=/admin')
+          ? '/admin'
+          : '/layout/principal');
         // Scroll para o topo após a navegação
         setTimeout(() => {
           window.scrollTo(0, 0);

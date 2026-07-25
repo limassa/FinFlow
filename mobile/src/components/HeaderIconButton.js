@@ -2,21 +2,17 @@ import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
- * Ícone de header sem fundo circular (padrão Contas / iOS).
- * Usa Ionicons com onPress — TouchableOpacity no header gera círculo no iOS.
+ * Ícone de header solto — padrão original da tela Contas.
+ * Ionicons direto com onPress (sem TouchableOpacity/Pressable),
+ * para não gerar círculo atrás no iOS.
  */
 export function HeaderIconButton({ name, onPress, side = 'right', size = 28, color = '#fff' }) {
-  const style =
-    side === 'left'
-      ? { marginLeft: 15, padding: 4 }
-      : { marginRight: 15, padding: 4 };
-
   return (
     <Ionicons
       name={name}
       size={size}
       color={color}
-      style={style}
+      style={side === 'left' ? { marginLeft: 15 } : { marginRight: 15 }}
       onPress={onPress}
     />
   );

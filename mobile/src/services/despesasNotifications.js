@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
+import { despesaEhRecorrente, extrairNomeBaseRecorrente } from '../utils/recorrentes';
 
 export const DESPESAS_NOTIFICATION_ID_PREFIX = 'claricash-despesa-';
 export const DESPESAS_NOTIFICATION_TYPE = 'despesas_nao_pagas';
@@ -72,8 +73,27 @@ function getDespesaValor(despesa) {
   return Number.isFinite(valor) ? valor : 0;
 }
 
+function getFrequencia(despesa) {
+  return String(
+    despesa.despesa_frequencia || despesa.Despesa_Frequencia || despesa.frequencia || ''
+  ).toLowerCase();
+}
+
 function notificationIdForDespesa(despesaId, index) {
   return `${DESPESAS_NOTIFICATION_ID_PREFIX}${despesaId ?? index}`;
+}
+
+function startOfDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function toYmd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export async function getNotificationPermissionStatus() {
@@ -119,7 +139,6 @@ export async function cancelEventoNotifications() {
         .filter((n) => {
           const type = n.content?.data?.type;
           const id = String(n.identifier || '');
-          // Preserva notificações de despesas não pagas
           if (type === DESPESAS_NOTIFICATION_TYPE) return false;
           if (id.startsWith(DESPESAS_NOTIFICATION_ID_PREFIX)) return false;
           if (id === 'claricash-despesas-nao-pagas-daily') return false;
@@ -132,10 +151,86 @@ export async function cancelEventoNotifications() {
   }
 }
 
+function getDespesaVencimentoDate(despesa) {
+  const raw =
+    despesa.despesa_dtvencimento ||
+    despesa.Despesa_DtVencimento ||
+    despesa.dataVencimento ||
+    despesa.despesa_data ||
+    despesa.Despesa_Data ||
+    despesa.data;
+  if (!raw) return null;
+  const ymd = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  const d = new Date(`${ymd}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 /**
- * Agenda uma notificação diária por despesa não paga (descrição + valor).
- * Só agenda se: permissão concedida, lembretes ativos e existir ao menos 1 despesa não paga.
- * Várias despesas são espaçadas em 1 minuto para aparecerem uma após a outra.
+ * Janela de lembrete: do (vencimento − N dias) até o dia do vencimento.
+ * Ex.: diasAntes=0 → avisa só no dia do vencimento.
+ * Ex.: diasAntes=5 e vencimento dia 05 → avisa do dia 01 ao dia 05, no horário configurado.
+ *
+ * Diária: só a ocorrência em aberto com vencimento = hoje.
+ * Mensal/semanal/quinzenal: só parcelas cuja data de vencimento cai na janela
+ * (não agenda todos os meses futuros de uma vez).
+ */
+function shouldNotifyDespesa(despesa, diasAntes, hoje = new Date()) {
+  const venc = getDespesaVencimentoDate(despesa);
+  if (!venc) return false;
+
+  const N = (() => {
+    const parsed = parseInt(diasAntes, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  })();
+  const hoje0 = startOfDay(hoje);
+  const venc0 = startOfDay(venc);
+  const freq = getFrequencia(despesa);
+  const recorrente = despesaEhRecorrente(despesa);
+
+  if (recorrente && (freq === 'diaria' || freq === 'diario' || freq === 'daily')) {
+    return toYmd(venc0) === toYmd(hoje0);
+  }
+
+  // Início do lembrete = vencimento − N dias
+  const inicio = new Date(venc0);
+  inicio.setDate(inicio.getDate() - N);
+
+  // Só enquanto ainda não passou o vencimento (parcela do período atual)
+  return hoje0.getTime() >= inicio.getTime() && hoje0.getTime() <= venc0.getTime();
+}
+
+/**
+ * Uma notificação por série recorrente (ex.: "Aluguel (1/12)", "Aluguel (2/12)"):
+ * mantém só a parcela mais próxima (em geral a do mês atual).
+ */
+function dedupeRecorrentes(despesas) {
+  const byKey = new Map();
+
+  for (const d of despesas) {
+    const desc = getDespesaDescricao(d);
+    const key = despesaEhRecorrente(d)
+      ? `rec:${extrairNomeBaseRecorrente(desc).toLowerCase()}`
+      : `id:${getDespesaId(d)}`;
+
+    const venc = getDespesaVencimentoDate(d);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, d);
+      continue;
+    }
+    const vencExist = getDespesaVencimentoDate(existing);
+    if (venc && vencExist && venc.getTime() < vencExist.getTime()) {
+      byKey.set(key, d);
+    }
+  }
+
+  return Array.from(byKey.values());
+}
+
+/**
+ * Agenda notificações diárias no horário de lembrete para despesas na janela
+ * (dias antes do vencimento → dia do vencimento).
  */
 export async function syncDespesasNaoPagasNotifications(userId) {
   if (!userId) {
@@ -165,19 +260,22 @@ export async function syncDespesasNaoPagasNotifications(userId) {
       return { scheduled: false, reason: 'permission-denied' };
     }
 
+    const diasAntes = lembretes.lembretesDiasAntes ?? 0;
     const despesas = Array.isArray(despesasRes.data) ? despesasRes.data : [];
-    const naoPagas = despesas
-      .filter((d) => isDespesaAtiva(d) && !isDespesaPaga(d))
+    const candidatas = despesas
+      .filter((d) => isDespesaAtiva(d) && !isDespesaPaga(d) && shouldNotifyDespesa(d, diasAntes))
       .sort((a, b) => {
         const da = String(a.despesa_dtvencimento || a.Despesa_DtVencimento || a.despesa_data || '');
         const db = String(b.despesa_dtvencimento || b.Despesa_DtVencimento || b.despesa_data || '');
         return da.localeCompare(db);
       });
 
+    const naoPagas = dedupeRecorrentes(candidatas);
+
     await cancelDespesasNaoPagasNotification();
 
     if (naoPagas.length === 0) {
-      return { scheduled: false, reason: 'none-unpaid', count: 0 };
+      return { scheduled: false, reason: 'none-in-window', count: 0, diasAntes };
     }
 
     const base = parseHorario(lembretes.lembretesHorario);
@@ -216,6 +314,7 @@ export async function syncDespesasNaoPagasNotifications(userId) {
       scheduled: true,
       count: paraAgendar.length,
       truncated: naoPagas.length > paraAgendar.length,
+      diasAntes,
       hour: base.hour,
       minute: base.minute,
     };
