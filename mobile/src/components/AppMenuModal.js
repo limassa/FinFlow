@@ -18,6 +18,7 @@ import { colors } from '../theme/theme';
 
 const MENU_ITEMS = [
   { screen: 'Home', label: 'Home', icon: 'home' },
+  { screen: 'Dashboard', label: 'Dashboard', icon: 'bar-chart' },
   { screen: 'Calendario', label: 'Calendário', icon: 'calendar' },
   { screen: 'Agenda', label: 'Agenda', icon: 'grid-outline' },
   { screen: 'Contas', label: 'Contas', icon: 'wallet' },

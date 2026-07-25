@@ -267,11 +267,11 @@ function GraficosPizza() {
   };
 
   const nextChart = () => {
-    setCurrentChart(1);
+    setCurrentChart((prev) => (prev + 1) % 2);
   };
 
   const prevChart = () => {
-    setCurrentChart(0);
+    setCurrentChart((prev) => (prev - 1 + 2) % 2);
   };
 
   const handleChartClick = () => {

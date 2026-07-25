@@ -1199,39 +1199,56 @@ const userRepository = {
   /** Registra acesso (último acesso + log para contagem). */
   async recordUserAccess(userId, origem = 'web') {
     if (!userId) return;
-    await this.ensureAdminSchema();
-    const origemNorm = String(origem || 'web').slice(0, 20);
+    const id = parseInt(userId, 10);
+    if (!Number.isFinite(id)) return;
 
     try {
-      await pool.query(
-        `UPDATE "Usuario" SET "Usuario_UltimoAcesso" = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $1`,
-        [userId]
-      );
-    } catch {
-      try {
-        await pool.query(
-          `UPDATE usuario SET usuario_ultimoacesso = CURRENT_TIMESTAMP WHERE usuario_id = $1`,
-          [userId]
-        );
-      } catch (err) {
-        console.warn('⚠️ recordUserAccess update:', err.message);
-      }
+      await this.ensureAdminSchema();
+    } catch (err) {
+      console.warn('⚠️ recordUserAccess schema:', err.message);
+      return;
     }
 
-    try {
-      await pool.query(
-        `INSERT INTO "Usuario_Acesso_Log" ("Usuario_Id", "Acesso_Origem") VALUES ($1, $2)`,
-        [userId, origemNorm]
-      );
-    } catch {
+    const origemNorm = String(origem || 'web').slice(0, 20);
+
+    // UPDATE último acesso (tenta vários nomes de coluna)
+    const updateAttempts = [
+      `UPDATE "Usuario" SET "Usuario_UltimoAcesso" = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $1`,
+      `UPDATE "Usuario" SET usuario_ultimoacesso = CURRENT_TIMESTAMP WHERE "Usuario_Id" = $1`,
+      `UPDATE usuario SET usuario_ultimoacesso = CURRENT_TIMESTAMP WHERE usuario_id = $1`,
+    ];
+    let updated = false;
+    for (const sql of updateAttempts) {
       try {
-        await pool.query(
-          `INSERT INTO usuario_acesso_log (usuario_id, acesso_origem) VALUES ($1, $2)`,
-          [userId, origemNorm]
-        );
-      } catch (err) {
-        console.warn('⚠️ recordUserAccess log:', err.message);
+        const r = await pool.query(sql, [id]);
+        if (r.rowCount > 0) {
+          updated = true;
+          break;
+        }
+      } catch {
+        // tenta próximo
       }
+    }
+    if (!updated) {
+      console.warn('⚠️ recordUserAccess: não atualizou Usuario_UltimoAcesso para', id);
+    }
+
+    const insertAttempts = [
+      `INSERT INTO "Usuario_Acesso_Log" ("Usuario_Id", "Acesso_Origem") VALUES ($1, $2)`,
+      `INSERT INTO usuario_acesso_log (usuario_id, acesso_origem) VALUES ($1, $2)`,
+    ];
+    let inserted = false;
+    for (const sql of insertAttempts) {
+      try {
+        await pool.query(sql, [id, origemNorm]);
+        inserted = true;
+        break;
+      } catch {
+        // tenta próximo
+      }
+    }
+    if (!inserted) {
+      console.warn('⚠️ recordUserAccess: não inseriu log para', id);
     }
   },
 
@@ -1292,39 +1309,83 @@ const userRepository = {
       }
     }
 
-    try {
-      const ultimosRes = await pool.query(`
+    // Preferir log de acessos; fallback para coluna UltimoAcesso
+    const listQueries = [
+      `
+        SELECT
+          u."Usuario_Id" as id,
+          u."Usuario_Nome" as nome,
+          u."Usuario_Email" as email,
+          COALESCE(MAX(l."Acesso_Data"), u."Usuario_UltimoAcesso") as ultimo_acesso,
+          u."Usuario_Ativo" as ativo,
+          (
+            SELECT l2."Acesso_Origem"
+            FROM "Usuario_Acesso_Log" l2
+            WHERE l2."Usuario_Id" = u."Usuario_Id"
+            ORDER BY l2."Acesso_Data" DESC
+            LIMIT 1
+          ) as origem
+        FROM "Usuario" u
+        LEFT JOIN "Usuario_Acesso_Log" l ON l."Usuario_Id" = u."Usuario_Id"
+        WHERE u."Usuario_UltimoAcesso" IS NOT NULL
+           OR EXISTS (SELECT 1 FROM "Usuario_Acesso_Log" lx WHERE lx."Usuario_Id" = u."Usuario_Id")
+        GROUP BY u."Usuario_Id", u."Usuario_Nome", u."Usuario_Email", u."Usuario_Ativo", u."Usuario_UltimoAcesso"
+        ORDER BY ultimo_acesso DESC NULLS LAST
+        LIMIT 50
+      `,
+      `
+        SELECT
+          u.usuario_id as id,
+          u.usuario_nome as nome,
+          u.usuario_email as email,
+          COALESCE(MAX(l.acesso_data), u.usuario_ultimoacesso) as ultimo_acesso,
+          u.usuario_ativo as ativo,
+          (
+            SELECT l2.acesso_origem
+            FROM usuario_acesso_log l2
+            WHERE l2.usuario_id = u.usuario_id
+            ORDER BY l2.acesso_data DESC
+            LIMIT 1
+          ) as origem
+        FROM usuario u
+        LEFT JOIN usuario_acesso_log l ON l.usuario_id = u.usuario_id
+        WHERE u.usuario_ultimoacesso IS NOT NULL
+           OR EXISTS (SELECT 1 FROM usuario_acesso_log lx WHERE lx.usuario_id = u.usuario_id)
+        GROUP BY u.usuario_id, u.usuario_nome, u.usuario_email, u.usuario_ativo, u.usuario_ultimoacesso
+        ORDER BY ultimo_acesso DESC NULLS LAST
+        LIMIT 50
+      `,
+      `
         SELECT
           u."Usuario_Id" as id,
           u."Usuario_Nome" as nome,
           u."Usuario_Email" as email,
           u."Usuario_UltimoAcesso" as ultimo_acesso,
           u."Usuario_Ativo" as ativo,
-          u."Usuario_DtCriacao" as criado_em
+          NULL as origem
         FROM "Usuario" u
         WHERE u."Usuario_UltimoAcesso" IS NOT NULL
         ORDER BY u."Usuario_UltimoAcesso" DESC NULLS LAST
-        LIMIT 30
-      `);
-      stats.ultimosAcessos = ultimosRes.rows;
-    } catch {
+        LIMIT 50
+      `,
+    ];
+
+    for (const sql of listQueries) {
       try {
-        const ultimosRes = await pool.query(`
-          SELECT
-            u.usuario_id as id,
-            u.usuario_nome as nome,
-            u.usuario_email as email,
-            u.usuario_ultimoacesso as ultimo_acesso,
-            u.usuario_ativo as ativo,
-            u.usuario_dtcriacao as criado_em
-          FROM usuario u
-          WHERE u.usuario_ultimoacesso IS NOT NULL
-          ORDER BY u.usuario_ultimoacesso DESC NULLS LAST
-          LIMIT 30
-        `);
-        stats.ultimosAcessos = ultimosRes.rows;
-      } catch {
-        stats.ultimosAcessos = [];
+        const ultimosRes = await pool.query(sql);
+        if (ultimosRes.rows.length > 0 || sql === listQueries[listQueries.length - 1]) {
+          stats.ultimosAcessos = ultimosRes.rows.map((r) => ({
+            id: r.id,
+            nome: r.nome,
+            email: r.email,
+            ultimo_acesso: r.ultimo_acesso,
+            ativo: r.ativo,
+            origem: r.origem || null,
+          }));
+          break;
+        }
+      } catch (err) {
+        console.warn('⚠️ getAdminDashboardStats list:', err.message);
       }
     }
 

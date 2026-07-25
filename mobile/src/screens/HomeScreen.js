@@ -18,8 +18,6 @@ import { useMenu } from '../context/MenuContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { colors } from '../theme/theme';
-import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
-import GraficosPizza from '../components/GraficosPizza';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -268,11 +266,21 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Gráficos */}
-      <View style={styles.chartsContainer}>
-        <GraficoEvolucaoMensal />
-        <GraficosPizza />
-      </View>
+      {/* Atalho Dashboard */}
+      <TouchableOpacity
+        style={styles.dashboardCard}
+        onPress={() => navigation.navigate('Dashboard')}
+        activeOpacity={0.85}
+      >
+        <View style={styles.dashboardIcon}>
+          <Ionicons name="bar-chart-outline" size={26} color="#fff" />
+        </View>
+        <View style={styles.dashboardText}>
+          <Text style={styles.dashboardTitle}>Dashboard</Text>
+          <Text style={styles.dashboardSubtitle}>Gráficos de evolução e pizza</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
+      </TouchableOpacity>
 
       <View style={styles.actionsContainer}>
         <TouchableOpacity
@@ -483,6 +491,43 @@ const styles = StyleSheet.create({
   },
   chartsContainer: {
     padding: 16,
+  },
+  dashboardCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    gap: 12,
+  },
+  dashboardIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dashboardText: {
+    flex: 1,
+  },
+  dashboardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  dashboardSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   actionsContainer: {
     flexDirection: 'row',

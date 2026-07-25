@@ -161,11 +161,10 @@ export default function GraficosPizza() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={[styles.navButton, !dadosReceitas && styles.navButtonDisabled]}
-          onPress={() => setCurrentChart(0)}
-          disabled={!dadosReceitas}
+          style={styles.navButton}
+          onPress={() => setCurrentChart((prev) => (prev - 1 + 2) % 2)}
         >
-          <Ionicons name="chevron-back" size={20} color={dadosReceitas ? colors.primary : colors.border} />
+          <Ionicons name="chevron-back" size={20} color={colors.primary} />
         </TouchableOpacity>
         
         <Text style={styles.title}>
@@ -173,11 +172,10 @@ export default function GraficosPizza() {
         </Text>
         
         <TouchableOpacity
-          style={[styles.navButton, !dadosDespesas && styles.navButtonDisabled]}
-          onPress={() => setCurrentChart(1)}
-          disabled={!dadosDespesas}
+          style={styles.navButton}
+          onPress={() => setCurrentChart((prev) => (prev + 1) % 2)}
         >
-          <Ionicons name="chevron-forward" size={20} color={dadosDespesas ? colors.primary : colors.border} />
+          <Ionicons name="chevron-forward" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
 

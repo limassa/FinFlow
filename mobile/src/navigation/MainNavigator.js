@@ -22,6 +22,7 @@ import CalculadoraSalarioHoraScreen from '../screens/CalculadoraSalarioHoraScree
 import CategoriasScreen from '../screens/CategoriasScreen';
 import OrcamentoScreen from '../screens/OrcamentoScreen';
 import CartaoCreditoScreen from '../screens/CartaoCreditoScreen';
+import DashboardScreen from '../screens/DashboardScreen';
 import AppMenuModal from '../components/AppMenuModal';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import { MenuProvider, useMenu } from '../context/MenuContext';
@@ -36,6 +37,11 @@ function MainMenuStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Dashboard' }))}
+      />
       <Stack.Screen
         name="Calendario"
         component={CalendarioScreen}
