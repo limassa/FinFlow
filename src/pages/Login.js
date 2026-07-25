@@ -34,15 +34,14 @@ function Login() {
     try {
       console.log('Enviando requisição para:', API_ENDPOINTS.LOGIN);
       const response = await axios.post(API_ENDPOINTS.LOGIN, {
-        email,
+        email: String(email || '').trim().toLowerCase(),
         senha,
         origem: 'web'
       });
 
       console.log('Resposta recebida:', response.data);
-      
+
       if (response.data.success) {
-        // Salvar dados do usuário
         const userData = {
           id: response.data.user.id,
           nome: response.data.user.usuario_nome,
@@ -51,15 +50,14 @@ function Login() {
           tipo: response.data.user.usuario_tipo || 'user',
           isAdmin: !!response.data.user.isAdmin
         };
-        
-        console.log('Salvando dados do usuário:', userData);
+
         localStorage.setItem('user', JSON.stringify(userData));
-        
-        console.log('Redirecionando...');
-        navigate(userData.isAdmin && window.location.search.includes('redirect=/admin')
-          ? '/admin'
-          : '/layout/principal');
-        // Scroll para o topo após a navegação
+
+        navigate(
+          userData.isAdmin && window.location.search.includes('redirect=/admin')
+            ? '/admin'
+            : '/layout/principal'
+        );
         setTimeout(() => {
           window.scrollTo(0, 0);
         }, 100);
@@ -68,7 +66,12 @@ function Login() {
       }
     } catch (error) {
       console.error('Erro no login:', error);
-      alert('Erro ao fazer login. Tente novamente.');
+      const msg =
+        error.response?.data?.error ||
+        (error.code === 'ERR_NETWORK'
+          ? 'Não foi possível conectar ao servidor. Verifique sua internet.'
+          : 'Erro ao fazer login. Tente novamente.');
+      alert(msg);
     } finally {
       setLoading(false);
     }

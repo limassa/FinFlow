@@ -85,87 +85,87 @@ const userRepository = {
   },
 
   async loginUser(email, senha) {
-    // Padrão: PascalCase ("Usuario"). Fallback: minúsculas (usuario)
+    const emailNorm = String(email || '').trim().toLowerCase();
+    if (!emailNorm || !senha) return null;
+
+    // Não depende de Usuario_Tipo (pode não existir / estar migrando)
     let result;
     try {
       result = await pool.query(
-        'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha", "Usuario_Tipo" FROM "Usuario" WHERE "Usuario_Email" = $1 AND "Usuario_Ativo" = TRUE',
-        [email]
+        'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha" FROM "Usuario" WHERE LOWER("Usuario_Email") = $1 AND "Usuario_Ativo" = TRUE',
+        [emailNorm]
       );
       if (result.rows.length === 0) {
         result = await pool.query(
-          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha, usuario_tipo FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
-          [email]
+          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE LOWER(usuario_email) = $1 AND usuario_ativo = TRUE',
+          [emailNorm]
         );
       }
     } catch (err) {
-      // Coluna Tipo pode não existir ainda — tentar sem ela
       try {
         result = await pool.query(
-          'SELECT "Usuario_Id", "Usuario_Email", "Usuario_Nome", "Usuario_Senha" FROM "Usuario" WHERE "Usuario_Email" = $1 AND "Usuario_Ativo" = TRUE',
-          [email]
+          'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE LOWER(usuario_email) = $1 AND usuario_ativo = TRUE',
+          [emailNorm]
         );
-        if (result.rows.length === 0) {
-          result = await pool.query(
-            'SELECT usuario_id, usuario_email, usuario_nome, usuario_senha FROM usuario WHERE usuario_email = $1 AND usuario_ativo = TRUE',
-            [email]
-          );
-        }
       } catch (err2) {
         console.error('Erro ao buscar usuário:', err2.message);
         return null;
       }
     }
-    
-    if (result.rows.length === 0) {
-      return null; // Usuário não encontrado
+
+    if (!result || result.rows.length === 0) {
+      return null;
     }
-    
+
     const user = result.rows[0];
-    console.log('📊 Usuário encontrado na query:', Object.keys(user));
-    
-    // Normalizar campos (pode vir em maiúsculas ou minúsculas)
     const usuarioSenha = user.usuario_senha || user.Usuario_Senha || user.USUARIO_SENHA;
     const usuarioId = user.usuario_id || user.Usuario_Id || user.USUARIO_ID;
     const usuarioEmail = user.usuario_email || user.Usuario_Email || user.USUARIO_EMAIL;
     const usuarioNome = user.usuario_nome || user.Usuario_Nome || user.USUARIO_NOME;
-    const usuarioTipo = (user.usuario_tipo || user.Usuario_Tipo || 'user').toString().toLowerCase();
-    
-    console.log('📊 Campos normalizados:', {
-      temSenha: !!usuarioSenha,
-      temId: !!usuarioId,
-      temEmail: !!usuarioEmail,
-      temNome: !!usuarioNome
-    });
-    
+
     if (!usuarioSenha) {
       console.error('❌ Senha não encontrada no resultado da query');
-      console.error('   Campos disponíveis:', Object.keys(user));
-      console.error('   Valores:', user);
       return null;
     }
-    
-    // Verificar se a senha está criptografada (senhas antigas podem não estar)
+
     let senhaValida = false;
-    
     if (usuarioSenha.startsWith('$2b$') || usuarioSenha.startsWith('$2a$')) {
-      // Senha está criptografada com bcrypt
       senhaValida = await bcrypt.compare(senha, usuarioSenha);
     } else {
-      // Senha antiga (não criptografada) - comparar diretamente
-      senhaValida = (senha === usuarioSenha);
+      senhaValida = senha === usuarioSenha;
     }
-    
+
     if (!senhaValida) {
-      return null; // Senha incorreta
+      return null;
     }
-    
-    // Retornar usuário normalizado sem a senha
+
+    // Tipo é opcional — falha aqui não pode impedir login
+    let usuarioTipo = 'user';
+    try {
+      const tipoRes = await pool.query(
+        'SELECT "Usuario_Tipo" as tipo FROM "Usuario" WHERE "Usuario_Id" = $1',
+        [usuarioId]
+      );
+      const t = tipoRes.rows[0]?.tipo;
+      if (t) usuarioTipo = String(t).toLowerCase();
+    } catch {
+      try {
+        const tipoRes = await pool.query(
+          'SELECT usuario_tipo as tipo FROM usuario WHERE usuario_id = $1',
+          [usuarioId]
+        );
+        const t = tipoRes.rows[0]?.tipo;
+        if (t) usuarioTipo = String(t).toLowerCase();
+      } catch {
+        // ignore
+      }
+    }
+
     return {
       usuario_id: usuarioId,
       usuario_email: usuarioEmail,
       usuario_nome: usuarioNome,
-      usuario_tipo: usuarioTipo
+      usuario_tipo: usuarioTipo,
     };
   },
 
@@ -1084,69 +1084,82 @@ const userRepository = {
     return parseFloat(result.rows[0].saldo_total || 0);
   },
 
+  _adminSchemaReady: false,
+  _adminSchemaPromise: null,
+
   /**
-   * Garante colunas/tabelas usadas pelo painel admin (idempotente).
+   * Garante colunas/tabelas usadas pelo painel admin (idempotente, 1x por processo).
    */
   async ensureAdminSchema() {
-    const statements = [
-      `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "Usuario_Tipo" VARCHAR(20) DEFAULT 'user'`,
-      `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "Usuario_UltimoAcesso" TIMESTAMP`,
-      `CREATE TABLE IF NOT EXISTS "Usuario_Acesso_Log" (
-        "Acesso_Id" SERIAL PRIMARY KEY,
-        "Usuario_Id" INTEGER NOT NULL,
-        "Acesso_Data" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        "Acesso_Origem" VARCHAR(20) DEFAULT 'web'
-      )`,
-      `CREATE INDEX IF NOT EXISTS idx_usuario_acesso_log_data ON "Usuario_Acesso_Log" ("Acesso_Data")`,
-      `CREATE INDEX IF NOT EXISTS idx_usuario_acesso_log_user ON "Usuario_Acesso_Log" ("Usuario_Id")`,
-    ];
+    if (this._adminSchemaReady) return;
+    if (this._adminSchemaPromise) return this._adminSchemaPromise;
 
-    for (const sql of statements) {
-      try {
-        await pool.query(sql);
-      } catch (err) {
-        // Fallback minúsculas (alguns ambientes)
+    this._adminSchemaPromise = (async () => {
+      const statements = [
+        `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "Usuario_Tipo" VARCHAR(20) DEFAULT 'user'`,
+        `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "Usuario_UltimoAcesso" TIMESTAMP`,
+        `CREATE TABLE IF NOT EXISTS "Usuario_Acesso_Log" (
+          "Acesso_Id" SERIAL PRIMARY KEY,
+          "Usuario_Id" INTEGER NOT NULL,
+          "Acesso_Data" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "Acesso_Origem" VARCHAR(20) DEFAULT 'web'
+        )`,
+        `CREATE INDEX IF NOT EXISTS idx_usuario_acesso_log_data ON "Usuario_Acesso_Log" ("Acesso_Data")`,
+        `CREATE INDEX IF NOT EXISTS idx_usuario_acesso_log_user ON "Usuario_Acesso_Log" ("Usuario_Id")`,
+      ];
+
+      for (const sql of statements) {
         try {
-          const lower = sql
-            .replace(/"Usuario"/g, 'usuario')
-            .replace(/"Usuario_Tipo"/g, 'usuario_tipo')
-            .replace(/"Usuario_UltimoAcesso"/g, 'usuario_ultimoacesso')
-            .replace(/"Usuario_Acesso_Log"/g, 'usuario_acesso_log')
-            .replace(/"Acesso_Id"/g, 'acesso_id')
-            .replace(/"Usuario_Id"/g, 'usuario_id')
-            .replace(/"Acesso_Data"/g, 'acesso_data')
-            .replace(/"Acesso_Origem"/g, 'acesso_origem')
-            .replace(/idx_usuario_acesso_log_data/g, 'idx_usuario_acesso_log_data')
-            .replace(/idx_usuario_acesso_log_user/g, 'idx_usuario_acesso_log_user');
-          await pool.query(lower);
-        } catch (err2) {
-          console.warn('⚠️ ensureAdminSchema:', err2.message);
+          await pool.query(sql);
+        } catch (err) {
+          try {
+            const lower = sql
+              .replace(/"Usuario"/g, 'usuario')
+              .replace(/"Usuario_Tipo"/g, 'usuario_tipo')
+              .replace(/"Usuario_UltimoAcesso"/g, 'usuario_ultimoacesso')
+              .replace(/"Usuario_Acesso_Log"/g, 'usuario_acesso_log')
+              .replace(/"Acesso_Id"/g, 'acesso_id')
+              .replace(/"Usuario_Id"/g, 'usuario_id')
+              .replace(/"Acesso_Data"/g, 'acesso_data')
+              .replace(/"Acesso_Origem"/g, 'acesso_origem');
+            await pool.query(lower);
+          } catch (err2) {
+            console.warn('⚠️ ensureAdminSchema:', err2.message);
+          }
         }
       }
-    }
 
-    // Promove e-mails listados em ADMIN_EMAILS para tipo admin
-    const emails = String(process.env.ADMIN_EMAILS || '')
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
+      const emails = String(process.env.ADMIN_EMAILS || '')
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
 
-    for (const email of emails) {
-      try {
-        await pool.query(
-          `UPDATE "Usuario" SET "Usuario_Tipo" = 'admin' WHERE LOWER("Usuario_Email") = $1`,
-          [email]
-        );
-      } catch {
+      for (const email of emails) {
         try {
           await pool.query(
-            `UPDATE usuario SET usuario_tipo = 'admin' WHERE LOWER(usuario_email) = $1`,
+            `UPDATE "Usuario" SET "Usuario_Tipo" = 'admin' WHERE LOWER("Usuario_Email") = $1`,
             [email]
           );
         } catch {
-          // ignore
+          try {
+            await pool.query(
+              `UPDATE usuario SET usuario_tipo = 'admin' WHERE LOWER(usuario_email) = $1`,
+              [email]
+            );
+          } catch {
+            // ignore
+          }
         }
       }
+
+      this._adminSchemaReady = true;
+    })();
+
+    try {
+      await this._adminSchemaPromise;
+    } catch (err) {
+      this._adminSchemaPromise = null;
+      throw err;
     }
   },
 

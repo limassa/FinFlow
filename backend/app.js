@@ -417,28 +417,28 @@ app.post('/api/login', async (req, res) => {
       const userEmail = user.usuario_email || user.Usuario_Email || user.email;
       const userTipo = (user.usuario_tipo || user.Usuario_Tipo || 'user').toString().toLowerCase();
 
-      // Registrar acesso (não bloqueia login se falhar)
-      try {
-        await userRepository.recordUserAccess(userId, origem || 'web');
-      } catch (accessErr) {
-        console.warn('⚠️ Falha ao registrar acesso:', accessErr.message);
-      }
+      // Registrar acesso em background — NÃO pode atrasar/falhar o login
+      setImmediate(() => {
+        userRepository.recordUserAccess(userId, origem || 'web').catch((accessErr) => {
+          console.warn('⚠️ Falha ao registrar acesso:', accessErr.message);
+        });
+      });
 
       const allowlist = userRepository.getAdminEmailsAllowlist();
       const isAdmin =
         userTipo === 'admin' ||
         allowlist.includes(String(userEmail || '').toLowerCase());
-      
+
       const userResponse = {
         success: true,
         user: {
           id: userId,
-          usuario_nome: userNome, 
+          usuario_nome: userNome,
           usuario_email: userEmail,
           usuario_tipo: isAdmin ? 'admin' : userTipo,
-          isAdmin
+          isAdmin,
         },
-        token: 'dummy-token' // Token temporário
+        token: 'dummy-token',
       };
       console.log('✅ Login bem-sucedido:', { id: userId, email: userEmail, isAdmin });
       res.json(userResponse);
