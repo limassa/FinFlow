@@ -4,6 +4,7 @@ import { FaChartLine, FaChartPie, FaHome } from 'react-icons/fa';
 import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
 import GraficosPizza from '../components/GraficosPizza';
 import { API_ENDPOINTS } from '../config/api';
+import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 
 function Dashboard() {
@@ -17,8 +18,8 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (!userData) {
+    const userData = getUsuarioLogado();
+    if (!userData?.id) {
       navigate('/');
       return;
     }
