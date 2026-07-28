@@ -30,12 +30,17 @@ import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
+import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
+import { useOffline } from '../context/OfflineContext';
+import { useTheme } from '../context/ThemeContext';
 
 const tiposReceitaPadrao = ['Salário', 'Venda', 'Presente', 'Investimento', 'Aluguel', 'Outros'];
 
 export default function ReceitaScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
+  const { isOnline, saveCache, loadCache } = useOffline();
   const userId = getUserId();
   const [receitas, setReceitas] = useState([]);
   const [contas, setContas] = useState([]);
@@ -69,6 +74,7 @@ export default function ReceitaScreen() {
   const [exibirAgrupado, setExibirAgrupado] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(new Set());
   const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+  const [coresCustomizadas, setCoresCustomizadas] = useState({});
 
   const tiposReceita = React.useMemo(() => {
     const padrao = [...tiposReceitaPadrao];
@@ -93,13 +99,22 @@ export default function ReceitaScreen() {
         conta_id: receita.conta_id || receita.Conta_id || receita.Conta_Id || receita.contaId || null
       }));
       setReceitas(receitasNormalizadas);
+      await saveCache(`receitas_${userId}_${mesAtual}`, receitasNormalizadas);
     } catch (err) {
       console.error('Erro ao buscar receitas:', err);
-      Alert.alert('Erro', 'Erro ao carregar receitas');
+      const cached = await loadCache(`receitas_${userId}_${mesAtual}`);
+      if (cached) {
+        setReceitas(cached);
+        if (!isOnline) {
+          Alert.alert('Modo offline', 'Exibindo receitas salvas no aparelho.');
+        }
+      } else {
+        Alert.alert('Erro', 'Erro ao carregar receitas');
+      }
     } finally {
       setLoading(false);
     }
-  }, [userId, mesAtual]);
+  }, [userId, mesAtual, saveCache, loadCache, isOnline]);
 
   const fetchReceitasTodas = useCallback(async () => {
     if (!userId) return;
@@ -140,8 +155,21 @@ export default function ReceitaScreen() {
       const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=receita`);
       const nomes = (res.data || []).map(c => c.categoria_nome || c.categoria_Nome).filter(Boolean);
       setCategoriasCustomizadas(nomes);
+      const cores = {};
+      (res.data || []).forEach((c) => {
+        const nome = c.categoria_nome || c.categoria_Nome;
+        const cor = c.categoria_cor || c.categoria_Cor;
+        if (nome && cor) cores[nome] = cor;
+      });
+      setCoresCustomizadas(cores);
+      await saveCache(`categorias_receita_${userId}`, { nomes, cores });
     } catch (err) {
       console.log('Erro ao buscar categorias:', err);
+      const cached = await loadCache(`categorias_receita_${userId}`);
+      if (cached?.nomes) {
+        setCategoriasCustomizadas(cached.nomes);
+        setCoresCustomizadas(cached.cores || {});
+      }
     }
   };
 
@@ -595,7 +623,12 @@ export default function ReceitaScreen() {
               <Ionicons name="calendar" size={14} /> {formatarData(receita.receita_data)}
             </Text>
             <Text style={styles.receitaDetail}>
-              <Ionicons name="pricetag" size={14} /> {receita.receita_tipo}
+              <Ionicons
+                name={getIconNameForTipo(receita.receita_tipo, 'receita')}
+                size={14}
+                color={getColorForTipo(receita.receita_tipo, 'receita', coresCustomizadas)}
+              />{' '}
+              {receita.receita_tipo}
             </Text>
             {conta && (
               <View style={styles.receitaDetail}>
@@ -667,7 +700,7 @@ export default function ReceitaScreen() {
   }, [navigation, handleAddPress]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.statsContainer}>
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -822,6 +855,12 @@ export default function ReceitaScreen() {
                       <View style={styles.groupHeader}>
                         <TouchableOpacity style={styles.groupHeaderLeft} onPress={toggleTipo} activeOpacity={0.7}>
                           <Ionicons name={tipoColapsado ? 'chevron-forward' : 'chevron-down'} size={18} color={colors.text} />
+                          <Ionicons
+                            name={getIconNameForTipo(tipoGrupo, 'receita')}
+                            size={18}
+                            color={getColorForTipo(tipoGrupo, 'receita', coresCustomizadas)}
+                            style={{ marginRight: 6 }}
+                          />
                           <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
                           <Text style={styles.groupCount}>({totalTipo})</Text>
                         </TouchableOpacity>
@@ -1018,6 +1057,7 @@ export default function ReceitaScreen() {
                 onChange={setTipo}
                 categoria="receita"
                 placeholder="Selecione a categoria"
+                customColors={coresCustomizadas}
               />
 
               <AccountSelector

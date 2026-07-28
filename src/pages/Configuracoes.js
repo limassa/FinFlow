@@ -27,13 +27,30 @@ function Configuracoes() {
     confirmarSenha: ''
   });
 
-  // Configurações de lembretes
+  // Configurações de lembretes / notificações
   const [lembretesConfig, setLembretesConfig] = useState({
     lembretesAtivos: true,
-    lembretesEmail: true,
     lembretesDiasAntes: 5,
     lembretesHorario: '18:15'
   });
+
+  const [notifPrefs, setNotifPrefs] = useState({
+    contas_a_vencer: true,
+    contas_vencidas: true,
+    metas_financeiras: true,
+    resumo_mensal: true,
+    resumo_semanal: true,
+    dicas_economia: true,
+  });
+
+  const NOTIF_PREF_OPTIONS = [
+    { key: 'contas_a_vencer', label: 'Contas a vencer' },
+    { key: 'contas_vencidas', label: 'Contas vencidas' },
+    { key: 'metas_financeiras', label: 'Metas Financeiras' },
+    { key: 'resumo_mensal', label: 'Resumo Mensal' },
+    { key: 'resumo_semanal', label: 'Resumo Semanal' },
+    { key: 'dicas_economia', label: 'Dicas de Economia' },
+  ];
 
 
 
@@ -59,10 +76,11 @@ function Configuracoes() {
       setLoading(true);
       
       // Buscar configurações do usuário e foto
-      const [lembretesRes, perfilRes, fotoRes] = await Promise.all([
+      const [lembretesRes, perfilRes, fotoRes, notifPrefsRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.USER_LEMBRETES}?userId=${userId}`),
         fetch(`${API_ENDPOINTS.USER_PROFILE}?userId=${userId}`),
-        fetch(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`)
+        fetch(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`),
+        fetch(`${API_ENDPOINTS.USER_NOTIFICACOES_PREFS}?userId=${userId}`)
       ]);
 
       if (lembretesRes.ok) {
@@ -70,9 +88,14 @@ function Configuracoes() {
         setLembretesConfig(prev => ({
           ...prev,
           lembretesAtivos: lembretes.lembretesAtivos,
-          lembretesEmail: lembretes.lembretesEmail,
-          lembretesDiasAntes: lembretes.lembretesDiasAntes
+          lembretesDiasAntes: lembretes.lembretesDiasAntes,
+          lembretesHorario: lembretes.lembretesHorario || prev.lembretesHorario
         }));
+      }
+
+      if (notifPrefsRes.ok) {
+        const data = await notifPrefsRes.json();
+        if (data.prefs) setNotifPrefs(prev => ({ ...prev, ...data.prefs }));
       }
 
       if (perfilRes.ok) {
@@ -155,19 +178,29 @@ function Configuracoes() {
 
   const handleSalvarLembretes = async () => {
     try {
-      const response = await fetch(`${API_ENDPOINTS.USER_LEMBRETES}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          ...lembretesConfig
+      const [lembretesResponse, prefsResponse] = await Promise.all([
+        fetch(`${API_ENDPOINTS.USER_LEMBRETES}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            lembretesAtivos: lembretesConfig.lembretesAtivos,
+            lembretesDiasAntes: lembretesConfig.lembretesDiasAntes,
+            lembretesHorario: lembretesConfig.lembretesHorario,
+          }),
         }),
-      });
+        fetch(`${API_ENDPOINTS.USER_NOTIFICACOES_PREFS}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            prefs: notifPrefs,
+          }),
+        }),
+      ]);
 
-      if (response.ok) {
-        alert('Configurações de lembretes salvas!');
+      if (lembretesResponse.ok && prefsResponse.ok) {
+        alert('Configurações de notificações salvas!');
       } else {
         alert('Erro ao salvar configurações');
       }
@@ -293,7 +326,7 @@ function Configuracoes() {
             className={`tab ${activeTab === 'lembretes' ? 'active' : ''}`}
             onClick={() => setActiveTab('lembretes')}
           >
-            <FaBell /> Lembretes
+            <FaBell /> Notificações
           </button>
           {/*
           <button 
@@ -432,7 +465,7 @@ function Configuracoes() {
           {/* Tab Lembretes */}
           {activeTab === 'lembretes' && (
             <div className="config-section">
-              <h3>Configurações de Lembretes</h3>
+              <h3>Configurações de Notificações</h3>
               <div className="config-form">
                 <div className="form-group">
                   <label>
@@ -446,21 +479,29 @@ function Configuracoes() {
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={lembretesConfig.lembretesEmail}
-                      onChange={(e) => setLembretesConfig({...lembretesConfig, lembretesEmail: e.target.checked})}
-                    />
-                    Receber lembretes por email
-                  </label>
+                  <label>Tipos de notificação</label>
+                  <p style={{ margin: '4px 0 10px', fontSize: 13, color: '#64748b' }}>
+                    Escolha o que deseja receber na central de notificações.
+                  </p>
+                  {NOTIF_PREF_OPTIONS.map((opt) => (
+                    <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={!!notifPrefs[opt.key]}
+                        onChange={(e) =>
+                          setNotifPrefs((prev) => ({ ...prev, [opt.key]: e.target.checked }))
+                        }
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
                 </div>
 
                 <div className="form-group">
                   <label>Dias antes do vencimento:</label>
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     max="30"
                     value={lembretesConfig.lembretesDiasAntes}
                     onChange={(e) => setLembretesConfig({...lembretesConfig, lembretesDiasAntes: parseInt(e.target.value)})}

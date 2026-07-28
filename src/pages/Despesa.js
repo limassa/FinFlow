@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight, FaChevronLeft, FaCreditCard, FaCalendarAlt } from 'react-icons/fa';
-import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
+import { getIconForTipo, getIconComponentByName, getColorForTipo } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
@@ -54,6 +54,7 @@ function Despesa() {
   // Estado para categorias customizadas
   const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
   const [iconesCustomizados, setIconesCustomizados] = useState({});
+  const [coresCustomizadas, setCoresCustomizadas] = useState({});
   
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -153,14 +154,19 @@ function Despesa() {
       const nomes = res.data.map(cat => cat.categoria_nome);
       setCategoriasCustomizadas(nomes);
       
-      // Criar mapa de ícones customizados
+      // Criar mapa de ícones e cores customizados
       const icones = {};
+      const cores = {};
       res.data.forEach(cat => {
         if (cat.categoria_icone) {
           icones[cat.categoria_nome] = cat.categoria_icone;
         }
+        if (cat.categoria_cor) {
+          cores[cat.categoria_nome] = cat.categoria_cor;
+        }
       });
       setIconesCustomizados(icones);
+      setCoresCustomizadas(cores);
     } catch (err) {
       console.log('Erro ao buscar categorias customizadas:', err);
     }
@@ -689,6 +695,8 @@ function Despesa() {
     return getIconForTipo(tipo, 'despesa');
   };
 
+  const getCor = (tipo) => getColorForTipo(tipo, 'despesa', coresCustomizadas);
+
   const handleSalvarMeta = async () => {
     if (!metaCategoria || !metaValor) {
       alert('Preencha todos os campos');
@@ -914,6 +922,7 @@ function Despesa() {
                     placeholder="Selecione"
                     required
                     customIcons={iconesCustomizados}
+                    customColors={coresCustomizadas}
                   />
                 </div>
                 <button
@@ -1036,6 +1045,7 @@ function Despesa() {
                   categoria="despesa"
                   placeholder="Selecione a categoria"
                   customIcons={iconesCustomizados}
+                  customColors={coresCustomizadas}
                 />
                 <input
                   type="number"
@@ -1078,7 +1088,7 @@ function Despesa() {
                     <div key={meta.meta_id} className={`metas-grid-row ${status}`}>
                       <div>{(() => {
                     const Icon = getIcone(meta.categoria);
-                    return <><Icon className="category-icon" /> {meta.categoria}</>;
+                    return <><Icon className="category-icon" style={{ color: getCor(meta.categoria) }} /> {meta.categoria}</>;
                   })()}</div>
                       <div>{metaPercentual.toFixed(1)}%</div>
                       <div>{formatarValor(gastoAtual)} ({percentualAtual.toFixed(1)}%)</div>
@@ -1155,7 +1165,7 @@ function Despesa() {
                             {compra.compra_categoria ? (
                               <>{(() => {
                                 const Icon = getIcone(compra.compra_categoria);
-                                return <Icon className="category-icon" />;
+                                return <Icon className="category-icon" style={{ color: getCor(compra.compra_categoria) }} />;
                               })()} {compra.compra_categoria}</>
                             ) : '-'}
                           </span>
@@ -1334,7 +1344,7 @@ function Despesa() {
                   >
                     <span className="grid-group-header-title">
                       {tipoColapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
-                      <IconTipo className="category-icon" /> {tipoGrupo}
+                      <IconTipo className="category-icon" style={{ color: getCor(tipoGrupo) }} /> {tipoGrupo}
                       <span className="group-count">({totalTipo})</span>
                     </span>
                   </div>
@@ -1402,7 +1412,7 @@ function Despesa() {
                       <div className="grid-cell grid-cell-tipo">
                         {(() => {
                           const Icon = getIcone(despesa.despesa_tipo);
-                          return <><Icon className="category-icon" /> {despesa.despesa_tipo}</>;
+                          return <><Icon className="category-icon" style={{ color: getCor(despesa.despesa_tipo) }} /> {despesa.despesa_tipo}</>;
                         })()}
                       </div>
                       <div className="grid-cell grid-cell-conta">
@@ -1473,7 +1483,7 @@ function Despesa() {
                   <div className="grid-cell grid-cell-tipo">
                     {(() => {
                       const Icon = getIcone(despesa.despesa_tipo);
-                      return <><Icon className="category-icon" /> {despesa.despesa_tipo}</>;
+                      return <><Icon className="category-icon" style={{ color: getCor(despesa.despesa_tipo) }} /> {despesa.despesa_tipo}</>;
                     })()}
                   </div>
                   <div className="grid-cell grid-cell-conta">

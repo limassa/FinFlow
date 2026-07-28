@@ -1,11 +1,9 @@
 import React from 'react';
 import '../App.css';
-import { getUsuarioLogado } from '../functions/auth';
-import UserMenu from './UserMenu'; 
+import UserMenu from './UserMenu';
+import NotificationCenter from './NotificationCenter';
 
 function Header() {
-  const usuario = getUsuarioLogado();
-
   return (
     <header className="app-header">
       <div className="header-content">
@@ -35,6 +33,7 @@ function Header() {
           </div>
         </div>
         <div className="user-info">
+          <NotificationCenter />
           <UserMenu />
         </div>
       </div>

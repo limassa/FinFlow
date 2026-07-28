@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/theme';
-import { getIconNameForTipo } from '../utils/categoryIcons';
+import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
 
 /**
  * Select com ícones nas opções (categorias de receita/despesa/conta).
@@ -11,6 +11,7 @@ import { getIconNameForTipo } from '../utils/categoryIcons';
  * @param {function} onChange - (value) => void
  * @param {string} categoria - 'conta' | 'despesa' | 'receita'
  * @param {string} placeholder - Texto quando nada selecionado
+ * @param {Object} customColors - Mapa de cores customizadas
  */
 export default function SelectWithIcons({
   value,
@@ -18,6 +19,7 @@ export default function SelectWithIcons({
   onChange,
   categoria = 'despesa',
   placeholder = 'Selecione',
+  customColors = {},
 }) {
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -28,6 +30,7 @@ export default function SelectWithIcons({
       : selectedOption
     : placeholder;
   const selectedIconName = value ? getIconNameForTipo(value, categoria) : null;
+  const selectedColor = value ? getColorForTipo(value, categoria, customColors) : colors.textSecondary;
 
   const handleSelect = (opt) => {
     const optValue = typeof opt === 'object' ? opt.value : opt;
@@ -46,7 +49,7 @@ export default function SelectWithIcons({
             <Ionicons
               name={selectedIconName}
               size={20}
-              color={value ? colors.text : colors.textSecondary}
+              color={value ? selectedColor : colors.textSecondary}
               style={styles.inputIcon}
             />
           )}
@@ -77,6 +80,7 @@ export default function SelectWithIcons({
                 const optLabel = typeof option === 'object' ? option.label : option;
                 const isSelected = optValue === value;
                 const iconName = getIconNameForTipo(optValue, categoria);
+                const iconColor = getColorForTipo(optValue, categoria, customColors);
 
                 return (
                   <TouchableOpacity
@@ -88,7 +92,7 @@ export default function SelectWithIcons({
                       <Ionicons
                         name={iconName}
                         size={20}
-                        color={isSelected ? colors.primary : colors.textSecondary}
+                        color={iconColor}
                         style={styles.optionIcon}
                       />
                       <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>

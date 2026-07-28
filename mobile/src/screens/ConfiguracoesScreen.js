@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useOffline } from '../context/OfflineContext';
 import { API_ENDPOINTS } from '../config/api';
 import { colors } from '../theme/theme';
 import { formatarTelefone, removerFormatacaoTelefone } from '../utils/formatters';
@@ -26,6 +28,8 @@ import { syncDespesasNaoPagasNotifications } from '../services/despesasNotificat
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
   const { user, logout, getUserId } = useAuth();
+  const { preference, setPreference, colors: themeColors, isDark } = useTheme();
+  const { enabled: offlineEnabled, setEnabled: setOfflineEnabled, lastSyncedAt, clearCache, isOnline } = useOffline();
   const userId = getUserId();
   
   useLayoutEffect(() => {
@@ -51,11 +55,27 @@ export default function ConfiguracoesScreen() {
   // Configurações de lembretes
   const [lembretesConfig, setLembretesConfig] = useState({
     lembretesAtivos: true,
-    lembretesEmail: true,
-    lembretesWhatsApp: false, // UI oculta por enquanto; backend mantém suporte
     lembretesDiasAntes: 0,
     lembretesHorario: '18:15'
   });
+
+  const [notifPrefs, setNotifPrefs] = useState({
+    contas_a_vencer: true,
+    contas_vencidas: true,
+    metas_financeiras: true,
+    resumo_mensal: true,
+    resumo_semanal: true,
+    dicas_economia: true,
+  });
+
+  const NOTIF_PREF_OPTIONS = [
+    { key: 'contas_a_vencer', label: 'Contas a vencer' },
+    { key: 'contas_vencidas', label: 'Contas vencidas' },
+    { key: 'metas_financeiras', label: 'Metas Financeiras' },
+    { key: 'resumo_mensal', label: 'Resumo Mensal' },
+    { key: 'resumo_semanal', label: 'Resumo Semanal' },
+    { key: 'dicas_economia', label: 'Dicas de Economia' },
+  ];
 
   // Versão do sistema
   const [versao, setVersao] = useState(null);
@@ -80,10 +100,11 @@ export default function ConfiguracoesScreen() {
   const carregarConfiguracoes = async () => {
     setLoading(true);
     try {
-      const [lembretesRes, perfilRes, versaoRes] = await Promise.all([
+      const [lembretesRes, perfilRes, versaoRes, notifPrefsRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.USER_LEMBRETES}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.USER_PROFILE}?userId=${userId}`),
-        axios.get(API_ENDPOINTS.VERSAO_MOBILE).catch(() => ({ data: { success: false } }))
+        axios.get(API_ENDPOINTS.VERSAO_MOBILE).catch(() => ({ data: { success: false } })),
+        axios.get(`${API_ENDPOINTS.USER_NOTIFICACOES_PREFS}?userId=${userId}`).catch(() => ({ data: null })),
       ]);
       
       // Carregar versão mobile
@@ -102,8 +123,6 @@ export default function ConfiguracoesScreen() {
         setLembretesConfig(prev => ({
           ...prev,
           lembretesAtivos: lembretesRes.data.lembretesAtivos ?? true,
-          lembretesEmail: lembretesRes.data.lembretesEmail ?? true,
-          lembretesWhatsApp: false,
           lembretesDiasAntes:
             diasCarregados === 0 || diasCarregados === '0'
               ? 0
@@ -112,6 +131,10 @@ export default function ConfiguracoesScreen() {
                 : 0,
           lembretesHorario: lembretesRes.data.lembretesHorario || '18:15'
         }));
+      }
+
+      if (notifPrefsRes.data?.prefs) {
+        setNotifPrefs(prev => ({ ...prev, ...notifPrefsRes.data.prefs }));
       }
 
       if (perfilRes.data) {
@@ -279,10 +302,11 @@ export default function ConfiguracoesScreen() {
       return;
     }
 
-    // Garantir que dias seja um número válido (WhatsApp oculto no app por enquanto)
+    // Garantir que dias seja um número válido
     const configToSave = {
-      ...lembretesConfig,
+      lembretesAtivos: lembretesConfig.lembretesAtivos,
       lembretesDiasAntes: dias,
+      lembretesHorario: lembretesConfig.lembretesHorario,
       lembretesWhatsApp: false,
     };
 
@@ -290,17 +314,21 @@ export default function ConfiguracoesScreen() {
     try {
       console.log('📤 Enviando configurações de lembretes:', { userId, ...configToSave });
       
-      const response = await axios.put(API_ENDPOINTS.USER_LEMBRETES, {
-        userId,
-        ...configToSave
-      });
+      await Promise.all([
+        axios.put(API_ENDPOINTS.USER_LEMBRETES, {
+          userId,
+          ...configToSave
+        }),
+        axios.put(API_ENDPOINTS.USER_NOTIFICACOES_PREFS, {
+          userId,
+          prefs: notifPrefs,
+        }),
+      ]);
 
-      if (response.data) {
-        console.log('✅ Configurações salvas:', response.data);
-        await syncDespesasNaoPagasNotifications(userId);
-        Alert.alert('Sucesso', 'Configurações de lembretes salvas!');
-        await carregarConfiguracoes();
-      }
+      console.log('✅ Configurações salvas');
+      await syncDespesasNaoPagasNotifications(userId);
+      Alert.alert('Sucesso', 'Configurações de notificações salvas!');
+      await carregarConfiguracoes();
     } catch (error) {
       console.error('❌ Erro ao salvar lembretes:', error);
       console.error('❌ Detalhes do erro:', {
@@ -371,10 +399,10 @@ export default function ConfiguracoesScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <ScrollView style={styles.content}>
         {/* Tabs de Navegação */}
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { backgroundColor: themeColors.surface }]}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'perfil' && styles.tabActive]}
             onPress={() => setActiveTab('perfil')}
@@ -399,7 +427,7 @@ export default function ConfiguracoesScreen() {
               color={activeTab === 'lembretes' ? '#fff' : colors.textSecondary} 
             />
             <Text style={[styles.tabText, activeTab === 'lembretes' && styles.tabTextActive]}>
-              Lembretes
+              Notificações
             </Text>
           </TouchableOpacity>
 
@@ -423,6 +451,43 @@ export default function ConfiguracoesScreen() {
           {/* Tab Perfil */}
           {activeTab === 'perfil' && (
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Aparência</Text>
+              <Text style={styles.helperText}>
+                Use o tema do celular ou escolha claro/escuro manualmente.
+              </Text>
+              <View style={styles.themeRow}>
+                {[
+                  { key: 'system', label: 'Sistema', icon: 'phone-portrait-outline' },
+                  { key: 'light', label: 'Claro', icon: 'sunny-outline' },
+                  { key: 'dark', label: 'Escuro', icon: 'moon-outline' },
+                ].map((opt) => {
+                  const active = preference === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      style={[
+                        styles.themeOption,
+                        active && { backgroundColor: themeColors.primary, borderColor: themeColors.primary },
+                      ]}
+                      onPress={() => setPreference(opt.key)}
+                    >
+                      <Ionicons
+                        name={opt.icon}
+                        size={18}
+                        color={active ? '#fff' : themeColors.text}
+                      />
+                      <Text style={[styles.themeOptionText, active && { color: '#fff' }]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={[styles.helperText, { marginBottom: 20 }]}>
+                Atual: {isDark ? 'escuro' : 'claro'}
+                {preference === 'system' ? ' (seguindo o celular)' : ''}
+              </Text>
+
               <Text style={styles.sectionTitle}>Informações do Perfil</Text>
               
               <View style={styles.fotoContainer}>
@@ -544,7 +609,7 @@ export default function ConfiguracoesScreen() {
           {/* Tab Lembretes */}
           {activeTab === 'lembretes' && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Configurações de Lembretes</Text>
+              <Text style={styles.sectionTitle}>Configurações de Notificações</Text>
               
               <View style={styles.switchGroup}>
                 <View style={styles.switchRow}>
@@ -555,20 +620,27 @@ export default function ConfiguracoesScreen() {
                   />
                 </View>
                 <Text style={styles.helperText}>
-                  Com lembretes ativos e permissão do sistema, o app notifica no horário configurado as despesas em aberto que estão na janela de lembrete (ver “Dias antes” abaixo). Recorrentes: só a parcela do período atual (ex.: mensal dia 05 → só a do mês corrente).
+                  Com lembretes ativos e permissão do sistema, o app notifica no horário configurado as despesas em aberto que estão na janela de lembrete (ver “Dias antes” abaixo).
                 </Text>
               </View>
 
-              <View style={styles.switchGroup}>
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Receber lembretes por email</Text>
-                  <Switch
-                    value={lembretesConfig.lembretesEmail}
-                    onValueChange={(value) => setLembretesConfig({ ...lembretesConfig, lembretesEmail: value })}
-                    disabled={!lembretesConfig.lembretesAtivos}
-                  />
+              <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Tipos de notificação</Text>
+              <Text style={styles.helperText}>
+                Escolha quais avisos deseja receber.
+              </Text>
+              {NOTIF_PREF_OPTIONS.map((opt) => (
+                <View key={opt.key} style={styles.switchGroup}>
+                  <View style={styles.switchRow}>
+                    <Text style={styles.switchLabel}>{opt.label}</Text>
+                    <Switch
+                      value={!!notifPrefs[opt.key]}
+                      onValueChange={(value) =>
+                        setNotifPrefs((prev) => ({ ...prev, [opt.key]: value }))
+                      }
+                    />
+                  </View>
                 </View>
-              </View>
+              ))}
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Dias antes do vencimento:</Text>
@@ -605,7 +677,7 @@ export default function ConfiguracoesScreen() {
                   placeholder="Selecione o horário"
                 />
                 <Text style={styles.helperText}>
-                  Horário em que a notificação do celular (e o e-mail no servidor) é disparada.
+                  Horário em que a notificação do celular é disparada.
                 </Text>
               </View>
 
@@ -619,6 +691,54 @@ export default function ConfiguracoesScreen() {
           {/* Tab Privacidade */}
           {activeTab === 'privacidade' && (
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Modo offline</Text>
+              <Text style={styles.helperText}>
+                Quando ativo, o app guarda despesas e receitas já carregadas para consulta sem internet.
+                Inclusões e edições ainda precisam de conexão.
+              </Text>
+              <View style={styles.switchGroup}>
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>
+                    {isOnline ? 'Online' : 'Sem conexão'} — cache {offlineEnabled ? 'ligado' : 'desligado'}
+                  </Text>
+                  <Switch
+                    value={offlineEnabled}
+                    onValueChange={(value) => setOfflineEnabled(value)}
+                  />
+                </View>
+              </View>
+              {lastSyncedAt ? (
+                <Text style={styles.helperText}>
+                  Última sincronização:{' '}
+                  {new Date(lastSyncedAt).toLocaleString('pt-BR')}
+                </Text>
+              ) : (
+                <Text style={styles.helperText}>Ainda não há dados em cache.</Text>
+              )}
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.textSecondary, marginBottom: 24 }]}
+                onPress={() => {
+                  Alert.alert(
+                    'Limpar cache',
+                    'Remover dados salvos no aparelho?',
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                      {
+                        text: 'Limpar',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await clearCache();
+                          Alert.alert('Pronto', 'Cache offline limpo.');
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="trash-outline" size={20} color="#fff" />
+                <Text style={styles.saveButtonText}>Limpar cache offline</Text>
+              </TouchableOpacity>
+
               <Text style={styles.sectionTitle}>Privacidade e Dados</Text>
 
               <TouchableOpacity
@@ -856,6 +976,28 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     lineHeight: 18,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  themeOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
   },
   saveButton: {
     flexDirection: 'row',

@@ -2,15 +2,17 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeaderIconButton } from '../components/HeaderIconButton';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * Header JS (igual ao das tabs) — evita o círculo nativo do iOS no native-stack.
  */
 function MenuStackHeader({ title, titleContent, openMenu, headerRight }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
-    <View style={[styles.wrapper, { paddingTop: insets.top, backgroundColor: '#2563EB' }]}>
+    <View style={[styles.wrapper, { paddingTop: insets.top, backgroundColor: colors.header }]}>
       <View style={styles.bar}>
         <View style={styles.side}>
           <HeaderIconButton name="menu" side="left" onPress={openMenu} />
@@ -36,7 +38,6 @@ export function getMenuScreenOptions(openMenu, overrides = {}) {
       typeof overrides === 'function' ? overrides({ navigation, route }) : overrides || {};
 
     return {
-      headerStyle: { backgroundColor: '#2563EB' },
       headerTintColor: '#fff',
       headerTitleStyle: { fontWeight: 'bold' },
       header: ({ options }) => {

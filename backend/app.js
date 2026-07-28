@@ -17,6 +17,7 @@ const userRepository = require('./src/database/userRepository');
 const PasswordValidator = require('./src/utils/passwordValidator');
 const emailService = require('./src/services/emailService');
 const whatsappService = require('./src/services/whatsappService');
+const notificacoesService = require('./src/services/notificacoesService');
 
 const app = express();
 app.use(cors());
@@ -937,6 +938,75 @@ app.get('/api/user/lembretes', async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar configuração de lembretes:', err);
     res.status(500).json({ error: 'Erro ao buscar configuração' });
+  }
+});
+
+// Preferências e central de notificações in-app
+app.get('/api/user/notificacoes-prefs', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: 'userId obrigatório' });
+  try {
+    const prefs = await notificacoesService.getPrefs(userId);
+    res.json({ prefs, defaults: notificacoesService.DEFAULT_PREFS });
+  } catch (err) {
+    console.error('Erro ao buscar prefs de notificações:', err);
+    res.status(500).json({ error: 'Erro ao buscar preferências' });
+  }
+});
+
+app.put('/api/user/notificacoes-prefs', async (req, res) => {
+  const { userId, prefs } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'userId obrigatório' });
+  try {
+    const saved = await notificacoesService.savePrefs(userId, prefs || {});
+    if (!saved) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json({ message: 'Preferências salvas!', prefs: saved });
+  } catch (err) {
+    console.error('Erro ao salvar prefs de notificações:', err);
+    res.status(500).json({ error: 'Erro ao salvar preferências' });
+  }
+});
+
+app.get('/api/user/notificacoes', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: 'userId obrigatório' });
+  try {
+    const user = await userRepository.findUserById(userId);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const diasAntes = user.usuario_lembretesdiasantes !== undefined
+      ? user.usuario_lembretesdiasantes
+      : (user.Usuario_LembretesDiasAntes !== undefined ? user.Usuario_LembretesDiasAntes : 5);
+
+    const data = await notificacoesService.listNotificacoes(userId, {
+      diasAntes: Number.isFinite(Number(diasAntes)) ? Number(diasAntes) : 5,
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('Erro ao listar notificações:', err);
+    res.status(500).json({ error: 'Erro ao listar notificações' });
+  }
+});
+
+app.post('/api/user/notificacoes/lida', async (req, res) => {
+  const { userId, keys, key, all } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'userId obrigatório' });
+  try {
+    if (all) {
+      const user = await userRepository.findUserById(userId);
+      const diasAntes = user?.usuario_lembretesdiasantes ?? user?.Usuario_LembretesDiasAntes ?? 5;
+      const data = await notificacoesService.listNotificacoes(userId, {
+        diasAntes: Number(diasAntes) || 5,
+      });
+      await notificacoesService.markAllRead(userId, data.items.map((i) => i.key));
+    } else {
+      const list = keys || (key ? [key] : []);
+      await notificacoesService.markRead(userId, list);
+    }
+    res.json({ message: 'Notificações atualizadas' });
+  } catch (err) {
+    console.error('Erro ao marcar notificações:', err);
+    res.status(500).json({ error: 'Erro ao atualizar notificações' });
   }
 });
 

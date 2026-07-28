@@ -307,8 +307,51 @@ export const ICONS_RECEITA = {
   Outros: FaEllipsisH,
 };
 
+/** Cores padrão por tipo de despesa */
+export const CORES_DESPESA = {
+  Alimentação: '#F97316',
+  Transporte: '#3B82F6',
+  Saúde: '#EF4444',
+  Moradia: '#8B5CF6',
+  Aluguel: '#7C3AED',
+  Outros: '#6B7280',
+  Veículos: '#0EA5E9',
+  Poupança: '#10B981',
+  Investimento: '#059669',
+  Investimentos: '#059669',
+  Educação: '#6366F1',
+  Lazer: '#EC4899',
+  Presentes: '#F43F5E',
+  Telefonia: '#14B8A6',
+  'Pet Shop': '#A855F7',
+  Vestuário: '#D946EF',
+  Assinaturas: '#06B6D4',
+  Compras: '#F59E0B',
+  'Cartão de Crédito': '#DC2626',
+  Impostos: '#64748B',
+  Seguros: '#2563EB',
+  Doações: '#22C55E',
+};
+
+/** Cores padrão por tipo de receita */
+export const CORES_RECEITA = {
+  Salário: '#059669',
+  Venda: '#F59E0B',
+  Presente: '#EC4899',
+  Investimento: '#2563EB',
+  Aluguel: '#8B5CF6',
+  Outros: '#6B7280',
+};
+
 /** Retorna o componente de ícone para um tipo (conta, despesa ou receita) */
 export function getIconForTipo(tipo, categoria = 'despesa') {
   const map = categoria === 'conta' ? ICONS_CONTA : categoria === 'receita' ? ICONS_RECEITA : ICONS_DESPESA;
   return map[tipo] || DEFAULT_ICON;
+}
+
+/** Retorna a cor do ícone/categoria */
+export function getColorForTipo(tipo, categoria = 'despesa', coresCustom = {}) {
+  if (coresCustom && coresCustom[tipo]) return coresCustom[tipo];
+  const map = categoria === 'receita' ? CORES_RECEITA : CORES_DESPESA;
+  return map[tipo] || '#6B7280';
 }

@@ -38,6 +38,9 @@ export const API_ENDPOINTS = {
   // Usuário
   USER_PROFILE: `${API_BASE_URL}/api/user/perfil`,
   USER_LEMBRETES: `${API_BASE_URL}/api/user/lembretes`,
+  USER_NOTIFICACOES: `${API_BASE_URL}/api/user/notificacoes`,
+  USER_NOTIFICACOES_PREFS: `${API_BASE_URL}/api/user/notificacoes-prefs`,
+  USER_NOTIFICACOES_LIDA: `${API_BASE_URL}/api/user/notificacoes/lida`,
   
   // Dados principais
   RECEITAS: `${API_BASE_URL}/api/receitas`,

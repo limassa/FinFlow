@@ -9,18 +9,20 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider } from 'react-native-paper';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { OfflineProvider } from './src/context/OfflineContext';
 import AuthStack from './src/navigation/AuthStack';
 import MainNavigator from './src/navigation/MainNavigator';
 import DespesasNotificationSync from './src/components/DespesasNotificationSync';
-import { theme } from './src/theme/theme';
 
 function AppNavigator() {
   const { user, loading } = useAuth();
+  const { colors, navigationTheme, isDark } = useTheme();
 
   if (loading) {
     return (
-      <View style={styles.bootContainer}>
-        <ActivityIndicator size="large" color="#2563EB" />
+      <View style={[styles.bootContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -35,21 +37,36 @@ function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <AuthStack />
     </NavigationContainer>
+  );
+}
+
+function ThemedApp() {
+  const { paperTheme, colors, isDark } = useTheme();
+
+  return (
+    <PaperProvider theme={paperTheme}>
+      <OfflineProvider>
+        <AuthProvider>
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <AppNavigator />
+          </View>
+        </AuthProvider>
+      </OfflineProvider>
+    </PaperProvider>
   );
 }
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <PaperProvider theme={theme}>
-        <AuthProvider>
-          <StatusBar style="auto" />
-          <AppNavigator />
-        </AuthProvider>
-      </PaperProvider>
+      <ThemeProvider>
+        <ThemedApp />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
@@ -59,6 +76,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
   },
 });

@@ -31,6 +31,9 @@ import AccountSelector from '../components/AccountSelector';
 import { syncDespesasNaoPagasNotifications } from '../services/despesasNotifications';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
+import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
+import { useOffline } from '../context/OfflineContext';
+import { useTheme } from '../context/ThemeContext';
 
 const tiposDespesaPadrao = [
   'Alimentação',
@@ -52,6 +55,8 @@ const tiposDespesaPadrao = [
 export default function DespesaScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
+  const { isOnline, saveCache, loadCache } = useOffline();
   const userId = getUserId();
   const [despesas, setDespesas] = useState([]);
   const [contas, setContas] = useState([]);
@@ -91,6 +96,7 @@ export default function DespesaScreen() {
   const [metaCategoria, setMetaCategoria] = useState('');
   const [metaValor, setMetaValor] = useState('');
   const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
+  const [coresCustomizadas, setCoresCustomizadas] = useState({});
 
   const tiposDespesa = React.useMemo(() => {
     const padrao = [...tiposDespesaPadrao];
@@ -116,13 +122,22 @@ export default function DespesaScreen() {
         conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id || despesa.contaId || null
       }));
       setDespesas(despesasNormalizadas);
+      await saveCache(`despesas_${userId}_${mesAtual}`, despesasNormalizadas);
     } catch (err) {
       console.error('Erro ao buscar despesas:', err);
-      Alert.alert('Erro', 'Erro ao carregar despesas');
+      const cached = await loadCache(`despesas_${userId}_${mesAtual}`);
+      if (cached) {
+        setDespesas(cached);
+        if (!isOnline) {
+          Alert.alert('Modo offline', 'Exibindo despesas salvas no aparelho.');
+        }
+      } else {
+        Alert.alert('Erro', 'Erro ao carregar despesas');
+      }
     } finally {
       setLoading(false);
     }
-  }, [userId, mesAtual]);
+  }, [userId, mesAtual, saveCache, loadCache, isOnline]);
 
   const fetchDespesasTodas = useCallback(async () => {
     if (!userId) return;
@@ -167,8 +182,21 @@ export default function DespesaScreen() {
       const res = await axios.get(`${API_ENDPOINTS.CATEGORIAS}?userId=${userId}&tipo=despesa`);
       const nomes = (res.data || []).map(c => c.categoria_nome || c.categoria_Nome).filter(Boolean);
       setCategoriasCustomizadas(nomes);
+      const cores = {};
+      (res.data || []).forEach((c) => {
+        const nome = c.categoria_nome || c.categoria_Nome;
+        const cor = c.categoria_cor || c.categoria_Cor;
+        if (nome && cor) cores[nome] = cor;
+      });
+      setCoresCustomizadas(cores);
+      await saveCache(`categorias_despesa_${userId}`, { nomes, cores });
     } catch (err) {
       console.log('Erro ao buscar categorias:', err);
+      const cached = await loadCache(`categorias_despesa_${userId}`);
+      if (cached?.nomes) {
+        setCategoriasCustomizadas(cached.nomes);
+        setCoresCustomizadas(cached.cores || {});
+      }
     }
   };
 
@@ -615,7 +643,12 @@ export default function DespesaScreen() {
               </Text>
             )}
             <Text style={styles.despesaDetail}>
-              <Ionicons name="pricetag" size={14} /> {despesa.despesa_tipo}
+              <Ionicons
+                name={getIconNameForTipo(despesa.despesa_tipo, 'despesa')}
+                size={14}
+                color={getColorForTipo(despesa.despesa_tipo, 'despesa', coresCustomizadas)}
+              />{' '}
+              {despesa.despesa_tipo}
             </Text>
             {conta && (
               <View style={styles.despesaDetail}>
@@ -767,7 +800,7 @@ export default function DespesaScreen() {
     : (loadingTodas && todasDespesasCache === null);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.statsContainer}>
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -885,6 +918,7 @@ export default function DespesaScreen() {
                 onChange={setMetaCategoria}
                 categoria="despesa"
                 placeholder="Selecione a categoria"
+                customColors={coresCustomizadas}
               />
               <TextInput
                 style={styles.metaInput}
@@ -989,6 +1023,12 @@ export default function DespesaScreen() {
                       <View style={[styles.groupHeader, styles.groupHeaderNivel1]}>
                         <TouchableOpacity style={styles.groupHeaderLeft} onPress={toggleTipo} activeOpacity={0.7}>
                           <Ionicons name={tipoColapsado ? 'chevron-forward' : 'chevron-down'} size={18} color={colors.text} />
+                          <Ionicons
+                            name={getIconNameForTipo(tipoGrupo, 'despesa')}
+                            size={18}
+                            color={getColorForTipo(tipoGrupo, 'despesa', coresCustomizadas)}
+                            style={{ marginRight: 6 }}
+                          />
                           <Text style={styles.groupHeaderText}>{tipoGrupo}</Text>
                           <Text style={styles.groupCount}>({totalTipo})</Text>
                         </TouchableOpacity>
@@ -1189,6 +1229,7 @@ export default function DespesaScreen() {
                 onChange={setTipo}
                 categoria="despesa"
                 placeholder="Selecione a categoria"
+                customColors={coresCustomizadas}
               />
 
               <AccountSelector

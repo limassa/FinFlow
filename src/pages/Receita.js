@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaChevronDown, FaChevronRight, FaChevronLeft, FaCalendarAlt } from 'react-icons/fa';
-import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
+import { getIconForTipo, getIconComponentByName, getColorForTipo } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
 import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
@@ -47,6 +47,7 @@ function Receita() {
   // Estado para categorias customizadas
   const [categoriasCustomizadas, setCategoriasCustomizadas] = useState([]);
   const [iconesCustomizados, setIconesCustomizados] = useState({});
+  const [coresCustomizadas, setCoresCustomizadas] = useState({});
   
   // Categorias padrão
   const tiposReceitaPadrao = [
@@ -104,14 +105,19 @@ function Receita() {
       const nomes = res.data.map(cat => cat.categoria_nome);
       setCategoriasCustomizadas(nomes);
       
-      // Criar mapa de ícones customizados
+      // Criar mapa de ícones e cores customizados
       const icones = {};
+      const cores = {};
       res.data.forEach(cat => {
         if (cat.categoria_icone) {
           icones[cat.categoria_nome] = cat.categoria_icone;
         }
+        if (cat.categoria_cor) {
+          cores[cat.categoria_nome] = cat.categoria_cor;
+        }
       });
       setIconesCustomizados(icones);
+      setCoresCustomizadas(cores);
     } catch (err) {
       console.log('Erro ao buscar categorias customizadas:', err);
     }
@@ -611,6 +617,8 @@ function Receita() {
     return getIconForTipo(tipo, 'receita');
   };
 
+  const getCor = (tipo) => getColorForTipo(tipo, 'receita', coresCustomizadas);
+
   const formatarValor = (valor) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -764,6 +772,7 @@ function Receita() {
                     placeholder="Selecione"
                     required
                     customIcons={iconesCustomizados}
+                    customColors={coresCustomizadas}
                   />
                 </div>
                 <button
@@ -1019,7 +1028,7 @@ function Receita() {
                   >
                     <span className="grid-group-header-title">
                       {tipoColapsado ? <FaChevronRight className="group-chevron" /> : <FaChevronDown className="group-chevron" />}
-                      <IconTipo className="category-icon" /> {tipoGrupo}
+                      <IconTipo className="category-icon" style={{ color: getCor(tipoGrupo) }} /> {tipoGrupo}
                       <span className="group-count">({totalTipo})</span>
                     </span>
                   </div>
@@ -1086,7 +1095,7 @@ function Receita() {
                       <div className="grid-cell grid-cell-tipo">
                       {(() => {
                         const Icon = getIcone(receita.receita_tipo);
-                        return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
+                        return <><Icon className="category-icon" style={{ color: getCor(receita.receita_tipo) }} /> {receita.receita_tipo}</>;
                       })()}
                     </div>
                       <div className="grid-cell grid-cell-conta">
@@ -1169,7 +1178,7 @@ function Receita() {
                   <div className="grid-cell grid-cell-tipo">
                     {(() => {
                       const Icon = getIcone(receita.receita_tipo);
-                      return <><Icon className="category-icon" /> {receita.receita_tipo}</>;
+                      return <><Icon className="category-icon" style={{ color: getCor(receita.receita_tipo) }} /> {receita.receita_tipo}</>;
                     })()}
                   </div>
                   <div className="grid-cell grid-cell-conta">

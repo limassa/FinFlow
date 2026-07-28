@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import { getIconForTipo, getIconComponentByName } from '../utils/categoryIcons';
+import { getIconForTipo, getIconComponentByName, getColorForTipo } from '../utils/categoryIcons';
 import '../App.css';
 
 /**
@@ -12,8 +12,9 @@ import '../App.css';
  * @param {string} placeholder - Texto quando nada selecionado
  * @param {boolean} required - Campo obrigatório
  * @param {Object} customIcons - Mapa de ícones customizados { nomeCat: 'FaIcon', ... }
+ * @param {Object} customColors - Mapa de cores customizadas { nomeCat: '#hex', ... }
  */
-function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa', placeholder = 'Selecione', required = false, customIcons = {} }) {
+function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa', placeholder = 'Selecione', required = false, customIcons = {}, customColors = {} }) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const ref = useRef(null);
@@ -50,6 +51,8 @@ function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa',
     return getIconForTipo(tipo, categoria);
   };
 
+  const getCor = (tipo) => getColorForTipo(tipo, categoria, customColors);
+
   const selectedLabel = value || placeholder;
   const IconSelected = value ? getIcon(value) : null;
 
@@ -63,7 +66,7 @@ function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa',
         aria-haspopup="listbox"
       >
         <span className="select-with-icons-value">
-          {IconSelected && <IconSelected className="category-icon" />}
+          {IconSelected && <IconSelected className="category-icon" style={{ color: getCor(value) }} />}
           {selectedLabel}
         </span>
         <FaChevronDown className="select-with-icons-chevron" />
@@ -94,7 +97,7 @@ function SelectWithIcons({ options = [], value, onChange, categoria = 'despesa',
                 className={`select-with-icons-option ${value === opt ? 'selected' : ''}`}
                 onClick={() => { onChange(opt); setOpen(false); }}
               >
-                <Icon className="category-icon" />
+                <Icon className="category-icon" style={{ color: getCor(opt) }} />
                 {opt}
               </li>
             );

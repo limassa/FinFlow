@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { View } from 'react-native';
 import { CommonActions, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -24,8 +25,10 @@ import OrcamentoScreen from '../screens/OrcamentoScreen';
 import CartaoCreditoScreen from '../screens/CartaoCreditoScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import AppMenuModal from '../components/AppMenuModal';
+import OfflineBanner from '../components/OfflineBanner';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import { MenuProvider, useMenu } from '../context/MenuContext';
+import { useTheme } from '../context/ThemeContext';
 import { getMenuScreenOptions } from './menuHeaderOptions';
 
 const Stack = createNativeStackNavigator();
@@ -33,9 +36,16 @@ const Tab = createBottomTabNavigator();
 
 function MainMenuStack() {
   const { openMenu } = useMenu();
+  const { colors } = useTheme();
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.header },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+      }}
+    >
       <Stack.Screen
         name="Home"
         component={HomeScreen}
@@ -112,10 +122,12 @@ function MainMenuStack() {
 }
 
 function HomeStackNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#2563EB' },
+        headerStyle: { backgroundColor: colors.header },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
       }}
@@ -131,6 +143,7 @@ function HomeStackNavigator() {
 
 function MainTabs() {
   const { openMenu } = useMenu();
+  const { colors } = useTheme();
 
   return (
     <Tab.Navigator
@@ -143,10 +156,11 @@ function MainTabs() {
           else if (route.name === 'Sair') iconName = 'log-out-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.border },
         headerShown: true,
-        headerStyle: { backgroundColor: '#2563EB' },
+        headerStyle: { backgroundColor: colors.header },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
       })}
@@ -218,18 +232,20 @@ function MainStack() {
 
 function MainNavigationTree() {
   return (
-    <>
+    <View style={{ flex: 1 }}>
+      <OfflineBanner />
       <MainStack />
       <AppMenuModal />
-    </>
+    </View>
   );
 }
 
 export default function MainNavigator() {
   const navigationRef = useRef(null);
+  const { navigationTheme } = useTheme();
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       <MenuProvider navigationRef={navigationRef}>
         <MainNavigationTree />
       </MenuProvider>

@@ -17,6 +17,8 @@ import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
+import { useOffline } from '../context/OfflineContext';
 import { HeaderGreetingTitle } from '../navigation/menuHeaderOptions';
 
 const DIAS_SEMANA = [
@@ -108,6 +110,8 @@ function fotoUriFromApi(foto) {
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { user, getUserId } = useAuth();
+  const { colors } = useTheme();
+  const { saveCache, loadCache } = useOffline();
   const userId = getUserId();
   const primeiroNome = useMemo(() => extrairPrimeiroNome(user), [user]);
   const saudacao = useMemo(() => {
@@ -275,8 +279,39 @@ export default function HomeScreen() {
         receitasMes,
         despesasMes,
       });
+      await saveCache(`home_${userId}`, {
+        totais: {
+          totalReceitas,
+          totalDespesas,
+          saldo: totalReceitas - totalDespesas,
+          saldoContas: saldoTotal,
+          receitasMes,
+          despesasMes,
+        },
+        vencimentos: { hoje: vencendoHoje, semana: vencendoSemana },
+        orcamento:
+          listaOrc.length > 0
+            ? {
+                totalOrcado: listaOrc.reduce(
+                  (s, o) => s + parseFloat(o.orcamento_valor || o.Orcamento_Valor || 0),
+                  0
+                ),
+                totalRealizado: listaOrc.reduce(
+                  (s, o) => s + parseFloat(o.valor_realizado || 0),
+                  0
+                ),
+              }
+            : null,
+      });
     } catch (err) {
       console.error('❌ Erro ao buscar totais:', err);
+      const cached = await loadCache(`home_${userId}`);
+      if (cached?.totais) {
+        setTotais(cached.totais);
+        if (cached.vencimentos) setVencimentos(cached.vencimentos);
+        if (cached.orcamento !== undefined) setOrcamento(cached.orcamento);
+        return;
+      }
       try {
         const contasRes = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
         const contasNormalizadas = contasRes.data.map((conta) => ({
@@ -365,7 +400,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
