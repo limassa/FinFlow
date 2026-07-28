@@ -864,22 +864,58 @@
   border: none;
 }
 .filtro-icon-btn {
-  border: 1px solid var(--grey-300, #dee2e6);
-  background: var(--white);
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  border: 1px solid #BFDBFE !important;
+  background: #fff !important;
+  border-radius: 8px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   cursor: pointer;
-  color: var(--primary-color, #2563EB);
+  color: #2563EB !important;
   font-size: 16px;
+  line-height: 1;
   transition: background 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.filtro-icon-btn svg {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px;
+  min-height: 16px;
+  fill: currentColor !important;
+  color: #2563EB !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 .filtro-icon-btn:hover {
-  background: var(--grey-100, #f3f4f6);
-  border-color: var(--primary-color, #2563EB);
+  background: #EFF6FF !important;
+  border-color: #2563EB !important;
+}
+.filtro-icon-btn:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 20;
+  pointer-events: none;
 }
 .grid-group-header {
   cursor: pointer;

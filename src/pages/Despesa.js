@@ -1266,10 +1266,10 @@ function Despesa() {
               type="button"
               className="filtro-icon-btn"
               onClick={() => setModalFiltroLista(true)}
-              title="Filtros"
-              aria-label="Filtros"
+              title="Filtro"
+              aria-label="Filtro"
             >
-              <FaFilter />
+              <FaFilter size={16} color="#2563EB" aria-hidden="true" />
             </button>
           </div>
         </div>
