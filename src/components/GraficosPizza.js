@@ -292,54 +292,51 @@ function GraficosPizza() {
 
   return (
     <div className="graficos-pizza-carrossel">
-      <div className="carrossel-container">
+      <div className="graficos-pizza-nav">
         <button
           type="button"
           onClick={prevChart}
-          className="btn-carrossel-side"
+          className="graficos-pizza-nav__btn"
           aria-label="Gráfico anterior"
         >
-          <FaChevronLeft />
+          <FaChevronLeft size={14} />
         </button>
-
-        <div className="chart-wrapper">
-          <p className="graficos-pizza-title">
-            {currentChart === 0 ? 'Receitas' : 'Despesas'} — Mês atual
-          </p>
-          <div
-            className="chart-container chart-container--pizza"
-            style={{ height: '280px', width: '100%', position: 'relative', cursor: 'pointer' }}
-            onClick={handleChartClick}
-            title="Clique para ver detalhes"
-          >
-            {currentChart === 0 ? (
-              hasReceitas ? (
-                <Pie data={dadosReceitas} options={optionsReceitas} />
-              ) : (
-                <div className="chart-empty">
-                  <p>Nenhuma receita registrada este mês</p>
-                </div>
-              )
-            ) : (
-              hasDespesas ? (
-                <Pie data={dadosDespesas} options={optionsDespesas} />
-              ) : (
-                <div className="chart-empty">
-                  <p>Nenhuma despesa registrada este mês</p>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
+        <p className="graficos-pizza-title">
+          {currentChart === 0 ? 'Receitas' : 'Despesas'} — Mês atual
+        </p>
         <button
           type="button"
           onClick={nextChart}
-          className="btn-carrossel-side"
+          className="graficos-pizza-nav__btn"
           aria-label="Próximo gráfico"
         >
-          <FaChevronRight />
+          <FaChevronRight size={14} />
         </button>
+      </div>
+
+      <div
+        className="chart-container chart-container--pizza"
+        style={{ height: '280px', width: '100%', position: 'relative', cursor: 'pointer' }}
+        onClick={handleChartClick}
+        title="Clique para ver detalhes"
+      >
+        {currentChart === 0 ? (
+          hasReceitas ? (
+            <Pie data={dadosReceitas} options={optionsReceitas} />
+          ) : (
+            <div className="chart-empty">
+              <p>Nenhuma receita registrada este mês</p>
+            </div>
+          )
+        ) : (
+          hasDespesas ? (
+            <Pie data={dadosDespesas} options={optionsDespesas} />
+          ) : (
+            <div className="chart-empty">
+              <p>Nenhuma despesa registrada este mês</p>
+            </div>
+          )
+        )}
       </div>
     </div>
   );

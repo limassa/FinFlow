@@ -198,7 +198,9 @@ function GraficoEvolucaoMensal() {
     scales: {
       y: {
         beginAtZero: true,
+        suggestedMax: 10,
         ticks: {
+          maxTicksLimit: 6,
           callback(value) {
             return new Intl.NumberFormat('pt-BR', {
               style: 'currency',
@@ -216,6 +218,9 @@ function GraficoEvolucaoMensal() {
           font: { size: 11 },
         },
       },
+    },
+    layout: {
+      padding: { top: 8, right: 8, bottom: 8, left: 4 },
     },
     interaction: {
       mode: 'index',
@@ -251,7 +256,7 @@ function GraficoEvolucaoMensal() {
           onClick={() => setOffsetDias((o) => o - DIAS_JANELA + 1)}
           aria-label="Período anterior"
         >
-          <FaChevronLeft />
+          <FaChevronLeft size={14} color="#2563EB" />
         </button>
         <button
           type="button"
@@ -268,7 +273,7 @@ function GraficoEvolucaoMensal() {
           onClick={() => setOffsetDias((o) => o + DIAS_JANELA - 1)}
           aria-label="Próximo período"
         >
-          <FaChevronRight />
+          <FaChevronRight size={14} color="#2563EB" />
         </button>
       </div>
       <div className="chart-container" style={{ height: '300px', width: '100%', position: 'relative' }}>

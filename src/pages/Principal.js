@@ -384,13 +384,29 @@ function Principal() {
             <p className="principal-greeting__sub">Visão geral das suas finanças</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowModalRelatorio(true)}
-          className="principal-btn-relatorio"
-        >
-          <FaFilePdf /> Gerar Relatórios
-        </button>
+        <div className="principal-header-actions">
+          <button
+            type="button"
+            onClick={() => navigate('/layout/receita')}
+            className="principal-btn-secondary"
+          >
+            <FaMoneyBillWave /> Nova Receita
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/layout/despesa')}
+            className="principal-btn-secondary principal-btn-secondary--despesa"
+          >
+            <FaMoneyCheckAlt /> Nova Despesa
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowModalRelatorio(true)}
+            className="principal-btn-relatorio"
+          >
+            <FaFilePdf /> Gerar Relatórios
+          </button>
+        </div>
       </header>
 
       <section className="principal-human-grid">
@@ -456,7 +472,7 @@ function Principal() {
             <FaMoneyBillWave />
           </div>
           <div className="principal-card__content">
-            <h3>Total Receitas</h3>
+            <h3>Receita</h3>
             <span className="principal-card__value">{formatarValor(totais.totalReceitas)}</span>
             <span className="principal-card__desc">Receitas Recebidas</span>
           </div>
@@ -473,7 +489,7 @@ function Principal() {
             <FaMoneyCheckAlt />
           </div>
           <div className="principal-card__content">
-            <h3>Total Despesas</h3>
+            <h3>Despesa</h3>
             <span className="principal-card__value">{formatarValor(totais.totalDespesas)}</span>
             <span className="principal-card__desc">Despesas Pagas</span>
           </div>
