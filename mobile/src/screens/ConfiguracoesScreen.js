@@ -77,6 +77,21 @@ export default function ConfiguracoesScreen() {
     { key: 'dicas_economia', label: 'Dicas de Economia' },
   ];
 
+  const allNotifSelected = NOTIF_PREF_OPTIONS.every((opt) => !!notifPrefs[opt.key]);
+
+  const setAllNotifPrefs = (value) => {
+    const next = {};
+    NOTIF_PREF_OPTIONS.forEach((opt) => {
+      next[opt.key] = value;
+    });
+    setNotifPrefs(next);
+  };
+
+  const handleToggleLembretesAtivos = (value) => {
+    setLembretesConfig((prev) => ({ ...prev, lembretesAtivos: value }));
+    if (!value) setAllNotifPrefs(false);
+  };
+
   // Versão do sistema
   const [versao, setVersao] = useState(null);
 
@@ -616,7 +631,7 @@ export default function ConfiguracoesScreen() {
                   <Text style={styles.switchLabel}>Ativar lembretes</Text>
                   <Switch
                     value={lembretesConfig.lembretesAtivos}
-                    onValueChange={(value) => setLembretesConfig({ ...lembretesConfig, lembretesAtivos: value })}
+                    onValueChange={handleToggleLembretesAtivos}
                   />
                 </View>
                 <Text style={styles.helperText}>
@@ -626,14 +641,30 @@ export default function ConfiguracoesScreen() {
 
               <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Tipos de notificação</Text>
               <Text style={styles.helperText}>
-                Escolha quais avisos deseja receber.
+                Selecione as notificações que deseja receber
               </Text>
+              <View style={styles.switchGroup}>
+                <View style={styles.switchRow}>
+                  <Text style={[styles.switchLabel, { fontWeight: '700' }]}>Marcar Todos</Text>
+                  <Switch
+                    value={allNotifSelected}
+                    disabled={!lembretesConfig.lembretesAtivos}
+                    onValueChange={(value) => {
+                      setAllNotifPrefs(value);
+                      if (value) {
+                        setLembretesConfig((prev) => ({ ...prev, lembretesAtivos: true }));
+                      }
+                    }}
+                  />
+                </View>
+              </View>
               {NOTIF_PREF_OPTIONS.map((opt) => (
                 <View key={opt.key} style={styles.switchGroup}>
                   <View style={styles.switchRow}>
                     <Text style={styles.switchLabel}>{opt.label}</Text>
                     <Switch
                       value={!!notifPrefs[opt.key]}
+                      disabled={!lembretesConfig.lembretesAtivos}
                       onValueChange={(value) =>
                         setNotifPrefs((prev) => ({ ...prev, [opt.key]: value }))
                       }

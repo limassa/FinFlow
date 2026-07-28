@@ -52,6 +52,21 @@ function Configuracoes() {
     { key: 'dicas_economia', label: 'Dicas de Economia' },
   ];
 
+  const allNotifSelected = NOTIF_PREF_OPTIONS.every((opt) => !!notifPrefs[opt.key]);
+
+  const setAllNotifPrefs = (value) => {
+    const next = {};
+    NOTIF_PREF_OPTIONS.forEach((opt) => {
+      next[opt.key] = value;
+    });
+    setNotifPrefs(next);
+  };
+
+  const handleToggleLembretesAtivos = (checked) => {
+    setLembretesConfig((prev) => ({ ...prev, lembretesAtivos: checked }));
+    if (!checked) setAllNotifPrefs(false);
+  };
+
 
 
   // Configurações de privacidade
@@ -472,7 +487,7 @@ function Configuracoes() {
                     <input
                       type="checkbox"
                       checked={lembretesConfig.lembretesAtivos}
-                      onChange={(e) => setLembretesConfig({...lembretesConfig, lembretesAtivos: e.target.checked})}
+                      onChange={(e) => handleToggleLembretesAtivos(e.target.checked)}
                     />
                     Ativar lembretes
                   </label>
@@ -481,13 +496,29 @@ function Configuracoes() {
                 <div className="form-group">
                   <label>Tipos de notificação</label>
                   <p style={{ margin: '4px 0 10px', fontSize: 13, color: '#64748b' }}>
-                    Escolha o que deseja receber na central de notificações.
+                    Selecione as notificações que deseja receber
                   </p>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={allNotifSelected}
+                      disabled={!lembretesConfig.lembretesAtivos}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAllNotifPrefs(checked);
+                        if (checked) {
+                          setLembretesConfig((prev) => ({ ...prev, lembretesAtivos: true }));
+                        }
+                      }}
+                    />
+                    Marcar Todos
+                  </label>
                   {NOTIF_PREF_OPTIONS.map((opt) => (
                     <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <input
                         type="checkbox"
                         checked={!!notifPrefs[opt.key]}
+                        disabled={!lembretesConfig.lembretesAtivos}
                         onChange={(e) =>
                           setNotifPrefs((prev) => ({ ...prev, [opt.key]: e.target.checked }))
                         }

@@ -383,12 +383,77 @@ async function fetchOrcamentoTotal(userId) {
   }
 }
 
-async function listNotificacoes(userId, { diasAntes = 5 } = {}) {
+async function temLancamentoMes(userId, ym) {
+  const [y, m] = ym.split('-').map(Number);
+  try {
+    const result = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM "Receita"
+           WHERE "Usuario_Id" = $1
+             AND EXTRACT(YEAR FROM "Receita_Data") = $2
+             AND EXTRACT(MONTH FROM "Receita_Data") = $3) +
+         (SELECT COUNT(*) FROM "Despesa"
+           WHERE "Usuario_Id" = $1
+             AND EXTRACT(YEAR FROM "Despesa_Data") = $2
+             AND EXTRACT(MONTH FROM "Despesa_Data") = $3) AS total`,
+      [userId, y, m]
+    );
+    return parseInt(result.rows[0]?.total || 0, 10) > 0;
+  } catch (_) {
+    const result = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM receita
+           WHERE usuario_id = $1
+             AND EXTRACT(YEAR FROM receita_data) = $2
+             AND EXTRACT(MONTH FROM receita_data) = $3) +
+         (SELECT COUNT(*) FROM despesa
+           WHERE usuario_id = $1
+             AND EXTRACT(YEAR FROM despesa_data) = $2
+             AND EXTRACT(MONTH FROM despesa_data) = $3) AS total`,
+      [userId, y, m]
+    );
+    return parseInt(result.rows[0]?.total || 0, 10) > 0;
+  }
+}
+
+async function temLancamentoSemana(userId, inicio, fim) {
+  try {
+    const result = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM "Receita"
+           WHERE "Usuario_Id" = $1
+             AND "Receita_Data"::date BETWEEN $2::date AND $3::date) +
+         (SELECT COUNT(*) FROM "Despesa"
+           WHERE "Usuario_Id" = $1
+             AND "Despesa_Data"::date BETWEEN $2::date AND $3::date) AS total`,
+      [userId, ymdLocal(inicio), ymdLocal(fim)]
+    );
+    return parseInt(result.rows[0]?.total || 0, 10) > 0;
+  } catch (_) {
+    const result = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM receita
+           WHERE usuario_id = $1
+             AND receita_data::date BETWEEN $2::date AND $3::date) +
+         (SELECT COUNT(*) FROM despesa
+           WHERE usuario_id = $1
+             AND despesa_data::date BETWEEN $2::date AND $3::date) AS total`,
+      [userId, ymdLocal(inicio), ymdLocal(fim)]
+    );
+    return parseInt(result.rows[0]?.total || 0, 10) > 0;
+  }
+}
+
+async function listNotificacoes(userId, { diasAntes = 5, lembretesAtivos = true } = {}) {
   await ensureSchema();
+  if (!lembretesAtivos) {
+    return { prefs: await getPrefs(userId), items: [], naoLidas: 0 };
+  }
   const prefs = await getPrefs(userId);
   const lidas = await getLidas(userId);
   const hoje = parseDateOnly(ymdLocal());
   const items = [];
+  const janelaDias = Number.isFinite(Number(diasAntes)) ? Number(diasAntes) : 0;
 
   if (prefs.contas_a_vencer || prefs.contas_vencidas) {
     const despesas = await fetchDespesasAbertas(userId);
@@ -411,7 +476,7 @@ async function listNotificacoes(userId, { diasAntes = 5 } = {}) {
           lida: lidas.has(key),
           href: '/layout/despesa',
         });
-      } else if (prefs.contas_a_vencer && diff >= 0 && diff <= Number(diasAntes || 0)) {
+      } else if (prefs.contas_a_vencer && diff >= 0 && diff <= janelaDias) {
         const key = `contas_a_vencer_${d.id}`;
         const quando = diff === 0 ? 'vence hoje' : `vence em ${diff} dia(s)`;
         items.push({
@@ -462,11 +527,14 @@ async function listNotificacoes(userId, { diasAntes = 5 } = {}) {
     const totais = await fetchTotaisMes(userId, ym);
     const key = `resumo_mensal_${ym}`;
     const saldo = totais.receitas - totais.despesas;
+    const semLancamento = !(await temLancamentoMes(userId, ym));
     items.push({
       key,
       tipo: 'resumo_mensal',
       titulo: 'Resumo mensal',
-      mensagem: `Receitas ${formatBRL(totais.receitas)} · Despesas ${formatBRL(totais.despesas)} · Saldo ${formatBRL(saldo)}.`,
+      mensagem: semLancamento
+        ? 'Não houve lançamento neste mês.'
+        : `Receitas ${formatBRL(totais.receitas)} · Despesas ${formatBRL(totais.despesas)} · Saldo ${formatBRL(saldo)}.`,
       createdAt: new Date().toISOString(),
       lida: lidas.has(key),
       href: '/layout/dashboard',
@@ -482,11 +550,14 @@ async function listNotificacoes(userId, { diasAntes = 5 } = {}) {
     const totais = await fetchTotaisSemana(userId, inicio, fim);
     const key = `resumo_semanal_${weekKey(hojeDate)}`;
     const saldo = totais.receitas - totais.despesas;
+    const semLancamento = !(await temLancamentoSemana(userId, inicio, fim));
     items.push({
       key,
       tipo: 'resumo_semanal',
       titulo: 'Resumo semanal',
-      mensagem: `Receitas ${formatBRL(totais.receitas)} · Despesas ${formatBRL(totais.despesas)} · Saldo ${formatBRL(saldo)}.`,
+      mensagem: semLancamento
+        ? 'Não houve lançamento nesta semana.'
+        : `Receitas ${formatBRL(totais.receitas)} · Despesas ${formatBRL(totais.despesas)} · Saldo ${formatBRL(saldo)}.`,
       createdAt: new Date().toISOString(),
       lida: lidas.has(key),
       href: '/layout/dashboard',

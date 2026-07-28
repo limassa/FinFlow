@@ -974,12 +974,17 @@ app.get('/api/user/notificacoes', async (req, res) => {
     const user = await userRepository.findUserById(userId);
     if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
+    const lembretesAtivos = user.usuario_lembretesativos !== undefined
+      ? user.usuario_lembretesativos
+      : (user.Usuario_LembretesAtivos !== undefined ? user.Usuario_LembretesAtivos : true);
+
     const diasAntes = user.usuario_lembretesdiasantes !== undefined
       ? user.usuario_lembretesdiasantes
       : (user.Usuario_LembretesDiasAntes !== undefined ? user.Usuario_LembretesDiasAntes : 5);
 
     const data = await notificacoesService.listNotificacoes(userId, {
       diasAntes: Number.isFinite(Number(diasAntes)) ? Number(diasAntes) : 5,
+      lembretesAtivos: !!lembretesAtivos,
     });
     res.json(data);
   } catch (err) {
@@ -1053,6 +1058,13 @@ app.put('/api/user/lembretes', async (req, res) => {
       lembretesHorario
     });
     if (result) {
+      if (lembretesAtivos === false) {
+        const offPrefs = Object.keys(notificacoesService.DEFAULT_PREFS).reduce((acc, key) => {
+          acc[key] = false;
+          return acc;
+        }, {});
+        await notificacoesService.savePrefs(userId, offPrefs);
+      }
       res.json({ 
         message: 'Configuração de lembretes atualizada com sucesso!',
         whatsAppAvailable: whatsAppColumnExists || lembretesWhatsApp === undefined
