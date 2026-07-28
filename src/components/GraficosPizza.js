@@ -316,7 +316,7 @@ function GraficosPizza() {
 
       <div
         className="chart-container chart-container--pizza"
-        style={{ height: '280px', width: '100%', position: 'relative', cursor: 'pointer' }}
+        style={{ height: '240px', width: '100%', position: 'relative', cursor: 'pointer' }}
         onClick={handleChartClick}
         title="Clique para ver detalhes"
       >

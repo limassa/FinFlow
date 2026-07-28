@@ -256,7 +256,7 @@ function GraficoEvolucaoMensal() {
           onClick={() => setOffsetDias((o) => o - DIAS_JANELA + 1)}
           aria-label="Período anterior"
         >
-          <FaChevronLeft size={14} color="#2563EB" />
+          <FaChevronLeft size={14} color="#fff" />
         </button>
         <button
           type="button"
@@ -273,10 +273,10 @@ function GraficoEvolucaoMensal() {
           onClick={() => setOffsetDias((o) => o + DIAS_JANELA - 1)}
           aria-label="Próximo período"
         >
-          <FaChevronRight size={14} color="#2563EB" />
+          <FaChevronRight size={14} color="#fff" />
         </button>
       </div>
-      <div className="chart-container" style={{ height: '300px', width: '100%', position: 'relative' }}>
+      <div className="chart-container" style={{ height: '240px', width: '100%', position: 'relative' }}>
         <Line data={dadosGrafico} options={options} />
       </div>
     </div>

@@ -5350,8 +5350,8 @@ select.form-input:focus {
   font-size: 13px;
   font-weight: 600;
   color: var(--grey-700);
-  width: 100%;
-  flex-shrink: 0;
+  width: auto;
+  flex: 0 1 auto;
 }
 .chart-container--pizza {
   display: flex;
@@ -6938,16 +6938,16 @@ select.form-input:focus {
 .dashboard-page__chart-card {
   background: #fff;
   border-radius: 16px;
-  padding: 18px;
+  padding: 16px;
   border: 1px solid rgba(99, 102, 241, 0.08);
   box-shadow: 0 2px 12px rgba(30, 58, 95, 0.08);
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   box-sizing: border-box;
 }
 .dashboard-page__chart-title {
@@ -6955,6 +6955,7 @@ select.form-input:focus {
   align-items: center;
   gap: 8px;
   color: #2563EB;
+  flex-shrink: 0;
 }
 .dashboard-page__chart-title h2 {
   margin: 0;
@@ -6965,100 +6966,52 @@ select.form-input:focus {
 .dashboard-page__chart-body {
   min-width: 0;
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .grafico-evolucao-mensal {
   width: 100% !important;
+  max-width: 100%;
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: flex-start !important;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  overflow: visible !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
 }
-.grafico-evolucao-nav {
+.grafico-evolucao-nav,
+.graficos-pizza-nav {
   display: flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: auto !important;
+  max-width: 100%;
+  margin: 0 auto;
   flex-shrink: 0;
+  flex-wrap: nowrap;
 }
-.grafico-evolucao-nav__btn {
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px;
+.grafico-evolucao-nav__btn,
+.graficos-pizza-nav__btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
   border-radius: 50% !important;
-  border: 1px solid #BFDBFE !important;
-  background: #EFF6FF !important;
-  color: #2563EB !important;
+  border: none !important;
+  background: linear-gradient(135deg, #4F46E5, #2563EB) !important;
+  color: #fff !important;
   cursor: pointer;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  box-shadow: none !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+  flex: 0 0 32px !important;
 }
-.grafico-evolucao-nav__btn svg {
-  display: block !important;
-  width: 14px !important;
-  height: 14px !important;
-  fill: currentColor !important;
-  color: #2563EB !important;
-  flex-shrink: 0;
-}
-.grafico-evolucao-nav__period {
-  min-width: 130px;
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  cursor: pointer;
-  padding: 6px 8px;
-}
-.grafico-evolucao-mensal .chart-container {
-  width: 100% !important;
-  height: 320px !important;
-  min-height: 280px;
-  display: block !important;
-  position: relative;
-  overflow: visible !important;
-}
-
-.graficos-pizza-carrossel {
-  width: 100% !important;
-  overflow: visible !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 10px;
-  min-width: 0;
-}
-.graficos-pizza-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-}
-.graficos-pizza-nav__btn {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, #4F46E5, #2563EB);
-  color: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-}
+.grafico-evolucao-nav__btn svg,
 .graficos-pizza-nav__btn svg {
   display: block !important;
   width: 14px !important;
@@ -7067,23 +7020,46 @@ select.form-input:focus {
   color: #fff !important;
   flex-shrink: 0;
 }
+.grafico-evolucao-nav__period,
 .graficos-pizza-title {
-  margin: 0;
+  margin: 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  flex: 0 1 auto !important;
+  border: none;
+  background: transparent;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  cursor: pointer;
+  padding: 4px 8px !important;
   text-align: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-  min-width: 160px;
+  white-space: nowrap;
 }
+.grafico-evolucao-mensal .chart-container,
 .graficos-pizza-carrossel .chart-container,
 .graficos-pizza-carrossel .chart-container--pizza {
   width: 100% !important;
-  height: 300px !important;
+  max-width: 100% !important;
+  height: 240px !important;
+  min-height: 220px !important;
+  max-height: 240px !important;
+  display: block !important;
   position: relative !important;
-  overflow: visible !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.graficos-pizza-carrossel {
+  width: 100% !important;
+  max-width: 100%;
+  overflow: hidden !important;
   display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .chart-empty {
   width: 100%;
@@ -7093,7 +7069,8 @@ select.form-input:focus {
   justify-content: center;
   text-align: center;
   color: #64748b;
-  padding: 24px;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1024px) {
