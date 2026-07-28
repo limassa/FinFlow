@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 import { useNavigate } from 'react-router-dom';
-import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
-import GraficosPizza from '../components/GraficosPizza';
 import ModalRelatorio from '../components/ModalRelatorio';
 
 const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
@@ -437,25 +435,20 @@ function Principal() {
         </p>
       </section>
 
-      <section className="principal-charts">
-        <div className="principal-charts__header">
-          <h3>Análise Financeira</h3>
-        </div>
-        <div className="principal-charts__grid">
-          <div className="principal-chart-card">
-            <h4>Evolução financeira</h4>
-            <div className="principal-chart-card__content">
-              <GraficoEvolucaoMensal />
-            </div>
-          </div>
-          <div className="principal-chart-card">
-            <h4>Distribuição por categoria</h4>
-            <div className="principal-chart-card__content">
-              <GraficosPizza />
-            </div>
-          </div>
-        </div>
-      </section>
+      <button
+        type="button"
+        className="principal-dashboard-link"
+        onClick={() => navigate('/layout/dashboard')}
+      >
+        <span className="principal-dashboard-link__icon">
+          <FaChartLine />
+        </span>
+        <span className="principal-dashboard-link__text">
+          <strong>Dashboard</strong>
+          <small>Ver gráficos e análise financeira</small>
+        </span>
+        <FaChevronRight className="principal-dashboard-link__chevron" />
+      </button>
 
       <ModalRelatorio
         isOpen={showModalRelatorio}

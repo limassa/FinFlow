@@ -127,9 +127,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 8px;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
   cursor: pointer;
   position: relative;
   border-radius: 12px;
@@ -139,7 +139,7 @@
 }
 
 .sidebar-item .icon {
-  font-size: 1.45rem;
+  font-size: 1.15rem;
   opacity: 0.9;
   transition: opacity 0.2s;
 }
@@ -1441,16 +1441,19 @@
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 
 .grafico-evolucao-mensal .chart-container {
   width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
+  min-height: 260px;
+  display: block;
+  position: relative;
 }
 
 /* Carrossel dos Gráficos de Pizza */
@@ -2965,16 +2968,19 @@ select.form-input:focus {
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 
 .grafico-evolucao-mensal .chart-container {
   width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
+  min-height: 260px;
+  display: block;
+  position: relative;
 }
 
 .chart-loading,
@@ -5223,13 +5229,14 @@ select.form-input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 4px;
   width: 100%;
+  flex-shrink: 0;
 }
 .grafico-evolucao-nav__btn {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
   background: #EFF6FF;
@@ -5238,35 +5245,90 @@ select.form-input:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 12px;
 }
 .grafico-evolucao-nav__btn:hover {
   background: #DBEAFE;
 }
 .grafico-evolucao-nav__period {
-  min-width: 140px;
+  min-width: 120px;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--black);
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 4px 6px;
 }
 .grafico-evolucao-nav__period:disabled {
   cursor: default;
   opacity: 1;
 }
 .graficos-pizza-title {
-  margin: 0 0 8px;
+  margin: 0;
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--grey-700);
+  width: 100%;
+  flex-shrink: 0;
 }
 .chart-container--pizza {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+}
+
+.principal-dashboard-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(30, 58, 95, 0.08);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+.principal-dashboard-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+.principal-dashboard-link__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.principal-dashboard-link__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.principal-dashboard-link__text strong {
+  font-size: 15px;
+  color: var(--black);
+}
+.principal-dashboard-link__text small {
+  font-size: 13px;
+  color: var(--grey-500);
+}
+.principal-dashboard-link__chevron {
+  color: var(--grey-400);
+  font-size: 14px;
 }
 
 /* Cards principais */
@@ -6717,4 +6779,167 @@ select.form-input:focus {
   .cartao-compras-lista .compra-row span:nth-child(5) {
     display: none;
   }
+}
+
+/* =====================================================
+   Dashboard page + chart layout fixes (override)
+   ===================================================== */
+.dashboard-page {
+  background: #EFF6FF;
+  padding: 24px;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.dashboard-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dashboard-page__header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.dashboard-page__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+.dashboard-page__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #2563EB;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(30, 58, 95, 0.08);
+}
+.dashboard-page__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.dashboard-page__stat {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow: 0 2px 10px rgba(30, 58, 95, 0.06);
+}
+.dashboard-page__stat span {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+.dashboard-page__stat strong {
+  font-size: 1.25rem;
+}
+.dashboard-page__stat.positive strong { color: #059669; }
+.dashboard-page__stat.negative strong { color: #DC2626; }
+.dashboard-page__charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dashboard-page__chart-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow: 0 2px 12px rgba(30, 58, 95, 0.08);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dashboard-page__chart-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2563EB;
+}
+.dashboard-page__chart-title h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.dashboard-page__chart-body {
+  min-width: 0;
+  width: 100%;
+}
+
+.grafico-evolucao-mensal {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 8px;
+  min-width: 0;
+}
+.grafico-evolucao-mensal .chart-container {
+  width: 100% !important;
+  height: 300px !important;
+  min-height: 260px;
+  display: block !important;
+  position: relative;
+}
+
+.graficos-pizza-carrossel {
+  width: 100% !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
+  min-width: 0;
+}
+.graficos-pizza-carrossel .carrossel-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  min-width: 0;
+}
+.graficos-pizza-carrossel .chart-wrapper {
+  flex: 1 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+}
+.graficos-pizza-carrossel .btn-carrossel-side {
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 11px !important;
+  flex-shrink: 0 !important;
+  z-index: 2 !important;
+}
+.graficos-pizza-carrossel .chart-container,
+.graficos-pizza-carrossel .chart-container--pizza {
+  width: 100% !important;
+  height: 280px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-page__charts { grid-template-columns: 1fr; }
+  .dashboard-page__stats { grid-template-columns: 1fr; }
 }

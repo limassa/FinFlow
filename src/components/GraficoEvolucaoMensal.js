@@ -271,7 +271,7 @@ function GraficoEvolucaoMensal() {
           <FaChevronRight />
         </button>
       </div>
-      <div className="chart-container" style={{ height: '320px', width: '100%', position: 'relative' }}>
+      <div className="chart-container" style={{ height: '300px', width: '100%', position: 'relative' }}>
         <Line data={dadosGrafico} options={options} />
       </div>
     </div>

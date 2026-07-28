@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUser, FaBell, FaBellSlash, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera } from 'react-icons/fa';
+import { FaUser, FaBell, FaBellSlash, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera, FaChartLine } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -198,6 +198,11 @@ function UserMenu() {
             <span>
               {lembretesAtivos ? 'Desativar Lembretes' : 'Ativar Lembretes'}
             </span>
+          </div>
+
+          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/dashboard'); }}>
+            <FaChartLine />
+            <span>Dashboard</span>
           </div>
 
           <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/configuracoes'); }}>

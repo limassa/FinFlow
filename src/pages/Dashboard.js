@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChartLine, FaChartPie, FaCalendarAlt, FaBell, FaCog } from 'react-icons/fa';
+import { FaChartLine, FaChartPie, FaHome } from 'react-icons/fa';
 import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
 import GraficosPizza from '../components/GraficosPizza';
 import { API_ENDPOINTS } from '../config/api';
@@ -11,12 +11,9 @@ function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalReceitas: 0,
-    totalDespesas: 0,
-    saldo: 0,
     receitasMes: 0,
     despesasMes: 0,
-    contasAtivas: 0
+    saldoMes: 0,
   });
 
   useEffect(() => {
@@ -29,50 +26,30 @@ function Dashboard() {
     carregarEstatisticas(userData.id);
   }, [navigate]);
 
-  // Verificar se está carregando
-  if (!user && !loading) {
-    return (
-      <div className="dashboard-container">
-        <div className="loading">Redirecionando...</div>
-      </div>
-    );
-  }
-
   const carregarEstatisticas = async (userId) => {
     try {
       setLoading(true);
-      
-      // Buscar estatísticas gerais
-      const [receitasRes, despesasRes, contasRes] = await Promise.all([
+      const [receitasRes, despesasRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
         fetch(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
-        fetch(`${API_ENDPOINTS.CONTAS}?userId=${userId}`)
       ]);
 
       const receitas = await receitasRes.json();
       const despesas = await despesasRes.json();
-      const contas = await contasRes.json();
-
-      // Calcular totais
-      const totalReceitas = receitas.reduce((sum, r) => sum + parseFloat(r.receita_valor), 0);
-      const totalDespesas = despesas.reduce((sum, d) => sum + parseFloat(d.despesa_valor), 0);
-      
-      // Calcular valores do mês atual
       const mesAtual = new Date().toISOString().slice(0, 7);
-      const receitasMes = receitas
-        .filter(r => r.receita_data.startsWith(mesAtual))
-        .reduce((sum, r) => sum + parseFloat(r.receita_valor), 0);
-      const despesasMes = despesas
-        .filter(d => d.despesa_data.startsWith(mesAtual))
-        .reduce((sum, d) => sum + parseFloat(d.despesa_valor), 0);
+
+      const receitasMes = (receitas || [])
+        .filter((r) => r.receita_recebido && String(r.receita_data || '').startsWith(mesAtual))
+        .reduce((sum, r) => sum + parseFloat(r.receita_valor || 0), 0);
+
+      const despesasMes = (despesas || [])
+        .filter((d) => d.despesa_pago && String(d.despesa_data || '').startsWith(mesAtual))
+        .reduce((sum, d) => sum + parseFloat(d.despesa_valor || 0), 0);
 
       setStats({
-        totalReceitas,
-        totalDespesas,
-        saldo: totalReceitas - totalDespesas,
         receitasMes,
         despesasMes,
-        contasAtivas: contas.length
+        saldoMes: receitasMes - despesasMes,
       });
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
@@ -81,132 +58,87 @@ function Dashboard() {
     }
   };
 
-  const formatarMoeda = (valor) => {
-    return new Intl.NumberFormat('pt-BR', {
+  const formatarMoeda = (valor) =>
+    new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(valor);
-  };
 
-  if (loading) {
+  if (!user && !loading) {
     return (
-      <div className="dashboard-container">
-        <div className="loading">Carregando dashboard...</div>
+      <div className="dashboard-page">
+        <div className="principal-loading">Redirecionando...</div>
       </div>
     );
   }
 
+  if (loading) {
+    return (
+      <div className="dashboard-page">
+        <div className="principal-loading">
+          <div className="principal-loading-spinner" />
+          <span>Carregando dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const mesLabel = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
   return (
-    <div className="dashboard-container">
-      {/* Header do Dashboard */}
-      <div className="dashboard-header">
-        <div className="dashboard-title">
-          <FaChartLine />
-          <h1>Dashboard Financeiro</h1>
+    <div className="dashboard-page">
+      <header className="dashboard-page__header">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Análise financeira de {mesLabel}</p>
         </div>
-        <div className="dashboard-actions">
-          <button 
-            className="btn-secondary"
-            onClick={() => navigate('/layout/principal')}
-          >
-            Voltar ao Menu
-          </button>
-        </div>
-      </div>
+        <button
+          type="button"
+          className="dashboard-page__home"
+          onClick={() => navigate('/layout/principal')}
+        >
+          <FaHome /> Home
+        </button>
+      </header>
 
-      {/* Cards de Estatísticas */}
-      <div className="stats-grid">
-        <div className="stat-card positive">
-          <div className="stat-icon">
+      <section className="dashboard-page__stats">
+        <article className="dashboard-page__stat positive">
+          <span>Receitas do mês</span>
+          <strong>{formatarMoeda(stats.receitasMes)}</strong>
+        </article>
+        <article className="dashboard-page__stat negative">
+          <span>Despesas do mês</span>
+          <strong>{formatarMoeda(stats.despesasMes)}</strong>
+        </article>
+        <article className={`dashboard-page__stat ${stats.saldoMes >= 0 ? 'positive' : 'negative'}`}>
+          <span>Saldo do mês</span>
+          <strong>{formatarMoeda(stats.saldoMes)}</strong>
+        </article>
+      </section>
+
+      <section className="dashboard-page__charts">
+        <div className="dashboard-page__chart-card">
+          <div className="dashboard-page__chart-title">
             <FaChartLine />
+            <h2>Evolução financeira</h2>
           </div>
-          <div className="stat-content">
-            <h3>Receitas do Mês</h3>
-            <div className="stat-value">{formatarMoeda(stats.receitasMes)}</div>
-            <div className="stat-description">Total de receitas em {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
+          <div className="dashboard-page__chart-body">
+            <GraficoEvolucaoMensal />
           </div>
         </div>
 
-        <div className="stat-card negative">
-          <div className="stat-icon">
+        <div className="dashboard-page__chart-card">
+          <div className="dashboard-page__chart-title">
             <FaChartPie />
+            <h2>Distribuição por categoria</h2>
           </div>
-          <div className="stat-content">
-            <h3>Despesas do Mês</h3>
-            <div className="stat-value">{formatarMoeda(stats.despesasMes)}</div>
-            <div className="stat-description">Total de despesas em {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
-          </div>
-        </div>
-
-        <div className={`stat-card ${stats.saldo >= 0 ? 'positive' : 'negative'}`}>
-          <div className="stat-icon">
-            <FaCalendarAlt />
-          </div>
-          <div className="stat-content">
-            <h3>Saldo do Mês</h3>
-            <div className="stat-value">{formatarMoeda(stats.saldo)}</div>
-            <div className="stat-description">
-              {stats.saldo >= 0 ? 'Superávit' : 'Déficit'} em {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            </div>
+          <div className="dashboard-page__chart-body">
+            <GraficosPizza />
           </div>
         </div>
-
-        <div className="stat-card neutral">
-          <div className="stat-icon">
-            <FaBell />
-          </div>
-          <div className="stat-content">
-            <h3>Contas Ativas</h3>
-            <div className="stat-value">{stats.contasAtivas}</div>
-            <div className="stat-description">Contas bancárias cadastradas</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Gráficos */}
-      <div className="charts-section">
-        <div className="chart-container">
-          <h3>Evolução financeira</h3>
-          <GraficoEvolucaoMensal />
-        </div>
-        
-        <div className="chart-container">
-          <h3>Distribuição por categoria</h3>
-          <GraficosPizza />
-        </div>
-      </div>
-
-      {/* Ações Rápidas */}
-      <div className="quick-actions">
-        <h3>Ações Rápidas</h3>
-        <div className="actions-grid">
-          <button 
-            className="action-btn"
-            onClick={() => navigate('/layout/receita')}
-          >
-            <FaChartLine />
-            <span>Nova Receita</span>
-          </button>
-          
-          <button 
-            className="action-btn"
-            onClick={() => navigate('/layout/despesa')}
-          >
-            <FaChartPie />
-            <span>Nova Despesa</span>
-          </button>
-          
-          <button 
-            className="action-btn"
-            onClick={() => navigate('/layout/contas')}
-          >
-            <FaCog />
-            <span>Gerenciar Contas</span>
-          </button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
 
-export default Dashboard; 
+export default Dashboard;
