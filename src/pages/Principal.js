@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaChartBar } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -92,6 +92,83 @@ function fotoUriFromApi(foto) {
   return `data:image/jpeg;base64,${foto}`;
 }
 
+function formatarValorBr(valor) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valor);
+}
+
+function somarPorCategoria(despesas, mes, ano) {
+  const mapa = {};
+  despesas.forEach((d) => {
+    if (!d.despesa_pago) return;
+    const data = parseLocalDate(d.despesa_data);
+    if (!data || data.getMonth() !== mes || data.getFullYear() !== ano) return;
+    const tipo = d.despesa_tipo || 'Outros';
+    mapa[tipo] = (mapa[tipo] || 0) + (parseFloat(d.despesa_valor) || 0);
+  });
+  return mapa;
+}
+
+function gerarInsight(despesas, receitasMes, despesasMes) {
+  const agora = new Date();
+  const mesAtual = agora.getMonth();
+  const anoAtual = agora.getFullYear();
+  const mesAnteriorDate = new Date(anoAtual, mesAtual - 1, 1);
+  const mesAnt = mesAnteriorDate.getMonth();
+  const anoAnt = mesAnteriorDate.getFullYear();
+
+  const mapaAtual = somarPorCategoria(despesas, mesAtual, anoAtual);
+  const mapaAnt = somarPorCategoria(despesas, mesAnt, anoAnt);
+  const saldoMes = receitasMes - despesasMes;
+  const insights = [];
+
+  if (saldoMes > 0) {
+    insights.push(`Você está economizando ${formatarValorBr(saldoMes)} este mês.`);
+    insights.push(
+      `Se continuar economizando nesse ritmo, em 12 meses terá guardado aproximadamente ${formatarValorBr(saldoMes * 12)}.`
+    );
+  } else if (saldoMes < 0 && despesasMes > 0) {
+    insights.push(
+      `Neste mês as despesas estão ${formatarValorBr(Math.abs(saldoMes))} acima das receitas. Vale revisar os gastos.`
+    );
+  }
+
+  const categoriasAtuais = Object.entries(mapaAtual).sort((a, b) => b[1] - a[1]);
+  if (categoriasAtuais.length > 0) {
+    const [maiorCat, maiorValor] = categoriasAtuais[0];
+    insights.push(
+      `Sua maior despesa continua sendo ${maiorCat.toLowerCase()} (${formatarValorBr(maiorValor)}).`
+    );
+  }
+
+  Object.keys(mapaAtual).forEach((cat) => {
+    const atual = mapaAtual[cat] || 0;
+    const anterior = mapaAnt[cat] || 0;
+    if (anterior > 0 && atual < anterior) {
+      const pct = Math.round(((anterior - atual) / anterior) * 100);
+      if (pct >= 5) {
+        insights.push(`Você gastou ${pct}% menos em ${cat.toLowerCase()}.`);
+      }
+    } else if (anterior > 0 && atual > anterior) {
+      const pct = Math.round(((atual - anterior) / anterior) * 100);
+      if (pct >= 10) {
+        insights.push(`Atenção: você gastou ${pct}% a mais em ${cat.toLowerCase()} neste mês.`);
+      }
+    }
+  });
+
+  if (insights.length === 0) {
+    return 'Continue registrando suas movimentações para receber insights personalizados.';
+  }
+
+  const diaDoAno = Math.floor(
+    (agora - new Date(agora.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
+  );
+  return insights[diaDoAno % insights.length];
+}
+
 function Principal() {
   const navigate = useNavigate();
   const [totais, setTotais] = useState({
@@ -119,6 +196,10 @@ function Principal() {
   }, [primeiroNome]);
   const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
   const dica = useMemo(() => dicaDoDia(), []);
+  const insight = useMemo(
+    () => gerarInsight(despesas, totais.receitasMes, totais.despesasMes),
+    [despesas, totais.receitasMes, totais.despesasMes]
+  );
 
   useEffect(() => {
     if (userId) {
@@ -246,13 +327,10 @@ function Principal() {
     }
   };
 
-  const formatarValor = (valor) =>
-    new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valor);
+  const formatarValor = formatarValorBr;
 
   const saldoMes = totais.receitasMes - totais.despesasMes;
+  const semMovimentacaoMes = totais.receitasMes === 0 && totais.despesasMes === 0;
   const saldoOrcamento = orcamento ? orcamento.totalOrcado - orcamento.totalRealizado : null;
   const pctDisponivel =
     orcamento && orcamento.totalOrcado > 0
@@ -356,6 +434,14 @@ function Principal() {
           </div>
           <p>{dica}</p>
         </article>
+
+        <article className="principal-insight-card">
+          <div className="principal-insight-card__header">
+            <FaChartBar />
+            <span>Insight</span>
+          </div>
+          <p>{insight}</p>
+        </article>
       </section>
 
       <section className="principal-cards">
@@ -412,27 +498,54 @@ function Principal() {
 
       <section className="principal-resumo">
         <h3>Resumo do Mês</h3>
-        <div className="principal-resumo__grid">
-          <div className="principal-resumo__item">
-            <span>Receitas do Mês</span>
-            <span className="principal-resumo__valor positive">{formatarValor(totais.receitasMes)}</span>
+        {semMovimentacaoMes ? (
+          <div className="principal-resumo__empty">
+            <p>
+              Você ainda não registrou movimentações neste mês. Que tal começar adicionando sua
+              primeira receita ou despesa?
+            </p>
+            <div className="principal-resumo__empty-actions">
+              <button type="button" onClick={() => navigate('/layout/receita')}>
+                Nova receita
+              </button>
+              <button type="button" onClick={() => navigate('/layout/despesa')}>
+                Nova despesa
+              </button>
+            </div>
           </div>
-          <div className="principal-resumo__item">
-            <span>Despesas do Mês</span>
-            <span className="principal-resumo__valor negative">{formatarValor(totais.despesasMes)}</span>
-          </div>
-          <div className="principal-resumo__item principal-resumo__item--destaque">
-            <span>Saldo do Mês</span>
-            <span className={`principal-resumo__valor ${saldoMes >= 0 ? 'positive' : 'negative'}`}>
-              {formatarValor(saldoMes)}
-            </span>
-          </div>
-        </div>
-        <p className={`principal-resumo__msg ${saldoMes >= 0 ? 'positive' : 'negative'}`}>
-          {saldoMes >= 0
-            ? `Você economizou ${formatarValor(saldoMes)} este mês. Continue assim!`
-            : `Você gastou ${formatarValor(Math.abs(saldoMes))} acima do orçamento.`}
-        </p>
+        ) : (
+          <>
+            <div className="principal-resumo__grid">
+              <div className="principal-resumo__item">
+                <span>Receitas do Mês</span>
+                <span className="principal-resumo__valor positive">
+                  {formatarValor(totais.receitasMes)}
+                </span>
+              </div>
+              <div className="principal-resumo__item">
+                <span>Despesas do Mês</span>
+                <span className="principal-resumo__valor negative">
+                  {formatarValor(totais.despesasMes)}
+                </span>
+              </div>
+              <div className="principal-resumo__item principal-resumo__item--destaque">
+                <span>Saldo do Mês</span>
+                <span
+                  className={`principal-resumo__valor ${
+                    saldoMes >= 0 ? 'positive' : 'negative'
+                  }`}
+                >
+                  {formatarValor(saldoMes)}
+                </span>
+              </div>
+            </div>
+            <p className={`principal-resumo__msg ${saldoMes >= 0 ? 'positive' : 'negative'}`}>
+              {saldoMes >= 0
+                ? `Você economizou ${formatarValor(saldoMes)} este mês. Continue assim!`
+                : `Você gastou ${formatarValor(Math.abs(saldoMes))} acima do orçamento.`}
+            </p>
+          </>
+        )}
       </section>
 
       <button
