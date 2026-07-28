@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -16,44 +18,76 @@ import { getUsuarioLogado } from '../functions/auth';
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend
 );
 
+const DIAS_JANELA = 7;
+const OFFSET_CENTRO = Math.floor(DIAS_JANELA / 2);
+
+function startOfLocalDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function formatLabel(date) {
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function sameLocalDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function parseLocalDate(raw) {
+  if (!raw) return null;
+  const ymd = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : startOfLocalDay(d);
+  }
+  const [y, m, day] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, day);
+}
+
 function GraficoEvolucaoMensal() {
-  const [dadosGrafico, setDadosGrafico] = useState(null);
+  const [receitas, setReceitas] = useState([]);
+  const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [offsetDias, setOffsetDias] = useState(0);
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
 
   useEffect(() => {
-    if (userId) {
-      buscarDadosMensais();
-    }
+    if (userId) buscarDados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const buscarDadosMensais = async () => {
+  const buscarDados = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      // Buscar receitas e despesas do usuário
       const [receitasRes, despesasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
       ]);
-
-      const receitas = receitasRes.data;
-      const despesas = despesasRes.data;
-
-      // Gerar dados dos últimos 12 meses
-      const dadosMensais = gerarDadosMensais(receitas, despesas);
-      
-      setDadosGrafico(dadosMensais);
+      setReceitas(receitasRes.data || []);
+      setDespesas(despesasRes.data || []);
     } catch (err) {
       console.error('Erro ao buscar dados:', err);
       setError('Erro ao carregar dados do gráfico');
@@ -62,78 +96,78 @@ function GraficoEvolucaoMensal() {
     }
   };
 
-  const gerarDadosMensais = (receitas, despesas) => {
-    const meses = [];
+  const janela = useMemo(() => {
+    const hoje = startOfLocalDay(new Date());
+    const centro = addDays(hoje, offsetDias);
+    const inicio = addDays(centro, -OFFSET_CENTRO);
+    const dias = [];
+    for (let i = 0; i < DIAS_JANELA; i++) {
+      dias.push(addDays(inicio, i));
+    }
+    return { centro, dias, hoje };
+  }, [offsetDias]);
+
+  const dadosGrafico = useMemo(() => {
+    const labels = [];
     const dadosReceitas = [];
     const dadosDespesas = [];
 
-    // Gerar array dos últimos 12 meses
-    for (let i = 11; i >= 0; i--) {
-      const data = new Date();
-      data.setMonth(data.getMonth() - i);
-      
-      const mesAno = data.toLocaleDateString('pt-BR', { 
-        month: 'short', 
-        year: 'numeric' 
-      });
-      
-      meses.push(mesAno);
+    janela.dias.forEach((dia) => {
+      labels.push(formatLabel(dia));
 
-      // Calcular total de receitas do mês
-      const receitasMes = receitas.filter(receita => {
-        const dataReceita = new Date(receita.receita_data);
-        const mesReceita = dataReceita.getMonth();
-        const anoReceita = dataReceita.getFullYear();
-        const mesAtual = data.getMonth();
-        const anoAtual = data.getFullYear();
-        const receitaPago = receita.receita_recebido;
-        
-        return mesReceita === mesAtual && anoReceita === anoAtual && receitaPago;
-      });
-      
-      const totalReceitasMes = receitasMes.reduce((sum, receita) => 
-        sum + parseFloat(receita.receita_valor), 0
-      );
-      dadosReceitas.push(totalReceitasMes);
+      const totalReceitas = receitas
+        .filter((r) => {
+          const data = parseLocalDate(r.receita_data);
+          return data && sameLocalDay(data, dia) && r.receita_recebido;
+        })
+        .reduce((sum, r) => sum + (parseFloat(r.receita_valor) || 0), 0);
 
-      // Calcular total de despesas do mês (apenas pagas)
-      const despesasMes = despesas.filter(despesa => {
-        const dataDespesa = new Date(despesa.despesa_data);
-        const mesDespesa = dataDespesa.getMonth();
-        const anoDespesa = dataDespesa.getFullYear();
-        const mesAtual = data.getMonth();
-        const anoAtual = data.getFullYear();
-        const despesaPaga = despesa.despesa_pago;
-        
-        return mesDespesa === mesAtual && anoDespesa === anoAtual && despesaPaga;
-      });
-      
-      const totalDespesasMes = despesasMes.reduce((sum, despesa) => 
-        sum + parseFloat(despesa.despesa_valor), 0
-      );
-      dadosDespesas.push(totalDespesasMes);
-    }
+      const totalDespesas = despesas
+        .filter((d) => {
+          const data = parseLocalDate(d.despesa_data);
+          return data && sameLocalDay(data, dia) && d.despesa_pago;
+        })
+        .reduce((sum, d) => sum + (parseFloat(d.despesa_valor) || 0), 0);
+
+      dadosReceitas.push(totalReceitas);
+      dadosDespesas.push(totalDespesas);
+    });
 
     return {
-      labels: meses,
+      labels,
       datasets: [
         {
           label: 'Receitas',
           data: dadosReceitas,
-          backgroundColor: 'rgba(34, 197, 94, 0.8)',
           borderColor: 'rgba(34, 197, 94, 1)',
-          borderWidth: 1,
+          backgroundColor: 'rgba(34, 197, 94, 0.15)',
+          tension: 0.35,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6,
         },
         {
           label: 'Despesas',
           data: dadosDespesas,
-          backgroundColor: 'rgba(239, 68, 68, 0.8)',
           borderColor: 'rgba(239, 68, 68, 1)',
-          borderWidth: 1,
+          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+          tension: 0.35,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6,
         },
       ],
     };
-  };
+  }, [janela, receitas, despesas]);
+
+  const tituloPeriodo = useMemo(() => {
+    const ini = janela.dias[0];
+    const fim = janela.dias[janela.dias.length - 1];
+    if (!ini || !fim) return '';
+    return `${formatLabel(ini)} a ${formatLabel(fim)}`;
+  }, [janela]);
+
+  const centroEhHoje = sameLocalDay(janela.centro, janela.hoje);
 
   const options = {
     responsive: true,
@@ -145,65 +179,51 @@ function GraficoEvolucaoMensal() {
         labels: {
           usePointStyle: true,
           padding: 15,
-          font: {
-            size: 11,
-            weight: 'bold'
-          }
-        }
+          font: { size: 11, weight: 'bold' },
+        },
       },
-      title: {
-        display: false
-      },
+      title: { display: false },
       tooltip: {
         callbacks: {
-          label: function(context) {
+          label(context) {
             const valor = context.parsed.y;
             return `${context.dataset.label}: ${new Intl.NumberFormat('pt-BR', {
               style: 'currency',
-              currency: 'BRL'
+              currency: 'BRL',
             }).format(valor)}`;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: function(value) {
+          callback(value) {
             return new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL',
               minimumFractionDigits: 0,
-              maximumFractionDigits: 0
+              maximumFractionDigits: 0,
             }).format(value);
-          }
-        }
+          },
+        },
       },
       x: {
         ticks: {
-          maxRotation: 45,
-          minRotation: 0
-        }
-      }
+          maxRotation: 0,
+          minRotation: 0,
+          font: { size: 11 },
+        },
+      },
     },
     interaction: {
       mode: 'index',
       intersect: false,
     },
-    layout: {
-      padding: {
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20
-      }
-    }
   };
 
-  if (!userId) {
-    return <div>Usuário não logado</div>;
-  }
+  if (!userId) return <div>Usuário não logado</div>;
 
   if (loading) {
     return (
@@ -217,26 +237,45 @@ function GraficoEvolucaoMensal() {
     return (
       <div className="chart-error">
         <p>{error}</p>
-        <button onClick={buscarDadosMensais}>Tentar novamente</button>
-      </div>
-    );
-  }
-
-  if (!dadosGrafico) {
-    return (
-      <div className="chart-empty">
-        <p>Nenhum dado disponível para exibir</p>
+        <button type="button" onClick={buscarDados}>Tentar novamente</button>
       </div>
     );
   }
 
   return (
     <div className="grafico-evolucao-mensal">
-      <div className="chart-container" style={{ height: '350px', width: '100%', position: 'relative', overflow: 'hidden' }}>
-        <Bar data={dadosGrafico} options={options} />
+      <div className="grafico-evolucao-nav">
+        <button
+          type="button"
+          className="grafico-evolucao-nav__btn"
+          onClick={() => setOffsetDias((o) => o - DIAS_JANELA + 1)}
+          aria-label="Período anterior"
+        >
+          <FaChevronLeft />
+        </button>
+        <button
+          type="button"
+          className="grafico-evolucao-nav__period"
+          onClick={() => setOffsetDias(0)}
+          disabled={centroEhHoje}
+          title={centroEhHoje ? undefined : 'Voltar para hoje'}
+        >
+          {tituloPeriodo}
+        </button>
+        <button
+          type="button"
+          className="grafico-evolucao-nav__btn"
+          onClick={() => setOffsetDias((o) => o + DIAS_JANELA - 1)}
+          aria-label="Próximo período"
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+      <div className="chart-container" style={{ height: '320px', width: '100%', position: 'relative' }}>
+        <Line data={dadosGrafico} options={options} />
       </div>
     </div>
   );
 }
 
-export default GraficoEvolucaoMensal; 
+export default GraficoEvolucaoMensal;

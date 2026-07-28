@@ -128,14 +128,20 @@ export default function AgendaScreen() {
   const getDiasDaSemana = () => {
     const dias = [];
     const inicio = new Date(semanaRef);
+    const hojeYmd = (() => {
+      const h = new Date();
+      return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
+    })();
     for (let i = 0; i < 7; i++) {
       const d = new Date(inicio);
       d.setDate(inicio.getDate() + i);
+      const data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       dias.push({
-        data: d.toISOString().split('T')[0],
+        data,
         label: diasSemana[i],
         dia: d.getDate(),
         mes: d.getMonth(),
+        isToday: data === hojeYmd,
       });
     }
     return dias;
@@ -270,9 +276,14 @@ export default function AgendaScreen() {
       <View style={styles.diasHeader}>
         <View style={[styles.diaCol, styles.cornerCol]} />
         {dias.map(d => (
-          <View key={d.data} style={styles.diaCol}>
-            <Text style={styles.diaNome}>{d.label}</Text>
-            <Text style={styles.diaNumero}>{d.dia}/{d.mes + 1}</Text>
+          <View key={d.data} style={[styles.diaCol, d.isToday && styles.diaColToday]}>
+            <Text style={[styles.diaNome, d.isToday && styles.diaNomeToday]}>{d.label}</Text>
+            <View style={[styles.diaNumeroWrap, d.isToday && styles.diaNumeroWrapToday]}>
+              <Text style={[styles.diaNumero, d.isToday && styles.diaNumeroToday]}>
+                {d.dia}/{d.mes + 1}
+              </Text>
+            </View>
+            {d.isToday ? <Text style={styles.diaHojeLabel}>Hoje</Text> : null}
           </View>
         ))}
       </View>
@@ -288,7 +299,11 @@ export default function AgendaScreen() {
               return (
                 <TouchableOpacity
                   key={`${dia.data}-${horario}`}
-                  style={[styles.slotCell, evs.length > 0 && styles.slotCellWithEvents]}
+                  style={[
+                    styles.slotCell,
+                    dia.isToday && styles.slotCellToday,
+                    evs.length > 0 && styles.slotCellWithEvents,
+                  ]}
                   onPress={() => abrirModalSlot(dia, horario)}
                   activeOpacity={0.7}
                 >
@@ -487,10 +502,32 @@ const styles = StyleSheet.create({
   diaCol: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 4,
+  },
+  diaColToday: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 10,
   },
   cornerCol: { flex: 0, width: 50 },
   diaNome: { fontSize: 10, color: 'rgba(255,255,255,0.9)' },
+  diaNomeToday: { fontWeight: '700', color: '#fff' },
+  diaNumeroWrap: {
+    marginTop: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  diaNumeroWrapToday: {
+    backgroundColor: '#fff',
+  },
   diaNumero: { fontSize: 12, color: '#fff', fontWeight: '700' },
+  diaNumeroToday: { color: colors.primary },
+  diaHojeLabel: {
+    marginTop: 2,
+    fontSize: 9,
+    color: '#fff',
+    fontWeight: '700',
+  },
   scroll: { flex: 1 },
   slotRow: {
     flexDirection: 'row',
@@ -511,6 +548,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderLeftWidth: 1,
     borderLeftColor: '#eee',
+  },
+  slotCellToday: {
+    backgroundColor: 'rgba(37, 99, 235, 0.06)',
   },
   slotCellWithEvents: { justifyContent: 'flex-start' },
   slotAdd: { fontSize: 16, color: '#ccc', textAlign: 'center' },

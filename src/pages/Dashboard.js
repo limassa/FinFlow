@@ -166,12 +166,12 @@ function Dashboard() {
       {/* Gráficos */}
       <div className="charts-section">
         <div className="chart-container">
-          <h3>Evolução Mensal</h3>
+          <h3>Evolução financeira</h3>
           <GraficoEvolucaoMensal />
         </div>
         
         <div className="chart-container">
-          <h3>Distribuição por Categoria</h3>
+          <h3>Distribuição por categoria</h3>
           <GraficosPizza />
         </div>
       </div>

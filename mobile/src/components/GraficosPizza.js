@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,10 @@ import { formatarValor } from '../utils/formatters';
 import { colors } from '../theme/theme';
 
 const screenWidth = Dimensions.get('window').width;
+const chartWidth = screenWidth - 40;
+/** Com hasLegend=false o pizza fica à esquerda; paddingLeft centraliza o disco */
+const pieDiameter = 180;
+const paddingLeft = Math.max(0, Math.round(chartWidth / 2 - pieDiameter / 2));
 
 export default function GraficosPizza() {
   const { getUserId } = useAuth();
@@ -27,7 +31,6 @@ export default function GraficosPizza() {
         axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
       ]);
 
-      // Normalizar dados de receitas
       const receitas = receitasRes.data.map(receita => ({
         ...receita,
         receita_id: receita.receita_id || receita.Receita_Id || receita.id,
@@ -39,7 +42,6 @@ export default function GraficosPizza() {
         conta_id: receita.conta_id || receita.Conta_id || receita.Conta_Id
       }));
 
-      // Normalizar dados de despesas
       const despesas = despesasRes.data.map(despesa => ({
         ...despesa,
         despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
@@ -52,15 +54,13 @@ export default function GraficosPizza() {
         conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id
       }));
 
-      // Mês atual
       const hoje = new Date();
       const mesAtual = hoje.getMonth();
       const anoAtual = hoje.getFullYear();
 
-      // Processar receitas
       const receitasMes = receitas.filter(r => {
         const data = new Date(r.receita_data);
-        return data.getMonth() === mesAtual && 
+        return data.getMonth() === mesAtual &&
                data.getFullYear() === anoAtual &&
                r.receita_recebido;
       });
@@ -69,10 +69,7 @@ export default function GraficosPizza() {
       receitasMes.forEach(r => {
         const tipo = r.receita_tipo || 'Outros';
         const valor = parseFloat(r.receita_valor || 0);
-        if (isNaN(valor)) {
-          console.warn('⚠️ Valor inválido de receita:', r);
-          return;
-        }
+        if (isNaN(valor)) return;
         receitasPorTipo[tipo] = (receitasPorTipo[tipo] || 0) + valor;
       });
 
@@ -80,14 +77,11 @@ export default function GraficosPizza() {
         name: tipo,
         value: receitasPorTipo[tipo],
         color: ['#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6', '#EF4444', '#10B981', '#06B6D4'][index % 7],
-        legendFontColor: colors.text,
-        legendFontSize: 12
       }));
 
-      // Processar despesas
       const despesasMes = despesas.filter(d => {
         const data = new Date(d.despesa_data);
-        return data.getMonth() === mesAtual && 
+        return data.getMonth() === mesAtual &&
                data.getFullYear() === anoAtual &&
                d.despesa_pago;
       });
@@ -96,10 +90,7 @@ export default function GraficosPizza() {
       despesasMes.forEach(d => {
         const tipo = d.despesa_tipo || 'Outros';
         const valor = parseFloat(d.despesa_valor || 0);
-        if (isNaN(valor)) {
-          console.warn('⚠️ Valor inválido de despesa:', d);
-          return;
-        }
+        if (isNaN(valor)) return;
         despesasPorTipo[tipo] = (despesasPorTipo[tipo] || 0) + valor;
       });
 
@@ -107,18 +98,8 @@ export default function GraficosPizza() {
         name: tipo,
         value: despesasPorTipo[tipo],
         color: ['#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E', '#10B981'][index % 7],
-        legendFontColor: colors.text,
-        legendFontSize: 12
       }));
 
-      console.log('📊 Dados recebidos no gráfico de pizza (Mobile):');
-      console.log('  - Total de receitas:', receitas.length);
-      console.log('  - Total de despesas:', despesas.length);
-      console.log('  - Receitas recebidas:', receitas.filter(r => r.receita_recebido).length);
-      console.log('  - Despesas pagas:', despesas.filter(d => d.despesa_pago).length);
-      console.log('  - Tipos de receitas:', receitasChart.length);
-      console.log('  - Tipos de despesas:', despesasChart.length);
-      
       setDadosReceitas(receitasChart.length > 0 ? receitasChart : null);
       setDadosDespesas(despesasChart.length > 0 ? despesasChart : null);
     } catch (error) {
@@ -135,7 +116,6 @@ export default function GraficosPizza() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // Recarregar dados quando a tela recebe foco
   useFocusEffect(
     React.useCallback(() => {
       if (userId) {
@@ -166,11 +146,11 @@ export default function GraficosPizza() {
         >
           <Ionicons name="chevron-back" size={20} color={colors.primary} />
         </TouchableOpacity>
-        
+
         <Text style={styles.title}>
           {currentChart === 0 ? 'Receitas' : 'Despesas'} - Mês Atual
         </Text>
-        
+
         <TouchableOpacity
           style={styles.navButton}
           onPress={() => setCurrentChart((prev) => (prev + 1) % 2)}
@@ -180,18 +160,34 @@ export default function GraficosPizza() {
       </View>
 
       {hasData ? (
-        <PieChart
-          data={chartData}
-          width={screenWidth - 40}
-          height={220}
-          chartConfig={{
-            color: (opacity = 1) => `rgba(34, 34, 34, ${opacity})`,
-          }}
-          accessor="value"
-          backgroundColor="transparent"
-          paddingLeft="15"
-          absolute
-        />
+        <>
+          <View style={styles.chartWrap}>
+            <PieChart
+              data={chartData}
+              width={chartWidth}
+              height={220}
+              chartConfig={{
+                color: (opacity = 1) => `rgba(34, 34, 34, ${opacity})`,
+              }}
+              accessor="value"
+              backgroundColor="transparent"
+              paddingLeft={`${paddingLeft}`}
+              absolute
+              hasLegend={false}
+            />
+          </View>
+          <View style={styles.legend}>
+            {chartData.map((item) => (
+              <View key={`${item.name}-${item.color}`} style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                <Text style={styles.legendLabel} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.legendValue}>{formatarValor(item.value)}</Text>
+              </View>
+            ))}
+          </View>
+        </>
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
@@ -228,8 +224,36 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 8,
   },
-  navButtonDisabled: {
-    opacity: 0.3,
+  chartWrap: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  legend: {
+    width: '100%',
+    marginTop: 8,
+    gap: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+  },
+  legendValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
   },
   emptyContainer: {
     height: 220,
@@ -245,4 +269,3 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 });
-

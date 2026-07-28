@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,40 +8,138 @@ import {
   RefreshControl,
   ActivityIndicator,
   Linking,
-  Image
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { useMenu } from '../context/MenuContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { colors } from '../theme/theme';
+import { HeaderGreetingTitle } from '../navigation/menuHeaderOptions';
+
+const DIAS_SEMANA = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado',
+];
+
+const DICAS_ECONOMIA = [
+  'Antes de comprar, espere 24 horas. Muitas compras por impulso perdem a graça no dia seguinte.',
+  'Anote todo gasto pequeno por uma semana. Você se surpreende com o que “some” no café e no delivery.',
+  'Defina um teto semanal para lazer e respeite como se fosse uma conta fixa.',
+  'Compare preços em pelo menos dois lugares antes de compras maiores.',
+  'Cancele assinaturas que você não usou no último mês.',
+  'Guarde automaticamente uma pequena parte de cada receita assim que ela cair na conta.',
+  'Cozinhar em casa alguns dias da semana costuma render mais economia do que qualquer cupom.',
+  'Revise as faturas do cartão: taxas e recorrências esquecidas são comuns.',
+  'Prefira pagar à vista quando o desconto for real — juros corroem o “parcelado fácil”.',
+  'Monte uma reserva de emergência, mesmo que comece com valores baixos.',
+  'Evite entrar em lojas ou apps de compra sem uma lista do que realmente precisa.',
+  'Negocie contas fixas (internet, plano de celular, seguros) pelo menos uma vez por ano.',
+  'Use o método dos envelopes ou categorias no app para limitar cada tipo de gasto.',
+  'Troque “quero ter” por “preciso agora?” — a pergunta muda muitas decisões.',
+  'Planeje o mês no início: quem decide antes gasta com mais consciência.',
+];
+
+function extrairPrimeiroNome(user) {
+  const nomeCompleto =
+    user?.usuario_nome ||
+    user?.Usuario_Nome ||
+    user?.nome ||
+    '';
+  const primeiro = String(nomeCompleto).trim().split(/\s+/)[0] || '';
+  if (!primeiro) return '';
+  return primeiro.charAt(0).toUpperCase() + primeiro.slice(1).toLowerCase();
+}
+
+function saudacaoPorHorario() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Bom dia';
+  if (h >= 12 && h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function startOfLocalDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function parseLocalDate(raw) {
+  if (!raw) return null;
+  const ymd = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : startOfLocalDay(d);
+  }
+  const [y, m, day] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, day);
+}
+
+function getSemanaRange(ref = new Date()) {
+  const hoje = startOfLocalDay(ref);
+  const diaSemana = hoje.getDay(); // 0 = domingo
+  const inicio = new Date(hoje);
+  inicio.setDate(hoje.getDate() - diaSemana);
+  const fim = new Date(inicio);
+  fim.setDate(inicio.getDate() + 6);
+  fim.setHours(23, 59, 59, 999);
+  return { inicio, fim, hoje };
+}
+
+function dicaDoDia() {
+  const agora = new Date();
+  const inicioAno = new Date(agora.getFullYear(), 0, 0);
+  const diaDoAno = Math.floor((agora - inicioAno) / (1000 * 60 * 60 * 24));
+  return DICAS_ECONOMIA[diaDoAno % DICAS_ECONOMIA.length];
+}
+
+function fotoUriFromApi(foto) {
+  if (!foto) return null;
+  return foto.startsWith('data:') ? foto : `data:image/jpeg;base64,${foto}`;
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation();
-  const { openMenu } = useMenu();
-  const { getUserId } = useAuth();
+  const { user, getUserId } = useAuth();
   const userId = getUserId();
+  const primeiroNome = useMemo(() => extrairPrimeiroNome(user), [user]);
+  const saudacao = useMemo(() => {
+    const base = saudacaoPorHorario();
+    return primeiroNome ? `${base}, ${primeiroNome}` : base;
+  }, [primeiroNome]);
+
   const [totais, setTotais] = useState({
     totalReceitas: 0,
     totalDespesas: 0,
     saldo: 0,
     saldoContas: 0,
     receitasMes: 0,
-    despesasMes: 0
+    despesasMes: 0,
   });
+  const [vencimentos, setVencimentos] = useState({ hoje: 0, semana: 0 });
+  const [orcamento, setOrcamento] = useState(null); // { totalOrcado, totalRealizado } | null
+  const [userFoto, setUserFoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [versao, setVersao] = useState(null);
 
-  useEffect(() => {
-    if (userId) {
-      fetchTotais();
-      fetchVersao();
-    }
-  }, [userId]);
+  const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
+  const dica = useMemo(() => dicaDoDia(), []);
+
+  useLayoutEffect(() => {
+    const fotoUri = fotoUriFromApi(userFoto);
+    navigation.setOptions({
+      title: saudacao,
+      headerTitle: () => <HeaderGreetingTitle fotoUri={fotoUri} title={saudacao} />,
+    });
+  }, [navigation, saudacao, userFoto]);
 
   const fetchVersao = async () => {
     try {
@@ -51,77 +149,120 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error('Erro ao buscar versão mobile:', error);
-      // Em caso de erro, usar versão padrão
       setVersao({
         versao_mobile: 'M.1.1.01',
-        versao_nome: 'Claricash Mobile'
+        versao_nome: 'Claricash Mobile',
       });
+    }
+  };
+
+  const fetchFoto = async () => {
+    try {
+      const res = await axios.get(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`);
+      if (res.data?.foto) setUserFoto(res.data.foto);
+      else setUserFoto(null);
+    } catch {
+      // silencioso
     }
   };
 
   const fetchTotais = async () => {
     try {
-      const [receitasRes, despesasRes, saldoContasRes] = await Promise.all([
+      const mesAtualStr = new Date().toISOString().slice(0, 7);
+      const [receitasRes, despesasRes, saldoContasRes, orcamentosRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`),
+        axios.get(`${API_ENDPOINTS.ORCAMENTOS}?userId=${userId}&mes=${mesAtualStr}`).catch(() => ({ data: [] })),
       ]);
 
-      // Normalizar dados de receitas
-      const receitasData = receitasRes.data.map(receita => ({
+      const receitasData = (receitasRes.data || []).map((receita) => ({
         ...receita,
-        receita_id: receita.receita_id || receita.Receita_Id || receita.id,
-        receita_descricao: receita.receita_descricao || receita.Receita_Descricao || receita.descricao,
         receita_valor: receita.receita_valor || receita.Receita_Valor || receita.valor,
         receita_data: receita.receita_data || receita.Receita_Data || receita.data,
-        receita_tipo: receita.receita_tipo || receita.Receita_Tipo || receita.tipo,
-        receita_recebido: receita.receita_recebido !== undefined ? receita.receita_recebido : (receita.Receita_Recebido !== undefined ? receita.Receita_Recebido : receita.recebido),
-        conta_id: receita.conta_id || receita.Conta_id || receita.Conta_Id
+        receita_recebido:
+          receita.receita_recebido !== undefined
+            ? receita.receita_recebido
+            : receita.Receita_Recebido !== undefined
+              ? receita.Receita_Recebido
+              : receita.recebido,
       }));
 
-      // Normalizar dados de despesas
-      const despesasData = despesasRes.data.map(despesa => ({
+      const despesasData = (despesasRes.data || []).map((despesa) => ({
         ...despesa,
-        despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
-        despesa_descricao: despesa.despesa_descricao || despesa.Despesa_Descricao || despesa.descricao,
         despesa_valor: despesa.despesa_valor || despesa.Despesa_Valor || despesa.valor,
         despesa_data: despesa.despesa_data || despesa.Despesa_Data || despesa.data,
-        despesa_dtvencimento: despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
-        despesa_tipo: despesa.despesa_tipo || despesa.Despesa_Tipo || despesa.tipo,
-        despesa_pago: despesa.despesa_pago !== undefined ? despesa.despesa_pago : (despesa.Despesa_Pago !== undefined ? despesa.Despesa_Pago : despesa.pago),
-        conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id
+        despesa_dtvencimento:
+          despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
+        despesa_pago:
+          despesa.despesa_pago !== undefined
+            ? despesa.despesa_pago
+            : despesa.Despesa_Pago !== undefined
+              ? despesa.Despesa_Pago
+              : despesa.pago,
       }));
 
       const totalReceitas = receitasData
-        .filter(receita => receita.receita_recebido)
+        .filter((receita) => receita.receita_recebido)
         .reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0);
 
       const totalDespesas = despesasData
-        .filter(despesa => despesa.despesa_pago)
+        .filter((despesa) => despesa.despesa_pago)
         .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
 
       const mesAtual = new Date().getMonth();
       const anoAtual = new Date().getFullYear();
 
-      const receitasMes = receitasData.filter(receita => {
-        const dataReceita = new Date(receita.receita_data);
-        return dataReceita.getMonth() === mesAtual &&
-               dataReceita.getFullYear() === anoAtual &&
-               receita.receita_recebido;
-      }).reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0);
+      const receitasMes = receitasData
+        .filter((receita) => {
+          const dataReceita = parseLocalDate(receita.receita_data);
+          return (
+            dataReceita &&
+            dataReceita.getMonth() === mesAtual &&
+            dataReceita.getFullYear() === anoAtual &&
+            receita.receita_recebido
+          );
+        })
+        .reduce((sum, receita) => sum + parseFloat(receita.receita_valor || 0), 0);
 
-      const despesasMes = despesasData.filter(despesa => {
-        const dataDespesa = new Date(despesa.despesa_data);
-        return dataDespesa.getMonth() === mesAtual &&
-               dataDespesa.getFullYear() === anoAtual &&
-               despesa.despesa_pago;
-      }).reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
+      const despesasMes = despesasData
+        .filter((despesa) => {
+          const dataDespesa = parseLocalDate(despesa.despesa_data);
+          return (
+            dataDespesa &&
+            dataDespesa.getMonth() === mesAtual &&
+            dataDespesa.getFullYear() === anoAtual &&
+            despesa.despesa_pago
+          );
+        })
+        .reduce((sum, despesa) => sum + parseFloat(despesa.despesa_valor || 0), 0);
 
-      console.log('📊 Dados normalizados (Mobile):');
-      console.log('  - Total de receitas normalizadas:', receitasData.length);
-      console.log('  - Total de despesas normalizadas:', despesasData.length);
-      console.log('  - Receitas recebidas:', receitasData.filter(r => r.receita_recebido).length);
-      console.log('  - Despesas pagas:', despesasData.filter(d => d.despesa_pago).length);
+      const { inicio, fim, hoje } = getSemanaRange();
+      const naoPagas = despesasData.filter((d) => !d.despesa_pago);
+      let vencendoHoje = 0;
+      let vencendoSemana = 0;
+      naoPagas.forEach((d) => {
+        const venc = parseLocalDate(d.despesa_dtvencimento);
+        if (!venc) return;
+        if (venc.getTime() === hoje.getTime()) vencendoHoje += 1;
+        if (venc >= inicio && venc <= fim) vencendoSemana += 1;
+      });
+      setVencimentos({ hoje: vencendoHoje, semana: vencendoSemana });
+
+      const listaOrc = orcamentosRes.data || [];
+      if (listaOrc.length > 0) {
+        const totalOrcado = listaOrc.reduce(
+          (s, o) => s + parseFloat(o.orcamento_valor || o.Orcamento_Valor || 0),
+          0
+        );
+        const totalRealizado = listaOrc.reduce(
+          (s, o) => s + parseFloat(o.valor_realizado || 0),
+          0
+        );
+        setOrcamento({ totalOrcado, totalRealizado });
+      } else {
+        setOrcamento(null);
+      }
 
       const saldoContas = saldoContasRes.data.saldoTotal || 0;
       const saldoTotal = saldoContas + (totalReceitas - totalDespesas);
@@ -132,34 +273,33 @@ export default function HomeScreen() {
         saldo: totalReceitas - totalDespesas,
         saldoContas: saldoTotal,
         receitasMes,
-        despesasMes
+        despesasMes,
       });
     } catch (err) {
       console.error('❌ Erro ao buscar totais:', err);
-      // Fallback: buscar contas manualmente se a rota falhar
       try {
         const contasRes = await axios.get(`${API_ENDPOINTS.CONTAS}?userId=${userId}`);
-        // Normalizar dados de contas
-        const contasNormalizadas = contasRes.data.map(conta => ({
+        const contasNormalizadas = contasRes.data.map((conta) => ({
           ...conta,
-          conta_id: conta.conta_id || conta.Conta_Id || conta.id,
-          conta_nome: conta.conta_nome || conta.Conta_Nome || conta.nome,
-          conta_tipo: conta.conta_tipo || conta.Conta_Tipo || conta.tipo,
-          conta_saldo: conta.conta_saldo || conta.Conta_Saldo || conta.saldo
+          conta_saldo: conta.conta_saldo || conta.Conta_Saldo || conta.saldo,
         }));
-        const saldoContas = contasNormalizadas.reduce((sum, conta) => sum + parseFloat(conta.conta_saldo || 0), 0);
-        setTotais(prev => ({ ...prev, saldoContas: saldoContas + (prev.totalReceitas - prev.totalDespesas) }));
-        console.log('⚠️ Usando fallback - Saldo calculado manualmente:', saldoContas);
+        const saldoContas = contasNormalizadas.reduce(
+          (sum, conta) => sum + parseFloat(conta.conta_saldo || 0),
+          0
+        );
+        setTotais((prev) => ({
+          ...prev,
+          saldoContas: saldoContas + (prev.totalReceitas - prev.totalDespesas),
+        }));
       } catch (fallbackErr) {
         console.error('❌ Erro no fallback:', fallbackErr);
-        // Manter valores zerados em caso de erro
         setTotais({
           totalReceitas: 0,
           totalDespesas: 0,
           saldo: 0,
           saldoContas: 0,
           receitasMes: 0,
-          despesasMes: 0
+          despesasMes: 0,
         });
       }
     } finally {
@@ -168,10 +308,53 @@ export default function HomeScreen() {
     }
   };
 
+  useEffect(() => {
+    if (userId) {
+      fetchTotais();
+      fetchVersao();
+      fetchFoto();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        fetchFoto();
+        fetchTotais();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId])
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchTotais();
+    fetchFoto();
   };
+
+  const saldoMes = totais.receitasMes - totais.despesasMes;
+  const saldoOrcamento = orcamento
+    ? orcamento.totalOrcado - orcamento.totalRealizado
+    : null;
+  const pctDisponivel =
+    orcamento && orcamento.totalOrcado > 0
+      ? Math.max(0, Math.min(100, (saldoOrcamento / orcamento.totalOrcado) * 100))
+      : 0;
+
+  const textoVencimentoHoje =
+    vencimentos.hoje === 0
+      ? 'Você não tem nenhuma conta vencendo hoje.'
+      : vencimentos.hoje === 1
+        ? 'Você tem 1 conta vencendo hoje.'
+        : `Você tem ${vencimentos.hoje} contas vencendo hoje.`;
+
+  const textoVencimentoSemana =
+    vencimentos.semana === 0
+      ? 'Nenhuma conta vencendo esta semana.'
+      : vencimentos.semana === 1
+        ? 'Você possui 1 conta vencendo esta semana.'
+        : `Você possui ${vencimentos.semana} contas vencendo esta semana.`;
 
   if (loading) {
     return (
@@ -185,141 +368,201 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-      <View style={styles.header}>
-        <View style={styles.menuButton}>
-          <Ionicons name="menu" size={28} color="#fff" onPress={openMenu} />
+        <View style={styles.welcomeCard}>
+          <Text style={styles.welcomeDay}>Hoje é {diaSemanaLabel}</Text>
+          <Text style={styles.welcomeLine}>{textoVencimentoHoje}</Text>
+          <Text style={styles.welcomeLineMuted}>{textoVencimentoSemana}</Text>
         </View>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Claricash</Text>
-          <Text style={styles.headerSubtitle}>Controle Financeiro</Text>
+
+        {orcamento ? (
+          <View style={styles.budgetCard}>
+            <Text style={styles.budgetLabel}>Saldo do mês</Text>
+            <Text
+              style={[
+                styles.budgetValue,
+                saldoOrcamento >= 0 ? styles.summaryPositive : styles.summaryNegative,
+              ]}
+            >
+              {formatarValor(saldoOrcamento)}
+            </Text>
+            <View style={styles.budgetBarTrack}>
+              <View
+                style={[
+                  styles.budgetBarFill,
+                  {
+                    width: `${pctDisponivel}%`,
+                    backgroundColor:
+                      pctDisponivel > 30
+                        ? colors.success
+                        : pctDisponivel > 10
+                          ? '#F59E0B'
+                          : colors.error,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.tipCard}>
+          <View style={styles.tipHeader}>
+            <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+            <Text style={styles.tipTitle}>Dica do dia</Text>
+          </View>
+          <Text style={styles.tipText}>{dica}</Text>
         </View>
-        <View style={styles.menuButton} />
-      </View>
 
-      <View style={styles.cardsContainer}>
-        <TouchableOpacity 
-          style={[styles.card, styles.cardReceita]}
-          onPress={() => navigation.navigate('Receita')}
-        >
-          <View style={[styles.cardIcon, styles.cardIconReceita]}>
-            <Ionicons name="wallet-outline" size={28} color="#fff" />
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.cardLabel}>Total Receitas</Text>
-            <Text style={[styles.cardValue, styles.cardValueReceita]}>{formatarValor(totais.totalReceitas)}</Text>
-            <Text style={styles.cardDescription}>Receitas Recebidas</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.cardsContainer}>
+          <TouchableOpacity
+            style={[styles.card, styles.cardReceita]}
+            onPress={() => navigation.navigate('Receita')}
+          >
+            <View style={[styles.cardIcon, styles.cardIconReceita]}>
+              <Ionicons name="wallet-outline" size={28} color="#fff" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardLabel}>Total Receitas</Text>
+              <Text style={[styles.cardValue, styles.cardValueReceita]}>
+                {formatarValor(totais.totalReceitas)}
+              </Text>
+              <Text style={styles.cardDescription}>Receitas Recebidas</Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.card, styles.cardDespesa]}
-          onPress={() => navigation.navigate('Despesa')}
-        >
-          <View style={[styles.cardIcon, styles.cardIconDespesa]}>
-            <Ionicons name="receipt-outline" size={28} color="#fff" />
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.cardLabel}>Total Despesas</Text>
-            <Text style={[styles.cardValue, styles.cardValueDespesa]}>{formatarValor(totais.totalDespesas)}</Text>
-            <Text style={styles.cardDescription}>Despesas Pagas</Text>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.card, styles.cardDespesa]}
+            onPress={() => navigation.navigate('Despesa')}
+          >
+            <View style={[styles.cardIcon, styles.cardIconDespesa]}>
+              <Ionicons name="receipt-outline" size={28} color="#fff" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardLabel}>Total Despesas</Text>
+              <Text style={[styles.cardValue, styles.cardValueDespesa]}>
+                {formatarValor(totais.totalDespesas)}
+              </Text>
+              <Text style={styles.cardDescription}>Despesas Pagas</Text>
+            </View>
+          </TouchableOpacity>
 
-        <View style={[styles.card, totais.saldoContas >= 0 ? styles.cardSaldoPositive : styles.cardSaldoNegative]}>
-          <View style={[styles.cardIcon, totais.saldoContas >= 0 ? styles.cardIconSaldo : styles.cardIconSaldoNeg]}>
-            <Ionicons name="trending-up" size={28} color="#fff" />
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.cardLabel}>Saldo Total</Text>
-            <Text style={[styles.cardValue, totais.saldoContas >= 0 ? styles.cardValueSaldo : styles.cardValueDespesa]}>{formatarValor(totais.saldoContas)}</Text>
-            <Text style={styles.cardDescription}>Saldo Disponível</Text>
+          <View
+            style={[
+              styles.card,
+              totais.saldoContas >= 0 ? styles.cardSaldoPositive : styles.cardSaldoNegative,
+            ]}
+          >
+            <View
+              style={[
+                styles.cardIcon,
+                totais.saldoContas >= 0 ? styles.cardIconSaldo : styles.cardIconSaldoNeg,
+              ]}
+            >
+              <Ionicons name="trending-up" size={28} color="#fff" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardLabel}>Saldo Total</Text>
+              <Text
+                style={[
+                  styles.cardValue,
+                  totais.saldoContas >= 0 ? styles.cardValueSaldo : styles.cardValueDespesa,
+                ]}
+              >
+                {formatarValor(totais.saldoContas)}
+              </Text>
+              <Text style={styles.cardDescription}>Saldo Disponível</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.summaryContainer}>
-        <Text style={styles.summaryTitle}>Resumo do Mês</Text>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Receitas do Mês:</Text>
-          <Text style={[styles.summaryValue, styles.summaryPositive]}>
-            {formatarValor(totais.receitasMes)}
+        <View style={styles.summaryContainer}>
+          <Text style={styles.summaryTitle}>Resumo do Mês</Text>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Receitas do Mês:</Text>
+            <Text style={[styles.summaryValue, styles.summaryPositive]}>
+              {formatarValor(totais.receitasMes)}
+            </Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Despesas do Mês:</Text>
+            <Text style={[styles.summaryValue, styles.summaryNegative]}>
+              {formatarValor(totais.despesasMes)}
+            </Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Saldo do Mês:</Text>
+            <Text
+              style={[
+                styles.summaryValue,
+                saldoMes >= 0 ? styles.summaryPositive : styles.summaryNegative,
+              ]}
+            >
+              {formatarValor(saldoMes)}
+            </Text>
+          </View>
+          <Text
+            style={[
+              styles.summaryMessage,
+              saldoMes >= 0 ? styles.summaryPositive : styles.summaryNegative,
+            ]}
+          >
+            {saldoMes >= 0
+              ? `Você economizou ${formatarValor(saldoMes)} este mês. Continue assim!`
+              : `Você gastou ${formatarValor(Math.abs(saldoMes))} acima do orçamento.`}
           </Text>
         </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Despesas do Mês:</Text>
-          <Text style={[styles.summaryValue, styles.summaryNegative]}>
-            {formatarValor(totais.despesasMes)}
-          </Text>
-        </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Saldo do Mês:</Text>
-          <Text style={[
-            styles.summaryValue,
-            (totais.receitasMes - totais.despesasMes) >= 0 ? styles.summaryPositive : styles.summaryNegative
-          ]}>
-            {formatarValor(totais.receitasMes - totais.despesasMes)}
-          </Text>
-        </View>
-      </View>
 
-      {/* Atalho Dashboard */}
-      <TouchableOpacity
-        style={styles.dashboardCard}
-        onPress={() => navigation.navigate('Dashboard')}
-        activeOpacity={0.85}
-      >
-        <View style={styles.dashboardIcon}>
-          <Ionicons name="bar-chart-outline" size={26} color="#fff" />
-        </View>
-        <View style={styles.dashboardText}>
-          <Text style={styles.dashboardTitle}>Dashboard</Text>
-          <Text style={styles.dashboardSubtitle}>Gráficos de evolução e pizza</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
-      </TouchableOpacity>
-
-      <View style={styles.actionsContainer}>
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('Receita')}
+          style={styles.dashboardCard}
+          onPress={() => navigation.navigate('Dashboard')}
+          activeOpacity={0.85}
         >
-          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-          <Text style={styles.actionButtonText}>Nova Receita</Text>
+          <View style={styles.dashboardIcon}>
+            <Ionicons name="bar-chart-outline" size={26} color="#fff" />
+          </View>
+          <View style={styles.dashboardText}>
+            <Text style={styles.dashboardTitle}>Dashboard</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('Despesa')}
-        >
-          <Ionicons name="remove-circle-outline" size={24} color={colors.error} />
-          <Text style={styles.actionButtonText}>Nova Despesa</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Versão do App */}
-      {versao && versao.versao_mobile && (
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Versão {versao.versao_mobile}</Text>
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('Receita')}
+          >
+            <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+            <Text style={styles.actionButtonText}>Nova Receita</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('Despesa')}
+          >
+            <Ionicons name="remove-circle-outline" size={24} color={colors.error} />
+            <Text style={styles.actionButtonText}>Nova Despesa</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* Logo da empresa - abre site ao clicar */}
-      <TouchableOpacity
-        style={styles.companyFooter}
-        onPress={() => Linking.openURL('https://lizsoftware.com.br')}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.companyFooterLabel}>Desenvolvido por</Text>
-        <Image
-          source={require('../../assets/logo_nova.png')}
-          style={styles.companyLogo}
-          resizeMode="contain"
-        />
-        <Text style={styles.companyFooterLink}>Liz Software</Text>
-      </TouchableOpacity>
+        {versao && versao.versao_mobile ? (
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>Versão {versao.versao_mobile}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          style={styles.companyFooter}
+          onPress={() => Linking.openURL('https://lizsoftware.com.br')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.companyFooterLabel}>Desenvolvido por</Text>
+          <Image
+            source={require('../../assets/logo_nova.png')}
+            style={styles.companyLogo}
+            resizeMode="contain"
+          />
+          <Text style={styles.companyFooterLink}>Liz Software</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -335,38 +578,98 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    padding: 20,
-    backgroundColor: colors.primary,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  menuButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerContent: {
+  scrollView: {
     flex: 1,
-    alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 28,
+  welcomeCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  welcomeDay: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  welcomeLine: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
     marginBottom: 4,
   },
-  headerSubtitle: {
+  welcomeLineMuted: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  budgetCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  budgetLabel: {
     fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  budgetValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  budgetBarTrack: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  budgetBarFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  tipCard: {
+    backgroundColor: '#EFF6FF',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(37, 99, 235, 0.12)',
+  },
+  tipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  tipText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 21,
   },
   cardsContainer: {
     padding: 16,
+    paddingTop: 16,
   },
   card: {
     flexDirection: 'row',
@@ -396,35 +699,15 @@ const styles = StyleSheet.create({
   },
   cardIconReceita: {
     backgroundColor: '#059669',
-    shadowColor: 'rgba(16, 185, 129, 0.35)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
   },
   cardIconDespesa: {
     backgroundColor: '#DC2626',
-    shadowColor: 'rgba(239, 68, 68, 0.35)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
   },
   cardIconSaldo: {
     backgroundColor: '#2563EB',
-    shadowColor: 'rgba(37, 99, 235, 0.35)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
   },
   cardIconSaldoNeg: {
     backgroundColor: '#DC2626',
-    shadowColor: 'rgba(220, 38, 38, 0.35)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
   },
   cardValueReceita: {
     color: '#059669',
@@ -456,6 +739,7 @@ const styles = StyleSheet.create({
   summaryContainer: {
     backgroundColor: '#fff',
     margin: 16,
+    marginTop: 0,
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -489,8 +773,11 @@ const styles = StyleSheet.create({
   summaryNegative: {
     color: colors.error,
   },
-  chartsContainer: {
-    padding: 16,
+  summaryMessage: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   dashboardCard: {
     flexDirection: 'row',
@@ -523,11 +810,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-  },
-  dashboardSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
   },
   actionsContainer: {
     flexDirection: 'row',
@@ -584,4 +866,3 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 });
-

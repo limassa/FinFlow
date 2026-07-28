@@ -13,25 +13,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../theme/theme';
 
+const FEATURES = [
+  'Registrar receitas e despesas.',
+  'Gerenciar contas bancárias.',
+  'Controlar cartões de crédito.',
+  'Acompanhar contas a pagar e receber.',
+  'Visualizar gráficos e relatórios.',
+  'Criar orçamentos e metas financeiras.',
+  'Utilizar calculadoras financeiras.',
+  'Receber lembretes para não esquecer vencimentos.',
+];
+
 export default function SobreScreen() {
   const navigation = useNavigation();
-  
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       title: 'Sobre',
     });
   }, [navigation]);
-  
+
   const handleEmailPress = () => {
     Linking.openURL('mailto:contatolizsoftware@gmail.com?subject=Contato Claricash');
   };
 
   const handleWhatsAppPress = () => {
-    const phoneNumber = '5571981512769'; // (71) 98151-2769
+    const phoneNumber = '5571981512769';
     const message = 'Olá! Gostaria de entrar em contato sobre o Claricash.';
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    
+
     Linking.canOpenURL(url).then((supported) => {
       if (supported) {
         Linking.openURL(url);
@@ -45,37 +56,45 @@ export default function SobreScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Descrição</Text>
+          <Text style={styles.sectionTitle}>Sobre o ClariCash</Text>
           <Text style={styles.sectionText}>
-            O Claricash é um sistema completo de controle financeiro pessoal desenvolvido pela Liz Software. 
-            Gerencie suas receitas, despesas, contas e tenha controle total sobre suas finanças.
+            O ClariCash foi criado para ajudar pessoas e pequenos empreendedores a entender melhor sua vida financeira de forma simples, intuitiva e segura.
+          </Text>
+          <Text style={styles.sectionText}>
+            Nossa missão é ajudar você a organizar sua vida financeira para tomar melhores decisões, economizar mais e conquistar seus objetivos.
+          </Text>
+          <Text style={styles.sectionText}>
+            Não importa se você deseja controlar os gastos do dia a dia, organizar as contas da família ou administrar as finanças do seu negócio: o ClariCash foi desenvolvido para acompanhar você nessa jornada.
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Funcionalidades</Text>
+          <Text style={styles.sectionTitle}>O que você pode fazer com o ClariCash</Text>
           <View style={styles.featureList}>
-            <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-              <Text style={styles.featureText}>Controle de Receitas e Despesas</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-              <Text style={styles.featureText}>Gestão de Contas Bancárias</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-              <Text style={styles.featureText}>Calendário de Vencimentos</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-              <Text style={styles.featureText}>Calculadoras Financeiras</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-              <Text style={styles.featureText}>Lembretes por Email e WhatsApp</Text>
-            </View>
+            {FEATURES.map((item) => (
+              <View key={item} style={styles.featureItem}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                <Text style={styles.featureText}>{item}</Text>
+              </View>
+            ))}
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Nosso compromisso</Text>
+          <Text style={styles.sectionText}>
+            Na Liz Software acreditamos que a tecnologia deve simplificar a vida das pessoas.
+          </Text>
+          <Text style={styles.sectionText}>
+            Por isso desenvolvemos aplicativos intuitivos, seguros e em constante evolução, sempre ouvindo nossos usuários para oferecer a melhor experiência possível.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Nosso propósito</Text>
+          <Text style={styles.sectionText}>
+            Acreditamos que organizar as finanças é o primeiro passo para conquistar sonhos.
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -85,15 +104,15 @@ export default function SobreScreen() {
           </View>
           <Text style={styles.companyName}>Liz Software</Text>
           <Text style={styles.sectionText}>
-            Soluções em software personalizadas para sua empresa.
+            Desenvolvemos soluções digitais que ajudam pessoas e empresas a organizar melhor suas finanças, seus negócios e sua rotina.
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Fale Conosco</Text>
-          
-          <TouchableOpacity 
-            style={styles.enviarMensagemButton} 
+
+          <TouchableOpacity
+            style={styles.enviarMensagemButton}
             onPress={() => navigation.navigate('FaleConosco')}
           >
             <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
@@ -167,19 +186,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     lineHeight: 24,
+    marginBottom: 12,
   },
   featureList: {
     marginTop: 10,
   },
   featureItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   featureText: {
+    flex: 1,
     fontSize: 16,
     color: colors.text,
     marginLeft: 10,
+    lineHeight: 22,
   },
   logoWrap: {
     marginBottom: 12,
@@ -193,7 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.primary,
-    marginBottom: 5,
+    marginBottom: 8,
   },
   enviarMensagemButton: {
     flexDirection: 'row',
@@ -244,5 +266,3 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
-
-

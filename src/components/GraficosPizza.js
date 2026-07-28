@@ -169,33 +169,26 @@ function GraficosPizza() {
       legend: {
         display: true,
         position: 'bottom',
+        align: 'center',
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 12,
+          boxWidth: 10,
           font: {
             size: 12,
-            weight: 'bold'
-          }
-        }
+            weight: '600',
+          },
+        },
       },
       title: {
-        display: true,
-        text: 'Receitas por Tipo - Mês Atual',
-        font: {
-          size: 14,
-          weight: 'bold'
-        },
-        padding: {
-          top: 10,
-          bottom: 10
-        }
+        display: false,
       },
       tooltip: {
         callbacks: {
           label: function(context) {
             const valor = context.parsed;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentual = ((valor / total) * 100).toFixed(1);
+            const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
             return `${context.label}: ${new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL'
@@ -206,10 +199,10 @@ function GraficosPizza() {
     },
     layout: {
       padding: {
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: 8
       }
     }
   };
@@ -221,33 +214,26 @@ function GraficosPizza() {
       legend: {
         display: true,
         position: 'bottom',
+        align: 'center',
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 12,
+          boxWidth: 10,
           font: {
             size: 12,
-            weight: 'bold'
-          }
-        }
+            weight: '600',
+          },
+        },
       },
       title: {
-        display: true,
-        text: 'Despesas por Tipo - Mês Atual',
-        font: {
-          size: 14,
-          weight: 'bold'
-        },
-        padding: {
-          top: 10,
-          bottom: 10
-        }
+        display: false,
       },
       tooltip: {
         callbacks: {
           label: function(context) {
             const valor = context.parsed;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentual = ((valor / total) * 100).toFixed(1);
+            const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
             return `${context.label}: ${new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL'
@@ -258,10 +244,10 @@ function GraficosPizza() {
     },
     layout: {
       padding: {
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: 8
       }
     }
   };
@@ -307,18 +293,22 @@ function GraficosPizza() {
   return (
     <div className="graficos-pizza-carrossel">
       <div className="carrossel-container">
-        <button 
-          onClick={prevChart} 
+        <button
+          type="button"
+          onClick={prevChart}
           className="btn-carrossel-side"
-          disabled={currentChart === 0}
+          aria-label="Gráfico anterior"
         >
           <FaChevronLeft />
         </button>
-        
+
         <div className="chart-wrapper">
-          <div 
-            className="chart-container" 
-            style={{ height: '350px', width: '100%', position: 'relative', cursor: 'pointer' }}
+          <p className="graficos-pizza-title">
+            {currentChart === 0 ? 'Receitas' : 'Despesas'} — Mês atual
+          </p>
+          <div
+            className="chart-container chart-container--pizza"
+            style={{ height: '320px', width: '100%', position: 'relative', cursor: 'pointer' }}
             onClick={handleChartClick}
             title="Clique para ver detalhes"
           >
@@ -341,11 +331,12 @@ function GraficosPizza() {
             )}
           </div>
         </div>
-        
-        <button 
-          onClick={nextChart} 
+
+        <button
+          type="button"
+          onClick={nextChart}
           className="btn-carrossel-side"
-          disabled={currentChart === 1}
+          aria-label="Próximo gráfico"
         >
           <FaChevronRight />
         </button>

@@ -74,14 +74,18 @@ function Agenda() {
   const getDiasDaSemana = () => {
     const dias = [];
     const inicio = new Date(semanaRef);
+    const hoje = new Date();
+    const hojeYmd = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
     for (let i = 0; i < 7; i++) {
       const d = new Date(inicio);
       d.setDate(inicio.getDate() + i);
+      const data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       dias.push({
-        data: d.toISOString().split('T')[0],
+        data,
         label: diasSemana[i],
         dia: d.getDate(),
-        mes: d.getMonth()
+        mes: d.getMonth(),
+        isToday: data === hojeYmd,
       });
     }
     return dias;
@@ -208,9 +212,10 @@ function Agenda() {
         <div className="agenda-dias-header">
           <div className="agenda-corner" />
           {dias.map(d => (
-            <div key={d.data} className="agenda-dia-header">
+            <div key={d.data} className={`agenda-dia-header ${d.isToday ? 'is-today' : ''}`}>
               <span className="dia-nome">{d.label}</span>
               <span className="dia-numero">{d.dia}/{d.mes + 1}</span>
+              {d.isToday ? <span className="dia-hoje">Hoje</span> : null}
             </div>
           ))}
         </div>
@@ -224,7 +229,7 @@ function Agenda() {
                   return (
                     <div
                       key={`${dia.data}-${horario}`}
-                      className={`agenda-slot-cell ${evs.length > 0 ? 'has-eventos' : ''}`}
+                      className={`agenda-slot-cell ${dia.isToday ? 'is-today' : ''} ${evs.length > 0 ? 'has-eventos' : ''}`}
                       onClick={() => abrirModalSlot(dia, horario)}
                     >
                       {evs.length > 0 ? (

@@ -108,6 +108,10 @@
   border-right: 1px solid rgba(255,255,255,0.2);
 }
 
+.agenda-dia-header.is-today {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .agenda-dia-header:last-child {
   border-right: none;
 }
@@ -119,9 +123,33 @@
 }
 
 .agenda-dia-header .dia-numero {
-  display: block;
+  display: inline-block;
+  margin-top: 4px;
   font-size: 14px;
   font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.agenda-dia-header.is-today .dia-numero {
+  background: #fff;
+  color: #2563EB;
+}
+
+.agenda-dia-header .dia-hoje {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.agenda-slot-cell.is-today {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.agenda-slot-cell.is-today:hover {
+  background: rgba(37, 99, 235, 0.12);
 }
 
 

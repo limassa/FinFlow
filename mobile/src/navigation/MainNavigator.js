@@ -36,7 +36,11 @@ function MainMenuStack() {
 
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Claricash' }))}
+      />
       <Stack.Screen
         name="Dashboard"
         component={DashboardScreen}
