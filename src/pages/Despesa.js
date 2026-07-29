@@ -1440,9 +1440,11 @@ function Despesa() {
                           onChange={() => handleTogglePago(despesa)}
                           title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
                         />
-                          <span className={`status-badge ${despesa.despesa_pago ? 'pago' : 'pendente'}`}>
-                            {despesa.despesa_pago ? 'Pago' : 'Pendente'}
-                          </span>
+                          <span
+                            className={`status-badge ${despesa.despesa_pago ? 'pago' : 'pendente'}`}
+                            title={despesa.despesa_pago ? 'Pago' : 'Pendente'}
+                            aria-label={despesa.despesa_pago ? 'Pago' : 'Pendente'}
+                          />
                         </label>
                       </div>
                       <div className="grid-cell acoes">
@@ -1516,9 +1518,11 @@ function Despesa() {
                       onChange={() => handleTogglePago(despesa)}
                       title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
                     />
-                      <span className={`status-badge ${despesa.despesa_pago ? 'pago' : 'pendente'}`}>
-                        {despesa.despesa_pago ? 'Pago' : 'Pendente'}
-                      </span>
+                      <span
+                        className={`status-badge ${despesa.despesa_pago ? 'pago' : 'pendente'}`}
+                        title={despesa.despesa_pago ? 'Pago' : 'Pendente'}
+                        aria-label={despesa.despesa_pago ? 'Pago' : 'Pendente'}
+                      />
                     </label>
                   </div>
                   <div className="grid-cell acoes">

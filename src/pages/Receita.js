@@ -1136,9 +1136,11 @@ function Receita() {
                             }
                           }}
                         />
-                          <span className={`status-badge ${receita.receita_recebido ? 'pago' : 'pendente'}`}>
-                            {receita.receita_recebido ? 'Pago' : 'Pendente'}
-                          </span>
+                          <span
+                            className={`status-badge ${receita.receita_recebido ? 'pago' : 'pendente'}`}
+                            title={receita.receita_recebido ? 'Recebido' : 'Pendente'}
+                            aria-label={receita.receita_recebido ? 'Recebido' : 'Pendente'}
+                          />
                         </label>
                       </div>
                       <div className="grid-cell acoes">
@@ -1211,9 +1213,11 @@ function Receita() {
                       onChange={() => handleTogglePago(receita)}
                       title={receita.receita_recebido ? "Marcar como não recebido" : "Marcar como recebido"}
                     />
-                      <span className={`status-badge ${receita.receita_recebido ? 'pago' : 'pendente'}`}>
-                        {receita.receita_recebido ? 'Pago' : 'Pendente'}
-                      </span>
+                      <span
+                        className={`status-badge ${receita.receita_recebido ? 'pago' : 'pendente'}`}
+                        title={receita.receita_recebido ? 'Recebido' : 'Pendente'}
+                        aria-label={receita.receita_recebido ? 'Recebido' : 'Pendente'}
+                      />
                     </label>
                   </div>
                   <div className="grid-cell acoes">
