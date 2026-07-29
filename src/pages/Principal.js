@@ -158,9 +158,12 @@ function Principal() {
       let vencendoHoje = 0;
       let vencendoSemana = 0;
       despesasData
-        .filter((d) => !d.despesa_pago)
+        .filter((d) => {
+          const pago = d.despesa_pago ?? d.Despesa_Pago;
+          return pago !== true && pago !== 1 && pago !== '1' && pago !== 'true';
+        })
         .forEach((d) => {
-          const venc = parseLocalDate(d.despesa_dtvencimento);
+          const venc = parseLocalDate(d.despesa_dtvencimento || d.Despesa_DtVencimento);
           if (!venc) return;
           if (venc.getTime() === hoje.getTime()) vencendoHoje += 1;
           if (venc >= inicio && venc <= fim) vencendoSemana += 1;
@@ -232,11 +235,11 @@ function Principal() {
         : `Você tem ${vencimentos.hoje} contas vencendo hoje.`;
 
   const textoVencimentoSemana =
-    vencimentos.semana === 0
-      ? 'Nenhuma conta vencendo esta semana.'
-      : vencimentos.semana === 1
-        ? 'Você possui 1 conta vencendo esta semana.'
-        : `Você possui ${vencimentos.semana} contas vencendo esta semana.`;
+    vencimentos.semana === 1
+      ? 'Você possui 1 conta vencendo esta semana.'
+      : vencimentos.semana > 1
+        ? `Você possui ${vencimentos.semana} contas vencendo esta semana.`
+        : null;
 
   if (!userId) {
     return <div>Usuário não logado</div>;
@@ -288,7 +291,9 @@ function Principal() {
         <article className="principal-welcome-card">
           <p className="principal-welcome-card__day">Hoje é {diaSemanaLabel}</p>
           <p className="principal-welcome-card__line">{textoVencimentoHoje}</p>
-          <p className="principal-welcome-card__muted">{textoVencimentoSemana}</p>
+          {textoVencimentoSemana ? (
+            <p className="principal-welcome-card__muted">{textoVencimentoSemana}</p>
+          ) : null}
         </article>
 
         <article className="principal-tip-card">
