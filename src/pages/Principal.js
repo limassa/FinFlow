@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaBullseye } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaBullseye, FaGooglePlay } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -8,6 +8,10 @@ import { useNavigate } from 'react-router-dom';
 import ModalRelatorio from '../components/ModalRelatorio';
 
 const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
+
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.lizsoftwares.finflow';
+// App Store: oculto por enquanto — reativar quando o app estiver publicado
+// const APP_STORE_URL = 'https://apps.apple.com/br/app/idSEU_APP_ID';
 
 const DIAS_SEMANA = [
   'Domingo',
@@ -493,6 +497,29 @@ function Principal() {
         </span>
         <FaChevronRight className="principal-dashboard-link__chevron" />
       </button>
+
+      <section className="principal-stores">
+        <h3>Leve o Claricash no celular</h3>
+        <p className="principal-stores__sub">
+          Baixe o app e acompanhe suas finanças onde estiver.
+        </p>
+        <div className="principal-stores__grid">
+          <a
+            className="principal-store-card principal-store-card--google"
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="principal-store-card__icon">
+              <FaGooglePlay />
+            </span>
+            <span className="principal-store-card__text">
+              <small>Disponível no</small>
+              <strong>Google Play</strong>
+            </span>
+          </a>
+        </div>
+      </section>
 
       <ModalRelatorio
         isOpen={showModalRelatorio}

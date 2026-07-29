@@ -139,6 +139,48 @@ function ResumoFinanceiro() {
     return Math.round(((totais.entradas - totais.saidas) / totais.entradas) * 100);
   }, [totais]);
 
+  const situacao = useMemo(() => {
+    const deficit = totais.saidas > totais.entradas;
+    const diferenca = Math.abs(totais.saldo);
+    const vezes =
+      totais.entradas > 0 && deficit
+        ? Math.round((totais.saidas / totais.entradas) * 10) / 10
+        : null;
+
+    if (totais.entradas <= 0 && totais.saidas <= 0) {
+      return { tipo: 'vazio' };
+    }
+
+    if (deficit) {
+      const sugestoes = [
+        'Revise suas despesas fixas e defina um orçamento mensal para evitar que esse déficit continue nos próximos meses.',
+        'Identifique a categoria com maior gasto e estabeleça um teto semanal para ela.',
+        'Negocie ou cancele assinaturas e recorrências que você quase não usa.',
+        'Priorize quitar contas atrasadas e evite novos parcelamentos neste momento.',
+        'Separe gastos essenciais dos opcionais por 30 dias e corte o que for possível.',
+      ];
+      const sugestao = sugestoes[ano % sugestoes.length];
+      return {
+        tipo: 'deficit',
+        diferenca,
+        vezes,
+        sugestao,
+      };
+    }
+
+    const sugestoesPositivas = [
+      'Que tal transformar parte dessa economia em uma reserva de emergência?',
+      'Defina uma meta mensal de poupança para manter esse ritmo o ano todo.',
+      'Considere investir o valor guardado com segurança, de acordo com seus objetivos.',
+    ];
+    return {
+      tipo: 'economia',
+      taxa: taxaEconomia ?? 0,
+      diferenca,
+      sugestao: sugestoesPositivas[ano % sugestoesPositivas.length],
+    };
+  }, [totais, taxaEconomia, ano]);
+
   const chartData = useMemo(
     () => ({
       labels: MESES_CURTO,
@@ -344,19 +386,67 @@ function ResumoFinanceiro() {
                   .
                 </li>
               </ul>
+
+              {situacao.tipo === 'deficit' && situacao.sugestao ? (
+                <div className="panorama-sugestao panorama-sugestao--alerta">
+                  <strong>💡 Sugestão do Claricash</strong>
+                  <p>{situacao.sugestao}</p>
+                </div>
+              ) : null}
+              {situacao.tipo === 'economia' && situacao.sugestao ? (
+                <div className="panorama-sugestao panorama-sugestao--ok">
+                  <strong>💡 Sugestão do Claricash</strong>
+                  <p>{situacao.sugestao}</p>
+                </div>
+              ) : null}
             </article>
 
-            <article className="panorama-taxa">
-              <div className="panorama-taxa__header">
-                <FaPiggyBank />
-                <h2>Taxa de economia</h2>
-              </div>
-              {taxaEconomia === null ? (
-                <p className="panorama-taxa__empty">
-                  Registre receitas neste ano para calcular sua taxa de economia.
-                </p>
+            <article
+              className={`panorama-taxa ${
+                situacao.tipo === 'deficit' ? 'panorama-taxa--deficit' : ''
+              }`}
+            >
+              {situacao.tipo === 'vazio' || taxaEconomia === null ? (
+                <>
+                  <div className="panorama-taxa__header">
+                    <FaPiggyBank />
+                    <h2>Situação financeira</h2>
+                  </div>
+                  <p className="panorama-taxa__empty">
+                    Registre receitas e despesas neste ano para ver sua situação financeira.
+                  </p>
+                </>
+              ) : situacao.tipo === 'deficit' ? (
+                <>
+                  <div className="panorama-taxa__header">
+                    <FaPiggyBank />
+                    <h2>Situação financeira</h2>
+                  </div>
+                  <p className="panorama-taxa__status">⚠️ Déficit</p>
+                  <div className="panorama-taxa__row">
+                    <span>Entradas</span>
+                    <strong className="positive">{formatarValor(totais.entradas)}</strong>
+                  </div>
+                  <div className="panorama-taxa__row">
+                    <span>Saídas</span>
+                    <strong className="negative">{formatarValor(totais.saidas)}</strong>
+                  </div>
+                  <p className="panorama-taxa__msg">
+                    Você gastou {formatarValor(situacao.diferenca)} a mais do que recebeu neste ano.
+                  </p>
+                  {situacao.vezes != null && situacao.vezes > 1 ? (
+                    <p className="panorama-taxa__extra">
+                      Isso equivale a gastar cerca de {String(situacao.vezes).replace('.', ',')} vezes
+                      mais do que recebeu.
+                    </p>
+                  ) : null}
+                </>
               ) : (
                 <>
+                  <div className="panorama-taxa__header">
+                    <FaPiggyBank />
+                    <h2>Taxa de economia</h2>
+                  </div>
                   <div className="panorama-taxa__row">
                     <span>Entradas</span>
                     <strong className="positive">{formatarValor(totais.entradas)}</strong>
@@ -366,14 +456,11 @@ function ResumoFinanceiro() {
                     <strong className="negative">{formatarValor(totais.saidas)}</strong>
                   </div>
                   <div className="panorama-taxa__pct">
-                    <span className={taxaEconomia >= 0 ? 'positive' : 'negative'}>
-                      {taxaEconomia}%
-                    </span>
+                    <span className="positive">{situacao.taxa}%</span>
                   </div>
+                  <p className="panorama-taxa__parabens">Parabéns!</p>
                   <p className="panorama-taxa__msg">
-                    {taxaEconomia >= 0
-                      ? `Você conseguiu guardar ${taxaEconomia}% da sua renda este ano.`
-                      : `Você gastou ${Math.abs(taxaEconomia)}% a mais do que recebeu este ano.`}
+                    Você conseguiu guardar {situacao.taxa}% da sua renda este ano.
                   </p>
                 </>
               )}
