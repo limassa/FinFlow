@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaInfoCircle } from 'react-icons/fa';
+import StoreBadges from '../components/StoreBadges';
 import '../App.css';
 
 const FEATURES = [
@@ -56,6 +57,12 @@ function Sobre() {
         <p style={{ lineHeight: 1.7, color: '#333', marginBottom: 14 }}>
           Acreditamos que organizar as finanças é o primeiro passo para conquistar sonhos.
         </p>
+
+        <h3 style={{ marginTop: 28, marginBottom: 10 }}>Baixe o app</h3>
+        <p style={{ lineHeight: 1.7, color: '#333', marginBottom: 14 }}>
+          Leve o Claricash no celular e acompanhe suas finanças onde estiver.
+        </p>
+        <StoreBadges className="store-badges--sobre" />
 
         <h3 style={{ marginTop: 28, marginBottom: 8 }}>Desenvolvido por</h3>
         <p style={{ lineHeight: 1.7, color: '#333', marginBottom: 8 }}>

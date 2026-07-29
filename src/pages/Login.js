@@ -6,6 +6,7 @@ import { funcoes } from '../functions/function.js';
 import AuthBanner from '../components/AuthBanner';
 import { FaEnvelope, FaCalculator, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../config/api';
+import StoreBadges from '../components/StoreBadges';
 import '../App.css';
 
 function Login() {
@@ -196,6 +197,11 @@ function Login() {
             <FaEnvelope />
             Precisa de ajuda?
           </button>
+        </div>
+
+        <div className="login-stores">
+          <p className="login-stores__label">Baixe o app Claricash</p>
+          <StoreBadges />
         </div>
 
         {/* Informações da Versão */}
