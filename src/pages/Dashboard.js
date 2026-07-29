@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChartLine, FaChartPie, FaHome } from 'react-icons/fa';
+import { FaChartLine, FaChartPie, FaHome, FaArrowDown, FaArrowUp, FaWallet } from 'react-icons/fa';
 import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
 import GraficosPizza from '../components/GraficosPizza';
 import { API_ENDPOINTS } from '../config/api';
@@ -104,16 +104,31 @@ function Dashboard() {
 
       <section className="dashboard-page__stats">
         <article className="dashboard-page__stat positive">
-          <span>Receitas do mês</span>
-          <strong>{formatarMoeda(stats.receitasMes)}</strong>
+          <div className="dashboard-page__stat-icon dashboard-page__stat-icon--receita">
+            <FaArrowDown />
+          </div>
+          <div>
+            <span>Receitas do mês</span>
+            <strong>{formatarMoeda(stats.receitasMes)}</strong>
+          </div>
         </article>
         <article className="dashboard-page__stat negative">
-          <span>Despesas do mês</span>
-          <strong>{formatarMoeda(stats.despesasMes)}</strong>
+          <div className="dashboard-page__stat-icon dashboard-page__stat-icon--despesa">
+            <FaArrowUp />
+          </div>
+          <div>
+            <span>Despesas do mês</span>
+            <strong>{formatarMoeda(stats.despesasMes)}</strong>
+          </div>
         </article>
         <article className={`dashboard-page__stat ${stats.saldoMes >= 0 ? 'positive' : 'negative'}`}>
-          <span>Saldo do mês</span>
-          <strong>{formatarMoeda(stats.saldoMes)}</strong>
+          <div className="dashboard-page__stat-icon dashboard-page__stat-icon--saldo">
+            <FaWallet />
+          </div>
+          <div>
+            <span>Saldo do mês</span>
+            <strong>{formatarMoeda(stats.saldoMes)}</strong>
+          </div>
         </article>
       </section>
 
@@ -123,7 +138,7 @@ function Dashboard() {
             <FaChartLine />
             <h2>Evolução financeira</h2>
           </div>
-          <div className="dashboard-page__chart-body">
+          <div className="dashboard-page__chart-body dashboard-page__chart-body--line">
             <GraficoEvolucaoMensal />
           </div>
         </div>

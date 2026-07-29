@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUser, FaBell, FaBellSlash, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera, FaChartLine } from 'react-icons/fa';
+import { FaUser, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera, FaChartLine } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -9,7 +9,6 @@ function UserMenu() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [lembretesAtivos, setLembretesAtivos] = useState(false);
   const [userFoto, setUserFoto] = useState(null);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const fileInputRef = useRef(null);
@@ -19,7 +18,6 @@ function UserMenu() {
     if (userData) {
       setUser(userData);
       if (userData.foto) setUserFoto(userData.foto);
-      fetchLembretesConfig(userData.id);
       fetchUserFoto(userData.id);
     }
   }, []);
@@ -54,13 +52,11 @@ function UserMenu() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
       alert('Por favor, selecione uma imagem válida.');
       return;
     }
 
-    // Validar tamanho (máx 2MB)
     if (file.size > 2 * 1024 * 1024) {
       alert('A imagem deve ter no máximo 2MB.');
       return;
@@ -69,16 +65,14 @@ function UserMenu() {
     setUploadingFoto(true);
 
     try {
-      // Converter para base64
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64 = reader.result;
-        
-        // Enviar para o servidor
+
         const response = await fetch(API_ENDPOINTS.USER_FOTO, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, foto: base64 })
+          body: JSON.stringify({ userId: user.id, foto: base64 }),
         });
 
         if (response.ok) {
@@ -93,44 +87,6 @@ function UserMenu() {
       console.error('Erro ao fazer upload da foto:', error);
       alert('Erro ao fazer upload da foto.');
       setUploadingFoto(false);
-    }
-  };
-
-  const fetchLembretesConfig = async (userId) => {
-    try {
-      const response = await fetch(`${API_ENDPOINTS.USER_LEMBRETES}?userId=${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLembretesAtivos(data.lembretesAtivos || false);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar configuração de lembretes:', error);
-    }
-  };
-
-  const toggleLembretes = async () => {
-    if (!user) return;
-
-    try {
-      const response = await fetch(`${API_ENDPOINTS.USER_LEMBRETES}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          lembretesAtivos: !lembretesAtivos
-        }),
-      });
-
-      if (response.ok) {
-        setLembretesAtivos(!lembretesAtivos);
-        // Mostrar feedback
-        alert(lembretesAtivos ? 'Lembretes desativados!' : 'Lembretes ativados!');
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar lembretes:', error);
-      alert('Erro ao atualizar configuração de lembretes');
     }
   };
 
@@ -152,7 +108,6 @@ function UserMenu() {
 
   return (
     <div className="user-menu-container">
-      {/* Input de arquivo oculto */}
       <input
         type="file"
         ref={fileInputRef}
@@ -160,11 +115,8 @@ function UserMenu() {
         accept="image/*"
         style={{ display: 'none' }}
       />
-      
-      <button 
-        className="user-menu-trigger"
-        onClick={() => setIsOpen(!isOpen)}
-      >
+
+      <button className="user-menu-trigger" onClick={() => setIsOpen(!isOpen)}>
         <div className="user-info">
           {userFoto ? (
             <img src={userFoto} alt="Foto" className="user-foto" />
@@ -193,51 +145,68 @@ function UserMenu() {
             <span>{user.nome}</span>
           </div>
 
-          <div className="menu-item" onClick={() => { setIsOpen(false); toggleLembretes(); }}>
-            {lembretesAtivos ? <FaBell /> : <FaBellSlash />}
-            <span>
-              {lembretesAtivos ? 'Desativar Lembretes' : 'Ativar Lembretes'}
-            </span>
-          </div>
-
-          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/dashboard'); }}>
+          <div
+            className="menu-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/layout/dashboard');
+            }}
+          >
             <FaChartLine />
             <span>Dashboard</span>
           </div>
 
-          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/configuracoes'); }}>
+          <div
+            className="menu-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/layout/configuracoes');
+            }}
+          >
             <FaCog />
             <span>Configurações</span>
           </div>
 
-          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/layout/sobre'); }}>
+          <div
+            className="menu-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/layout/sobre');
+            }}
+          >
             <FaInfoCircle />
             <span>Sobre</span>
           </div>
 
-          <div className="menu-item" onClick={() => { setIsOpen(false); navigate('/privacy-policy'); }}>
+          <div
+            className="menu-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/privacy-policy');
+            }}
+          >
             <FaShieldAlt />
             <span>Política de Privacidade</span>
           </div>
 
-          <div className="menu-divider"></div>
+          <div className="menu-divider" />
 
-          <div className="menu-item logout" onClick={() => { setIsOpen(false); handleLogout(); }}>
+          <div
+            className="menu-item logout"
+            onClick={() => {
+              setIsOpen(false);
+              handleLogout();
+            }}
+          >
             <FaSignOutAlt />
             <span>Sair</span>
           </div>
         </div>
       )}
 
-      {/* Overlay para fechar o menu */}
-      {isOpen && (
-        <div 
-          className="menu-overlay"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <div className="menu-overlay" onClick={() => setIsOpen(false)} />}
     </div>
   );
 }
 
-export default UserMenu; 
+export default UserMenu;

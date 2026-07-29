@@ -8,6 +8,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
@@ -22,7 +23,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const DIAS_JANELA = 7;
@@ -139,22 +141,30 @@ function GraficoEvolucaoMensal() {
         {
           label: 'Receitas',
           data: dadosReceitas,
-          borderColor: 'rgba(34, 197, 94, 1)',
-          backgroundColor: 'rgba(34, 197, 94, 0.15)',
-          tension: 0.35,
-          fill: false,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          borderColor: '#16A34A',
+          backgroundColor: 'rgba(34, 197, 94, 0.18)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#16A34A',
+          pointBorderWidth: 2,
+          borderWidth: 3,
         },
         {
           label: 'Despesas',
           data: dadosDespesas,
-          borderColor: 'rgba(239, 68, 68, 1)',
-          backgroundColor: 'rgba(239, 68, 68, 0.15)',
-          tension: 0.35,
-          fill: false,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          borderColor: '#DC2626',
+          backgroundColor: 'rgba(239, 68, 68, 0.14)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#DC2626',
+          pointBorderWidth: 2,
+          borderWidth: 3,
         },
       ],
     };
@@ -172,18 +182,27 @@ function GraficoEvolucaoMensal() {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
         display: true,
         position: 'top',
+        align: 'end',
         labels: {
           usePointStyle: true,
-          padding: 15,
-          font: { size: 11, weight: 'bold' },
+          pointStyle: 'circle',
+          padding: 18,
+          font: { size: 12, weight: '600' },
+          color: '#334155',
         },
       },
       title: { display: false },
       tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        titleFont: { size: 13, weight: '600' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 10,
         callbacks: {
           label(context) {
             const valor = context.parsed.y;
@@ -199,8 +218,12 @@ function GraficoEvolucaoMensal() {
       y: {
         beginAtZero: true,
         suggestedMax: 10,
+        border: { display: false },
+        grid: { color: 'rgba(148, 163, 184, 0.18)' },
         ticks: {
           maxTicksLimit: 6,
+          color: '#64748b',
+          font: { size: 11 },
           callback(value) {
             return new Intl.NumberFormat('pt-BR', {
               style: 'currency',
@@ -212,19 +235,18 @@ function GraficoEvolucaoMensal() {
         },
       },
       x: {
+        border: { display: false },
+        grid: { display: false },
         ticks: {
           maxRotation: 0,
           minRotation: 0,
-          font: { size: 11 },
+          color: '#64748b',
+          font: { size: 11, weight: '600' },
         },
       },
     },
     layout: {
       padding: { top: 8, right: 8, bottom: 8, left: 4 },
-    },
-    interaction: {
-      mode: 'index',
-      intersect: false,
     },
   };
 

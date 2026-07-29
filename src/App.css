@@ -5227,12 +5227,14 @@ select.form-input:focus {
 .principal-welcome-card,
 .principal-budget-card,
 .principal-tip-card,
-.principal-insight-card {
-  background: #FFFFFF;
+.principal-insight-card,
+.principal-meta-card {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  border: 1px solid #E2E8F0;
 }
 .principal-welcome-card__day {
   margin: 0 0 8px;
@@ -5277,8 +5279,9 @@ select.form-input:focus {
   transition: width 0.3s ease;
 }
 .principal-tip-card {
-  background: #EFF6FF;
-  border-color: rgba(37, 99, 235, 0.12);
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #E2E8F0;
 }
 .principal-tip-card__header {
   display: flex;
@@ -5307,14 +5310,17 @@ select.form-input:focus {
 .principal-tip-card__next:hover {
   text-decoration: underline;
 }
-.principal-insight-card {
-  background: #FFFFFF;
+.principal-insight-card,
+.principal-meta-card {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  border: 1px solid #E2E8F0;
 }
-.principal-insight-card__header {
+.principal-insight-card__header,
+.principal-meta-card__header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -5322,6 +5328,70 @@ select.form-input:focus {
   color: #059669;
   font-weight: 700;
   font-size: 14px;
+}
+.principal-meta-card {
+  cursor: pointer;
+  transition: var(--transition);
+}
+.principal-meta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+}
+.principal-meta-card__objetivo {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--black);
+  line-height: 1.45;
+  font-weight: 600;
+}
+.principal-meta-card__bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #E2E8F0;
+  overflow: hidden;
+}
+.principal-meta-card__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.principal-meta-card__pct {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--grey-600);
+}
+.principal-meta-card__meta {
+  border-top: 1px solid #E2E8F0;
+  padding-top: 10px;
+}
+.principal-meta-card__meta-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--grey-500);
+  margin-bottom: 6px;
+}
+.principal-meta-card__meta p {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--black);
+  line-height: 1.4;
+}
+.principal-meta-card__meta p.positive { color: #059669; font-weight: 600; }
+.principal-meta-card__meta p.negative { color: #DC2626; font-weight: 600; }
+.principal-meta-card__empty p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--grey-600);
+  line-height: 1.5;
+}
+.principal-meta-card__cta {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563EB;
 }
 .principal-insight-card p {
   margin: 0;
@@ -5478,14 +5548,15 @@ select.form-input:focus {
   gap: 24px;
 }
 .principal-card {
-  background: #FFFFFF;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   border-radius: 16px;
   padding: 24px;
   display: flex;
   align-items: center;
   gap: 20px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  border: 1px solid #E2E8F0;
   transition: var(--transition);
   min-height: 100px;
 }
@@ -5498,8 +5569,27 @@ select.form-input:focus {
 .principal-card--despesa:hover,
 .principal-card--saldo:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
-  border-color: rgba(203, 213, 225, 1);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  border-color: #CBD5E1;
+}
+.principal-card--receita:hover .principal-card__chevron,
+.principal-card--despesa:hover .principal-card__chevron,
+.principal-card--saldo:hover .principal-card__chevron {
+  color: #2563EB;
+  transform: translateX(2px);
+}
+.principal-card__chevron {
+  color: #94A3B8;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.principal-card__link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563EB;
 }
 .principal-card__icon {
   width: 52px;
@@ -5561,11 +5651,12 @@ select.form-input:focus {
 
 /* Resumo do mês */
 .principal-resumo {
-  background: #FFFFFF;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  border: 1px solid #E2E8F0;
 }
 .principal-resumo h3 {
   margin: 0 0 20px 0;
@@ -7269,15 +7360,19 @@ select.form-input:focus {
   background: #EF4444;
 }
 
+
 .resumo-financeiro-page {
   padding: 8px 4px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 .resumo-financeiro-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 4px;
 }
 .resumo-financeiro-header h1 {
   margin: 0;
@@ -7313,14 +7408,68 @@ select.form-input:focus {
   cursor: pointer;
   padding: 0;
 }
-.resumo-financeiro-loading {
-  color: #64748b;
+.resumo-financeiro-loading { color: #64748b; }
+.panorama-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
 }
+.panorama-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+.panorama-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.panorama-card--entrada .panorama-card__icon { background: linear-gradient(135deg, #22C55E, #16A34A); }
+.panorama-card--saida .panorama-card__icon { background: linear-gradient(135deg, #EF4444, #DC2626); }
+.panorama-card--saldo .panorama-card__icon { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.panorama-card__label {
+  display: block;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.panorama-card__value { font-size: 1.25rem; font-weight: 700; }
+.panorama-card__value.positive,
+.panorama-insights .positive,
+.panorama-taxa .positive { color: #059669; }
+.panorama-card__value.negative,
+.panorama-insights .negative,
+.panorama-taxa .negative { color: #DC2626; }
+.panorama-chart-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+.panorama-chart-card h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.panorama-chart-card__body { height: 280px; width: 100%; }
 .resumo-financeiro-table-wrap {
   background: #FFFFFF;
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid #E2E8F0;
   overflow: auto;
 }
 .resumo-financeiro-table {
@@ -7346,4 +7495,128 @@ select.form-input:focus {
   background: #f8fafc;
   font-weight: 700;
   border-bottom: none;
+}
+.panorama-bottom {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 14px;
+}
+.panorama-insights,
+.panorama-taxa {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+.panorama-insights h2,
+.panorama-taxa h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.panorama-insights ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.panorama-taxa__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2563EB;
+  margin-bottom: 8px;
+}
+.panorama-taxa__header h2 { margin: 0; }
+.panorama-taxa__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #64748b;
+}
+.panorama-taxa__pct { text-align: center; padding: 18px 0 8px; }
+.panorama-taxa__pct span {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.panorama-taxa__msg {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+}
+.panorama-taxa__empty {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.graficos-pizza-tabs {
+  display: inline-flex;
+  gap: 6px;
+  background: #F1F5F9;
+  padding: 4px;
+  border-radius: 12px;
+  margin: 0 auto 10px;
+}
+.graficos-pizza-tab {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.graficos-pizza-tab.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+.pizza-legend__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.dashboard-page__stat {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 14px !important;
+}
+.dashboard-page__stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.dashboard-page__stat-icon--receita { background: linear-gradient(135deg, #22C55E, #16A34A); }
+.dashboard-page__stat-icon--despesa { background: linear-gradient(135deg, #EF4444, #DC2626); }
+.dashboard-page__stat-icon--saldo { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.dashboard-page__chart-card {
+  background: #ffffff !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.07) !important;
+}
+.dashboard-page__chart-body--line { min-height: 320px; }
+@media (max-width: 900px) {
+  .panorama-cards,
+  .panorama-bottom { grid-template-columns: 1fr; }
 }

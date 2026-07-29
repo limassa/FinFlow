@@ -5,18 +5,20 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Pie } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
+import { getIconForTipo, getColorForTipo } from '../utils/categoryIcons';
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 function formatarBRL(valor) {
   return new Intl.NumberFormat('pt-BR', {
@@ -25,59 +27,106 @@ function formatarBRL(valor) {
   }).format(valor || 0);
 }
 
-function PizzaLegend({ chartData }) {
-  if (!chartData?.labels?.length) return null;
-  const values = chartData.datasets?.[0]?.data || [];
-  const colors = chartData.datasets?.[0]?.backgroundColor || [];
+function parseLocalDate(raw) {
+  if (!raw) return null;
+  const ymd = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const [y, m, day] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, day);
+}
+
+function PizzaLegend({ labels, values, colors, tipoCategoria }) {
+  if (!labels?.length) return null;
 
   return (
     <ul className="pizza-legend" aria-label="Legenda do gráfico">
-      {chartData.labels.map((label, index) => (
-        <li key={`${label}-${index}`} className="pizza-legend__item">
-          <span
-            className="pizza-legend__dot"
-            style={{ backgroundColor: colors[index] || '#94a3b8' }}
-          />
-          <span className="pizza-legend__label">{label}</span>
-          <span className="pizza-legend__value">{formatarBRL(values[index])}</span>
-        </li>
-      ))}
+      {labels.map((label, index) => {
+        const Icon = getIconForTipo(label, tipoCategoria);
+        const cor = colors[index] || getColorForTipo(label, tipoCategoria);
+        return (
+          <li key={`${label}-${index}`} className="pizza-legend__item">
+            <span className="pizza-legend__icon" style={{ color: cor, backgroundColor: `${cor}18` }}>
+              <Icon />
+            </span>
+            <span className="pizza-legend__label">{label}</span>
+            <span className="pizza-legend__value">{formatarBRL(values[index])}</span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
+function montarPizza(itens, { tipoCampo, valorCampo, dataCampo, pagoCampo, mes, ano, tipoCategoria }) {
+  const filtrados = itens.filter((item) => {
+    const data = parseLocalDate(item[dataCampo]);
+    return (
+      data &&
+      data.getMonth() === mes &&
+      data.getFullYear() === ano &&
+      item[pagoCampo]
+    );
+  });
+
+  const porTipo = {};
+  filtrados.forEach((item) => {
+    const tipo = item[tipoCampo] || 'Outros';
+    porTipo[tipo] = (porTipo[tipo] || 0) + parseFloat(item[valorCampo] || 0);
+  });
+
+  const labels = Object.keys(porTipo);
+  const data = Object.values(porTipo);
+  const colors = labels.map((l) => getColorForTipo(l, tipoCategoria));
+
+  return {
+    labels,
+    values: data,
+    colors,
+    datasets: [
+      {
+        data,
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 3,
+        hoverOffset: 8,
+      },
+    ],
+  };
+}
+
 function GraficosPizza() {
   const navigate = useNavigate();
-  const [dadosReceitas, setDadosReceitas] = useState(null);
-  const [dadosDespesas, setDadosDespesas] = useState(null);
+  const [receitas, setReceitas] = useState([]);
+  const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentChart, setCurrentChart] = useState(0); // 0 = receitas, 1 = despesas
+  const [currentChart, setCurrentChart] = useState(1); // 0 = receitas, 1 = despesas
+  const [mesRef, setMesRef] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
 
   useEffect(() => {
-    if (userId) {
-      buscarDadosMensais();
-    }
+    if (userId) buscarDados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const buscarDadosMensais = async () => {
+  const buscarDados = async () => {
     setLoading(true);
     setError(null);
-    
     try {
       const [receitasRes, despesasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
       ]);
-
-      const receitas = receitasRes.data;
-      const despesas = despesasRes.data;
-
-      setDadosReceitas(gerarDadosReceitasPizza(receitas));
-      setDadosDespesas(gerarDadosDespesasPizza(despesas));
+      setReceitas(receitasRes.data || []);
+      setDespesas(despesasRes.data || []);
     } catch (err) {
       console.error('Erro ao buscar dados:', err);
       setError('Erro ao carregar dados do gráfico');
@@ -86,121 +135,70 @@ function GraficosPizza() {
     }
   };
 
-  const gerarDadosReceitasPizza = (receitas) => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
+  const mes = mesRef.getMonth();
+  const ano = mesRef.getFullYear();
+  const tipoCategoria = currentChart === 0 ? 'receita' : 'despesa';
 
-    const receitasMes = receitas.filter(receita => {
-      const dataReceita = new Date(receita.receita_data);
-      return dataReceita.getMonth() === mesAtual && 
-             dataReceita.getFullYear() === anoAtual &&
-             receita.receita_recebido;
-    });
+  const dadosReceitas = useMemo(
+    () =>
+      montarPizza(receitas, {
+        tipoCampo: 'receita_tipo',
+        valorCampo: 'receita_valor',
+        dataCampo: 'receita_data',
+        pagoCampo: 'receita_recebido',
+        mes,
+        ano,
+        tipoCategoria: 'receita',
+      }),
+    [receitas, mes, ano]
+  );
 
-    const receitasPorTipo = {};
-    receitasMes.forEach(receita => {
-      const tipo = receita.receita_tipo || 'Outros';
-      if (!receitasPorTipo[tipo]) {
-        receitasPorTipo[tipo] = 0;
-      }
-      receitasPorTipo[tipo] += parseFloat(receita.receita_valor);
-    });
+  const dadosDespesas = useMemo(
+    () =>
+      montarPizza(despesas, {
+        tipoCampo: 'despesa_tipo',
+        valorCampo: 'despesa_valor',
+        dataCampo: 'despesa_data',
+        pagoCampo: 'despesa_pago',
+        mes,
+        ano,
+        tipoCategoria: 'despesa',
+      }),
+    [despesas, mes, ano]
+  );
 
-    const labels = Object.keys(receitasPorTipo);
-    const data = Object.values(receitasPorTipo);
-    const cores = [
-      '#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6',
-      '#EF4444', '#10B981', '#F97316', '#06B6D4',
-    ];
-
-    return {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: cores.slice(0, labels.length),
-        borderColor: cores.slice(0, labels.length).map(cor => cor + 'CC'),
-        borderWidth: 2,
-      }],
-    };
-  };
-
-  const gerarDadosDespesasPizza = (despesas) => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-
-    const despesasMes = despesas.filter(despesa => {
-      const dataDespesa = new Date(despesa.despesa_data);
-      return dataDespesa.getMonth() === mesAtual && 
-             dataDespesa.getFullYear() === anoAtual &&
-             despesa.despesa_pago;
-    });
-
-    const despesasPorTipo = {};
-    despesasMes.forEach(despesa => {
-      const tipo = despesa.despesa_tipo || 'Outros';
-      if (!despesasPorTipo[tipo]) {
-        despesasPorTipo[tipo] = 0;
-      }
-      despesasPorTipo[tipo] += parseFloat(despesa.despesa_valor);
-    });
-
-    const labels = Object.keys(despesasPorTipo);
-    const data = Object.values(despesasPorTipo);
-    const cores = [
-      '#EF4444', '#F97316', '#F59E0B', '#8B5CF6',
-      '#EC4899', '#F43F5E', '#DC2626', '#EA580C',
-    ];
-
-    return {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: cores.slice(0, labels.length),
-        borderColor: cores.slice(0, labels.length).map(cor => cor + 'CC'),
-        borderWidth: 2,
-      }],
-    };
-  };
-
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        title: { display: false },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              const valor = context.parsed;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
+              return `${context.label}: ${formatarBRL(valor)} (${percentual}%)`;
+            },
+          },
+        },
       },
-      title: {
-        display: false,
+      layout: {
+        padding: { left: 8, right: 8, top: 8, bottom: 8 },
       },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            const valor = context.parsed;
-            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
-            return `${context.label}: ${formatarBRL(valor)} (${percentual}%)`;
-          }
-        }
-      }
-    },
-    layout: {
-      padding: {
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: 8
-      }
-    }
-  }), []);
+    }),
+    []
+  );
 
-  const nextChart = () => {
-    setCurrentChart((prev) => (prev + 1) % 2);
+  const prevMes = () => {
+    setMesRef((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   };
 
-  const prevChart = () => {
-    setCurrentChart((prev) => (prev - 1 + 2) % 2);
+  const nextMes = () => {
+    setMesRef((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   };
 
   const handleChartClick = () => {
@@ -224,35 +222,51 @@ function GraficosPizza() {
     return (
       <div className="chart-error">
         <p>{error}</p>
-        <button onClick={buscarDadosMensais}>Tentar novamente</button>
+        <button type="button" onClick={buscarDados}>
+          Tentar novamente
+        </button>
       </div>
     );
   }
 
-  const hasReceitas = dadosReceitas && dadosReceitas.labels.length > 0;
-  const hasDespesas = dadosDespesas && dadosDespesas.labels.length > 0;
   const activeData = currentChart === 0 ? dadosReceitas : dadosDespesas;
-  const hasActiveData = currentChart === 0 ? hasReceitas : hasDespesas;
+  const hasActiveData = activeData.labels.length > 0;
+  const mesLabel = `${MESES[mes]} ${ano}`;
 
   return (
     <div className="graficos-pizza-carrossel">
+      <div className="graficos-pizza-tabs">
+        <button
+          type="button"
+          className={`graficos-pizza-tab ${currentChart === 0 ? 'active' : ''}`}
+          onClick={() => setCurrentChart(0)}
+        >
+          Receitas
+        </button>
+        <button
+          type="button"
+          className={`graficos-pizza-tab ${currentChart === 1 ? 'active' : ''}`}
+          onClick={() => setCurrentChart(1)}
+        >
+          Despesas
+        </button>
+      </div>
+
       <div className="graficos-pizza-nav">
         <button
           type="button"
-          onClick={prevChart}
+          onClick={prevMes}
           className="graficos-pizza-nav__btn"
-          aria-label="Gráfico anterior"
+          aria-label="Mês anterior"
         >
           <FaChevronLeft size={14} />
         </button>
-        <p className="graficos-pizza-title">
-          {currentChart === 0 ? 'Receitas' : 'Despesas'} — Mês atual
-        </p>
+        <p className="graficos-pizza-title">{mesLabel}</p>
         <button
           type="button"
-          onClick={nextChart}
+          onClick={nextMes}
           className="graficos-pizza-nav__btn"
-          aria-label="Próximo gráfico"
+          aria-label="Próximo mês"
         >
           <FaChevronRight size={14} />
         </button>
@@ -266,16 +280,21 @@ function GraficosPizza() {
             onClick={handleChartClick}
             title="Clique para ver detalhes"
           >
-            <Pie data={activeData} options={chartOptions} />
+            <Doughnut data={activeData} options={chartOptions} />
           </div>
-          <PizzaLegend chartData={activeData} />
+          <PizzaLegend
+            labels={activeData.labels}
+            values={activeData.values}
+            colors={activeData.colors}
+            tipoCategoria={tipoCategoria}
+          />
         </div>
       ) : (
         <div className="chart-empty">
           <p>
             {currentChart === 0
-              ? 'Nenhuma receita registrada este mês'
-              : 'Nenhuma despesa registrada este mês'}
+              ? `Nenhuma receita registrada em ${mesLabel.toLowerCase()}`
+              : `Nenhuma despesa registrada em ${mesLabel.toLowerCase()}`}
           </p>
         </div>
       )}

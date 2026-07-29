@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaChartBar } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaBullseye } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -72,76 +72,6 @@ function formatarValorBr(valor) {
   }).format(valor);
 }
 
-function somarPorCategoria(despesas, mes, ano) {
-  const mapa = {};
-  despesas.forEach((d) => {
-    if (!d.despesa_pago) return;
-    const data = parseLocalDate(d.despesa_data);
-    if (!data || data.getMonth() !== mes || data.getFullYear() !== ano) return;
-    const tipo = d.despesa_tipo || 'Outros';
-    mapa[tipo] = (mapa[tipo] || 0) + (parseFloat(d.despesa_valor) || 0);
-  });
-  return mapa;
-}
-
-function gerarInsight(despesas, receitasMes, despesasMes) {
-  const agora = new Date();
-  const mesAtual = agora.getMonth();
-  const anoAtual = agora.getFullYear();
-  const mesAnteriorDate = new Date(anoAtual, mesAtual - 1, 1);
-  const mesAnt = mesAnteriorDate.getMonth();
-  const anoAnt = mesAnteriorDate.getFullYear();
-
-  const mapaAtual = somarPorCategoria(despesas, mesAtual, anoAtual);
-  const mapaAnt = somarPorCategoria(despesas, mesAnt, anoAnt);
-  const saldoMes = receitasMes - despesasMes;
-  const insights = [];
-
-  if (saldoMes > 0) {
-    insights.push(`Você está economizando ${formatarValorBr(saldoMes)} este mês.`);
-    insights.push(
-      `Se continuar economizando nesse ritmo, em 12 meses terá guardado aproximadamente ${formatarValorBr(saldoMes * 12)}.`
-    );
-  } else if (saldoMes < 0 && despesasMes > 0) {
-    insights.push(
-      `Neste mês as despesas estão ${formatarValorBr(Math.abs(saldoMes))} acima das receitas. Vale revisar os gastos.`
-    );
-  }
-
-  const categoriasAtuais = Object.entries(mapaAtual).sort((a, b) => b[1] - a[1]);
-  if (categoriasAtuais.length > 0) {
-    const [maiorCat, maiorValor] = categoriasAtuais[0];
-    insights.push(
-      `Sua maior despesa continua sendo ${maiorCat.toLowerCase()} (${formatarValorBr(maiorValor)}).`
-    );
-  }
-
-  Object.keys(mapaAtual).forEach((cat) => {
-    const atual = mapaAtual[cat] || 0;
-    const anterior = mapaAnt[cat] || 0;
-    if (anterior > 0 && atual < anterior) {
-      const pct = Math.round(((anterior - atual) / anterior) * 100);
-      if (pct >= 5) {
-        insights.push(`Você gastou ${pct}% menos em ${cat.toLowerCase()}.`);
-      }
-    } else if (anterior > 0 && atual > anterior) {
-      const pct = Math.round(((atual - anterior) / anterior) * 100);
-      if (pct >= 10) {
-        insights.push(`Atenção: você gastou ${pct}% a mais em ${cat.toLowerCase()} neste mês.`);
-      }
-    }
-  });
-
-  if (insights.length === 0) {
-    return 'Continue registrando suas movimentações para receber insights personalizados.';
-  }
-
-  const diaDoAno = Math.floor(
-    (agora - new Date(agora.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
-  );
-  return insights[diaDoAno % insights.length];
-}
-
 function Principal() {
   const navigate = useNavigate();
   const [totais, setTotais] = useState({
@@ -164,10 +94,6 @@ function Principal() {
   const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
   const [dicaIdx, setDicaIdx] = useState(() => new Date().getDate() % DICAS_ECONOMIA.length);
   const dica = DICAS_ECONOMIA[dicaIdx % DICAS_ECONOMIA.length];
-  const insight = useMemo(
-    () => gerarInsight(despesas, totais.receitasMes, totais.despesasMes),
-    [despesas, totais.receitasMes, totais.despesasMes]
-  );
 
   useEffect(() => {
     if (userId) {
@@ -289,9 +215,13 @@ function Principal() {
   const saldoMes = totais.receitasMes - totais.despesasMes;
   const semMovimentacaoMes = totais.receitasMes === 0 && totais.despesasMes === 0;
   const saldoOrcamento = orcamento ? orcamento.totalOrcado - orcamento.totalRealizado : null;
-  const pctDisponivel =
+  const pctOrcamento =
     orcamento && orcamento.totalOrcado > 0
-      ? Math.max(0, Math.min(100, (saldoOrcamento / orcamento.totalOrcado) * 100))
+      ? Math.max(0, Math.min(100, Math.round((orcamento.totalRealizado / orcamento.totalOrcado) * 100)))
+      : 0;
+  const pctRestante =
+    orcamento && orcamento.totalOrcado > 0
+      ? Math.max(0, Math.min(100, Math.round((Math.max(0, saldoOrcamento) / orcamento.totalOrcado) * 100)))
       : 0;
 
   const textoVencimentoHoje =
@@ -361,33 +291,6 @@ function Principal() {
           <p className="principal-welcome-card__muted">{textoVencimentoSemana}</p>
         </article>
 
-        {orcamento ? (
-          <article className="principal-budget-card">
-            <p className="principal-budget-card__label">Saldo do mês</p>
-            <p
-              className={`principal-budget-card__value ${
-                saldoOrcamento >= 0 ? 'positive' : 'negative'
-              }`}
-            >
-              {formatarValor(saldoOrcamento)}
-            </p>
-            <div className="principal-budget-card__bar">
-              <div
-                className="principal-budget-card__fill"
-                style={{
-                  width: `${pctDisponivel}%`,
-                  background:
-                    pctDisponivel > 30
-                      ? '#059669'
-                      : pctDisponivel > 10
-                        ? '#F59E0B'
-                        : '#DC2626',
-                }}
-              />
-            </div>
-          </article>
-        ) : null}
-
         <article className="principal-tip-card">
           <div className="principal-tip-card__header">
             <FaLightbulb />
@@ -403,12 +306,57 @@ function Principal() {
           </button>
         </article>
 
-        <article className="principal-insight-card">
-          <div className="principal-insight-card__header">
-            <FaChartBar />
-            <span>Insight</span>
+        <article
+          className="principal-meta-card"
+          onClick={() => navigate('/layout/orcamento')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/layout/orcamento')}
+        >
+          <div className="principal-meta-card__header">
+            <FaBullseye />
+            <span>Objetivo do Mês</span>
           </div>
-          <p>{insight}</p>
+          {orcamento ? (
+            <>
+              <p className="principal-meta-card__objetivo">
+                Controlar gastos em até {formatarValor(orcamento.totalOrcado)}
+              </p>
+              <div className="principal-meta-card__bar">
+                <div
+                  className="principal-meta-card__fill"
+                  style={{
+                    width: `${pctOrcamento}%`,
+                    background:
+                      pctOrcamento <= 70
+                        ? '#059669'
+                        : pctOrcamento <= 90
+                          ? '#F59E0B'
+                          : '#DC2626',
+                  }}
+                />
+              </div>
+              <p className="principal-meta-card__pct">{pctOrcamento}% utilizado</p>
+              <div className="principal-meta-card__meta">
+                <span className="principal-meta-card__meta-label">Meta</span>
+                <p>Orçado: {formatarValor(orcamento.totalOrcado)}</p>
+                <p>Já gasto: {formatarValor(orcamento.totalRealizado)}</p>
+                <p className={saldoOrcamento >= 0 ? 'positive' : 'negative'}>
+                  {saldoOrcamento >= 0
+                    ? `Restam ${formatarValor(saldoOrcamento)} (${pctRestante}%)`
+                    : `Excedeu ${formatarValor(Math.abs(saldoOrcamento))}`}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="principal-meta-card__empty">
+              <p>
+                Você ainda não definiu um objetivo para este mês. Que tal criar um orçamento e
+                acompanhar suas metas de perto?
+              </p>
+              <span className="principal-meta-card__cta">Definir orçamento →</span>
+            </div>
+          )}
         </article>
       </section>
 
@@ -427,7 +375,9 @@ function Principal() {
             <h3>Receita</h3>
             <span className="principal-card__value">{formatarValor(totais.totalReceitas)}</span>
             <span className="principal-card__desc">Receitas Recebidas</span>
+            <span className="principal-card__link">Ver detalhes</span>
           </div>
+          <FaChevronRight className="principal-card__chevron" aria-hidden />
         </article>
 
         <article
@@ -444,7 +394,9 @@ function Principal() {
             <h3>Despesa</h3>
             <span className="principal-card__value">{formatarValor(totais.totalDespesas)}</span>
             <span className="principal-card__desc">Despesas Pagas</span>
+            <span className="principal-card__link">Ver detalhes</span>
           </div>
+          <FaChevronRight className="principal-card__chevron" aria-hidden />
         </article>
 
         <article
@@ -464,7 +416,9 @@ function Principal() {
             <h3>Saldo Total</h3>
             <span className="principal-card__value">{formatarValor(totais.saldoContas)}</span>
             <span className="principal-card__desc">Saldo Disponível</span>
+            <span className="principal-card__link">Ver resumo</span>
           </div>
+          <FaChevronRight className="principal-card__chevron" aria-hidden />
         </article>
       </section>
 
