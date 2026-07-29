@@ -1,124 +1,63 @@
 import React, { useState } from 'react';
 import { FaHome, FaMoneyBillWave, FaMoneyCheckAlt, FaSignOutAlt, FaEnvelope, FaWallet, FaCalendarAlt, FaCalendarWeek, FaCalculator, FaCreditCard, FaChartPie, FaTags, FaChartLine } from 'react-icons/fa';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import Header from '../components/Header';
 import LembreteEventoProvider from '../components/LembreteEventoProvider';
 
+const MENU_ITEMS = [
+  { key: 'home', path: '/layout/principal', match: ['/layout/principal', '/layout/resumo-financeiro'], icon: FaHome, label: 'Home', title: 'Home' },
+  { key: 'dashboard', path: '/layout/dashboard', match: ['/layout/dashboard'], icon: FaChartLine, label: 'Dashboard', title: 'Dashboard' },
+  { key: 'contas', path: '/layout/contas', match: ['/layout/contas'], icon: FaWallet, label: 'Contas', title: 'Contas' },
+  { key: 'receita', path: '/layout/receita', match: ['/layout/receita'], icon: FaMoneyBillWave, label: 'Receita', title: 'Receita' },
+  { key: 'despesa', path: '/layout/despesa', match: ['/layout/despesa'], icon: FaMoneyCheckAlt, label: 'Despesa', title: 'Despesa' },
+  { key: 'calendario', path: '/layout/calendario', match: ['/layout/calendario'], icon: FaCalendarAlt, label: 'Calendário', title: 'Calendário' },
+  { key: 'agenda', path: '/layout/agenda', match: ['/layout/agenda'], icon: FaCalendarWeek, label: 'Agenda', title: 'Agenda' },
+  { key: 'cartoes', path: '/layout/cartoes', match: ['/layout/cartoes'], icon: FaCreditCard, label: 'Cartões', title: 'Cartões de Crédito' },
+  { key: 'orcamento', path: '/layout/orcamento', match: ['/layout/orcamento'], icon: FaChartPie, label: 'Orçamento', title: 'Orçamento Mensal' },
+  { key: 'categorias', path: '/layout/categorias', match: ['/layout/categorias'], icon: FaTags, label: 'Categorias', title: 'Categorias' },
+  { key: 'calculadoras', path: '/layout/calculadora-juros', match: ['/layout/calculadora-juros', '/layout/calculadora-retiradas', '/layout/calculadora-aporte-meta'], icon: FaCalculator, label: 'Calculadoras', title: 'Calculadoras' },
+];
+
 function Layout() {
   const [hovered, setHovered] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSair = () => {
     logout();
     navigate('/');
   };
 
+  const isActive = (item) =>
+    (item.match || [item.path]).some(
+      (p) => location.pathname === p || location.pathname.startsWith(`${p}/`)
+    );
+
   return (
     <LembreteEventoProvider>
     <div className="home-container">
       <Header />
       <nav className="sidebar">
-        <div className={`sidebar-item ${hovered === 'home' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('home')}
-        onMouseLeave={() => setHovered(null)}
-            onClick={() => navigate('/layout/principal')}
-        style={{ cursor: 'pointer' }}
-        title="Home">
-            <span className="icon"><FaHome /></span>
-            <span className="label">{hovered === 'home' && 'Home'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'dashboard' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('dashboard')}
-        onMouseLeave={() => setHovered(null)}
-            onClick={() => navigate('/layout/dashboard')}
-        style={{ cursor: 'pointer' }}
-        title="Dashboard">
-            <span className="icon"><FaChartLine /></span>
-            <span className="label">{hovered === 'dashboard' && 'Dashboard'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'contas' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('contas')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/contas')}
-        style={{ cursor: 'pointer' }}
-        title="Contas">
-            <span className="icon"><FaWallet /></span>
-            <span className="label">{hovered === 'contas' && 'Contas'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'receita' ? 'hovered' : ''}`}   
-        onMouseEnter={() => setHovered('receita')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/receita')}
-        style={{ cursor: 'pointer' }}
-        title="Receita">
-            <span className="icon"><FaMoneyBillWave /></span>
-            <span className="label">{hovered === 'receita' && 'Receita'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'despesa' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('despesa')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/despesa')}
-        style={{ cursor: 'pointer' }}
-        title="Despesa">
-            <span className="icon"><FaMoneyCheckAlt /></span>
-            <span className="label">{hovered === 'despesa' && 'Despesa'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'calendario' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('calendario')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/calendario')}
-        style={{ cursor: 'pointer' }}
-        title="Calendário">
-            <span className="icon"><FaCalendarAlt /></span>
-            <span className="label">{hovered === 'calendario' && 'Calendário'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'agenda' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('agenda')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/agenda')}
-        style={{ cursor: 'pointer' }}
-        title="Agenda">
-            <span className="icon"><FaCalendarWeek /></span>
-            <span className="label">{hovered === 'agenda' && 'Agenda'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'cartoes' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('cartoes')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/cartoes')}
-        style={{ cursor: 'pointer' }}
-        title="Cartões de Crédito">
-            <span className="icon"><FaCreditCard /></span>
-            <span className="label">{hovered === 'cartoes' && 'Cartões'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'orcamento' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('orcamento')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/orcamento')}
-        style={{ cursor: 'pointer' }}
-        title="Orçamento Mensal">
-            <span className="icon"><FaChartPie /></span>
-            <span className="label">{hovered === 'orcamento' && 'Orçamento'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'categorias' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('categorias')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/categorias')}
-        style={{ cursor: 'pointer' }}
-        title="Categorias">
-            <span className="icon"><FaTags /></span>
-            <span className="label">{hovered === 'categorias' && 'Categorias'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'calculadoras' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('calculadoras')}
-        onMouseLeave={() => setHovered(null)}
-                    onClick={() => navigate('/layout/calculadora-juros')}
-        style={{ cursor: 'pointer' }}
-        title="Calculadoras">
-            <span className="icon"><FaCalculator /></span>
-            <span className="label">{hovered === 'calculadoras' && 'Calculadoras'}</span>
-        </div>
-        <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''}`}
+        {MENU_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item);
+          return (
+            <div
+              key={item.key}
+              className={`sidebar-item ${hovered === item.key ? 'hovered' : ''} ${active ? 'active' : ''}`}
+              onMouseEnter={() => setHovered(item.key)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => navigate(item.path)}
+              style={{ cursor: 'pointer' }}
+              title={item.title}
+            >
+              <span className="icon"><Icon /></span>
+              <span className="label">{(hovered === item.key || active) && item.label}</span>
+            </div>
+          );
+        })}
+        <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''} ${location.pathname === '/fale-conosco' ? 'active' : ''}`}
         onMouseEnter={() => setHovered('fale-conosco')}
         onMouseLeave={() => setHovered(null)}
         onClick={() => navigate('/fale-conosco')}

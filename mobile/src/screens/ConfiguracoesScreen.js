@@ -674,7 +674,7 @@ export default function ConfiguracoesScreen() {
               ))}
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Dias antes do vencimento:</Text>
+                <Text style={styles.label}>Antecedência do lembrete:</Text>
                 <TextInput
                   style={styles.input}
                   value={lembretesConfig.lembretesDiasAntes.toString()}
@@ -701,7 +701,7 @@ export default function ConfiguracoesScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Horário dos lembretes:</Text>
+                <Text style={styles.label}>Horário das Notificações:</Text>
                 <TimePicker
                   value={lembretesConfig.lembretesHorario}
                   onChange={(time) => setLembretesConfig({ ...lembretesConfig, lembretesHorario: time })}

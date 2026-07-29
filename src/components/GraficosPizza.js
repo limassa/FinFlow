@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -17,6 +17,34 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+
+function formatarBRL(valor) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valor || 0);
+}
+
+function PizzaLegend({ chartData }) {
+  if (!chartData?.labels?.length) return null;
+  const values = chartData.datasets?.[0]?.data || [];
+  const colors = chartData.datasets?.[0]?.backgroundColor || [];
+
+  return (
+    <ul className="pizza-legend" aria-label="Legenda do gráfico">
+      {chartData.labels.map((label, index) => (
+        <li key={`${label}-${index}`} className="pizza-legend__item">
+          <span
+            className="pizza-legend__dot"
+            style={{ backgroundColor: colors[index] || '#94a3b8' }}
+          />
+          <span className="pizza-legend__label">{label}</span>
+          <span className="pizza-legend__value">{formatarBRL(values[index])}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function GraficosPizza() {
   const navigate = useNavigate();
@@ -40,7 +68,6 @@ function GraficosPizza() {
     setError(null);
     
     try {
-      // Buscar receitas e despesas do usuário
       const [receitasRes, despesasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
@@ -49,12 +76,8 @@ function GraficosPizza() {
       const receitas = receitasRes.data;
       const despesas = despesasRes.data;
 
-      // Gerar dados dos gráficos de pizza
-      const dadosReceitasPizza = gerarDadosReceitasPizza(receitas);
-      const dadosDespesasPizza = gerarDadosDespesasPizza(despesas);
-      
-      setDadosReceitas(dadosReceitasPizza);
-      setDadosDespesas(dadosDespesasPizza);
+      setDadosReceitas(gerarDadosReceitasPizza(receitas));
+      setDadosDespesas(gerarDadosDespesasPizza(despesas));
     } catch (err) {
       console.error('Erro ao buscar dados:', err);
       setError('Erro ao carregar dados do gráfico');
@@ -64,13 +87,10 @@ function GraficosPizza() {
   };
 
   const gerarDadosReceitasPizza = (receitas) => {
-    // Obter mês atual
     const hoje = new Date();
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
-   
 
-    // Filtrar receitas do mês atual
     const receitasMes = receitas.filter(receita => {
       const dataReceita = new Date(receita.receita_data);
       return dataReceita.getMonth() === mesAtual && 
@@ -78,7 +98,6 @@ function GraficosPizza() {
              receita.receita_recebido;
     });
 
-    // Agrupar por tipo
     const receitasPorTipo = {};
     receitasMes.forEach(receita => {
       const tipo = receita.receita_tipo || 'Outros';
@@ -88,18 +107,11 @@ function GraficosPizza() {
       receitasPorTipo[tipo] += parseFloat(receita.receita_valor);
     });
 
-    // Preparar dados para o gráfico
     const labels = Object.keys(receitasPorTipo);
     const data = Object.values(receitasPorTipo);
     const cores = [
-      '#22C55E', // Verde
-      '#3B82F6', // Azul
-      '#F59E0B', // Amarelo
-      '#8B5CF6', // Roxo
-      '#EF4444', // Vermelho
-      '#10B981', // Verde claro
-      '#F97316', // Laranja
-      '#06B6D4', // Ciano
+      '#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6',
+      '#EF4444', '#10B981', '#F97316', '#06B6D4',
     ];
 
     return {
@@ -114,20 +126,17 @@ function GraficosPizza() {
   };
 
   const gerarDadosDespesasPizza = (despesas) => {
-    // Obter mês atual
     const hoje = new Date();
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
 
-    // Filtrar despesas do mês atual (apenas pagas)
     const despesasMes = despesas.filter(despesa => {
       const dataDespesa = new Date(despesa.despesa_data);
-              return dataDespesa.getMonth() === mesAtual && 
-               dataDespesa.getFullYear() === anoAtual &&
-               despesa.despesa_pago;
+      return dataDespesa.getMonth() === mesAtual && 
+             dataDespesa.getFullYear() === anoAtual &&
+             despesa.despesa_pago;
     });
 
-    // Agrupar por tipo
     const despesasPorTipo = {};
     despesasMes.forEach(despesa => {
       const tipo = despesa.despesa_tipo || 'Outros';
@@ -137,18 +146,11 @@ function GraficosPizza() {
       despesasPorTipo[tipo] += parseFloat(despesa.despesa_valor);
     });
 
-    // Preparar dados para o gráfico
     const labels = Object.keys(despesasPorTipo);
     const data = Object.values(despesasPorTipo);
     const cores = [
-      '#EF4444', // Vermelho
-      '#F97316', // Laranja
-      '#F59E0B', // Amarelo
-      '#8B5CF6', // Roxo
-      '#EC4899', // Rosa
-      '#F43F5E', // Rosa escuro
-      '#DC2626', // Vermelho escuro
-      '#EA580C', // Laranja escuro
+      '#EF4444', '#F97316', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#F43F5E', '#DC2626', '#EA580C',
     ];
 
     return {
@@ -162,23 +164,12 @@ function GraficosPizza() {
     };
   };
 
-  const optionsReceitas = {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
-        position: 'bottom',
-        align: 'center',
-        labels: {
-          usePointStyle: true,
-          padding: 12,
-          boxWidth: 10,
-          font: {
-            size: 12,
-            weight: '600',
-          },
-        },
+        display: false,
       },
       title: {
         display: false,
@@ -189,10 +180,7 @@ function GraficosPizza() {
             const valor = context.parsed;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
-            return `${context.label}: ${new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(valor)} (${percentual}%)`;
+            return `${context.label}: ${formatarBRL(valor)} (${percentual}%)`;
           }
         }
       }
@@ -205,52 +193,7 @@ function GraficosPizza() {
         bottom: 8
       }
     }
-  };
-
-  const optionsDespesas = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        align: 'center',
-        labels: {
-          usePointStyle: true,
-          padding: 12,
-          boxWidth: 10,
-          font: {
-            size: 12,
-            weight: '600',
-          },
-        },
-      },
-      title: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            const valor = context.parsed;
-            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
-            return `${context.label}: ${new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(valor)} (${percentual}%)`;
-          }
-        }
-      }
-    },
-    layout: {
-      padding: {
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: 8
-      }
-    }
-  };
+  }), []);
 
   const nextChart = () => {
     setCurrentChart((prev) => (prev + 1) % 2);
@@ -261,7 +204,6 @@ function GraficosPizza() {
   };
 
   const handleChartClick = () => {
-    // Determinar qual gráfico está ativo (receitas ou despesas)
     const tipoAtivo = currentChart === 0 ? 'receitas' : 'despesas';
     navigate('/layout/detalhes-grafico', { state: { defaultTab: tipoAtivo } });
   };
@@ -289,6 +231,8 @@ function GraficosPizza() {
 
   const hasReceitas = dadosReceitas && dadosReceitas.labels.length > 0;
   const hasDespesas = dadosDespesas && dadosDespesas.labels.length > 0;
+  const activeData = currentChart === 0 ? dadosReceitas : dadosDespesas;
+  const hasActiveData = currentChart === 0 ? hasReceitas : hasDespesas;
 
   return (
     <div className="graficos-pizza-carrossel">
@@ -314,32 +258,29 @@ function GraficosPizza() {
         </button>
       </div>
 
-      <div
-        className="chart-container chart-container--pizza"
-        style={{ height: '240px', width: '100%', position: 'relative', cursor: 'pointer' }}
-        onClick={handleChartClick}
-        title="Clique para ver detalhes"
-      >
-        {currentChart === 0 ? (
-          hasReceitas ? (
-            <Pie data={dadosReceitas} options={optionsReceitas} />
-          ) : (
-            <div className="chart-empty">
-              <p>Nenhuma receita registrada este mês</p>
-            </div>
-          )
-        ) : (
-          hasDespesas ? (
-            <Pie data={dadosDespesas} options={optionsDespesas} />
-          ) : (
-            <div className="chart-empty">
-              <p>Nenhuma despesa registrada este mês</p>
-            </div>
-          )
-        )}
-      </div>
+      {hasActiveData ? (
+        <div className="pizza-chart-layout">
+          <div
+            className="chart-container chart-container--pizza"
+            style={{ cursor: 'pointer' }}
+            onClick={handleChartClick}
+            title="Clique para ver detalhes"
+          >
+            <Pie data={activeData} options={chartOptions} />
+          </div>
+          <PizzaLegend chartData={activeData} />
+        </div>
+      ) : (
+        <div className="chart-empty">
+          <p>
+            {currentChart === 0
+              ? 'Nenhuma receita registrada este mês'
+              : 'Nenhuma despesa registrada este mês'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-export default GraficosPizza; 
+export default GraficosPizza;

@@ -228,17 +228,19 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   legend: {
     width: '100%',
-    marginTop: 8,
+    marginTop: 12,
     gap: 10,
+    paddingHorizontal: 4,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingVertical: 2,
   },
   legendDot: {
     width: 12,
@@ -248,11 +250,12 @@ const styles = StyleSheet.create({
   legendLabel: {
     flex: 1,
     fontSize: 14,
+    fontWeight: '600',
     color: colors.text,
   },
   legendValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
   },
   emptyContainer: {

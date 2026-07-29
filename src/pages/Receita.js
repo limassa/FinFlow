@@ -1105,7 +1105,7 @@ function Receita() {
                               const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                               return (
                                 <span className="conta-com-badge">
-                                  <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                                  <span className="bank-badge bank-badge-list" style={{ backgroundColor: b.cor }}>
                                     {b.abbr}
                                   </span>
                                   {conta.conta_nome || conta.Conta_Nome}
@@ -1115,8 +1115,9 @@ function Receita() {
                           </>
                         ) : '-'}
                       </div>
-                      <div className="grid-cell">
-                        <input
+                      <div className="grid-cell grid-cell-status">
+                        <label className="status-pago-wrap">
+                          <input
                           type="checkbox"
                           checked={receita.receita_recebido || false}
                           onChange={async (e) => {
@@ -1135,6 +1136,10 @@ function Receita() {
                             }
                           }}
                         />
+                          <span className={`status-badge ${receita.receita_recebido ? 'pago' : 'pendente'}`}>
+                            {receita.receita_recebido ? 'Pago' : 'Pendente'}
+                          </span>
+                        </label>
                       </div>
                       <div className="grid-cell acoes">
                         <button 
@@ -1188,7 +1193,7 @@ function Receita() {
                           const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                           return (
                             <span className="conta-com-badge">
-                              <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                              <span className="bank-badge bank-badge-list" style={{ backgroundColor: b.cor }}>
                                 {b.abbr}
                               </span>
                               {conta.conta_nome || conta.Conta_Nome}
@@ -1198,13 +1203,18 @@ function Receita() {
                       </>
                     ) : '-'}
                   </div>
-                  <div className="grid-cell">
-                    <input
+                  <div className="grid-cell grid-cell-status">
+                    <label className="status-pago-wrap">
+                      <input
                       type="checkbox"
                       checked={receita.receita_recebido || false}
                       onChange={() => handleTogglePago(receita)}
                       title={receita.receita_recebido ? "Marcar como não recebido" : "Marcar como recebido"}
                     />
+                      <span className={`status-badge ${receita.receita_recebido ? 'pago' : 'pendente'}`}>
+                        {receita.receita_recebido ? 'Pago' : 'Pendente'}
+                      </span>
+                    </label>
                   </div>
                   <div className="grid-cell acoes">
                     <button onClick={() => handleEdit(receita)} className="btn-edit" title="Editar">

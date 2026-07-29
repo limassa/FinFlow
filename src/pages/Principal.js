@@ -37,20 +37,6 @@ const DICAS_ECONOMIA = [
   'Planeje o mês no início: quem decide antes gasta com mais consciência.',
 ];
 
-function extrairPrimeiroNome(usuario) {
-  const nome = usuario?.nome || usuario?.usuario_nome || '';
-  const primeiro = String(nome).trim().split(/\s+/)[0] || '';
-  if (!primeiro) return '';
-  return primeiro.charAt(0).toUpperCase() + primeiro.slice(1).toLowerCase();
-}
-
-function saudacaoPorHorario() {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Bom dia';
-  if (h >= 12 && h < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
-
 function startOfLocalDay(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -77,19 +63,6 @@ function getSemanaRange(ref = new Date()) {
   fim.setDate(inicio.getDate() + 6);
   fim.setHours(23, 59, 59, 999);
   return { inicio, fim, hoje };
-}
-
-function dicaDoDia() {
-  const agora = new Date();
-  const inicioAno = new Date(agora.getFullYear(), 0, 0);
-  const diaDoAno = Math.floor((agora - inicioAno) / (1000 * 60 * 60 * 24));
-  return DICAS_ECONOMIA[diaDoAno % DICAS_ECONOMIA.length];
-}
-
-function fotoUriFromApi(foto) {
-  if (!foto) return null;
-  if (foto.startsWith('data:') || foto.startsWith('http') || foto.startsWith('blob:')) return foto;
-  return `data:image/jpeg;base64,${foto}`;
 }
 
 function formatarValorBr(valor) {
@@ -183,19 +156,14 @@ function Principal() {
   const [despesas, setDespesas] = useState([]);
   const [vencimentos, setVencimentos] = useState({ hoje: 0, semana: 0 });
   const [orcamento, setOrcamento] = useState(null);
-  const [userFoto, setUserFoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModalRelatorio, setShowModalRelatorio] = useState(false);
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
-  const primeiroNome = useMemo(() => extrairPrimeiroNome(usuario), [usuario]);
-  const saudacao = useMemo(() => {
-    const base = saudacaoPorHorario();
-    return primeiroNome ? `${base}, ${primeiroNome}` : base;
-  }, [primeiroNome]);
   const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
-  const dica = useMemo(() => dicaDoDia(), []);
+  const [dicaIdx, setDicaIdx] = useState(() => new Date().getDate() % DICAS_ECONOMIA.length);
+  const dica = DICAS_ECONOMIA[dicaIdx % DICAS_ECONOMIA.length];
   const insight = useMemo(
     () => gerarInsight(despesas, totais.receitasMes, totais.despesasMes),
     [despesas, totais.receitasMes, totais.despesasMes]
@@ -204,20 +172,9 @@ function Principal() {
   useEffect(() => {
     if (userId) {
       fetchTotais();
-      fetchFoto();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
-
-  const fetchFoto = async () => {
-    try {
-      const res = await axios.get(`${API_ENDPOINTS.USER_FOTO}?userId=${userId}`);
-      if (res.data?.foto) setUserFoto(res.data.foto);
-      else setUserFoto(null);
-    } catch {
-      // silencioso
-    }
-  };
 
   const fetchTotais = async () => {
     setLoading(true);
@@ -351,8 +308,6 @@ function Principal() {
         ? 'Você possui 1 conta vencendo esta semana.'
         : `Você possui ${vencimentos.semana} contas vencendo esta semana.`;
 
-  const fotoUri = fotoUriFromApi(userFoto);
-
   if (!userId) {
     return <div>Usuário não logado</div>;
   }
@@ -371,18 +326,8 @@ function Principal() {
   return (
     <div className="home-container principal-page">
       <header className="principal-header">
-        <div className="principal-greeting">
-          {fotoUri ? (
-            <img src={fotoUri} alt="" className="principal-greeting__foto" />
-          ) : (
-            <div className="principal-greeting__foto principal-greeting__foto--placeholder">
-              {(primeiroNome || '?').charAt(0)}
-            </div>
-          )}
-          <div>
-            <h1 className="principal-title">{saudacao}</h1>
-            <p className="principal-greeting__sub">Visão geral das suas finanças</p>
-          </div>
+        <div className="principal-header-intro">
+          <p className="principal-greeting__sub">Visão geral das suas finanças</p>
         </div>
         <div className="principal-header-actions">
           <button
@@ -390,14 +335,14 @@ function Principal() {
             onClick={() => navigate('/layout/receita')}
             className="principal-btn-secondary"
           >
-            <FaMoneyBillWave /> Nova Receita
+            <FaMoneyBillWave /> + Receita
           </button>
           <button
             type="button"
             onClick={() => navigate('/layout/despesa')}
             className="principal-btn-secondary principal-btn-secondary--despesa"
           >
-            <FaMoneyCheckAlt /> Nova Despesa
+            <FaMoneyCheckAlt /> + Despesa
           </button>
           <button
             type="button"
@@ -449,6 +394,13 @@ function Principal() {
             <span>Dica do dia</span>
           </div>
           <p>{dica}</p>
+          <button
+            type="button"
+            className="principal-tip-card__next"
+            onClick={() => setDicaIdx((i) => (i + 1) % DICAS_ECONOMIA.length)}
+          >
+            Ver outra Dica
+          </button>
         </article>
 
         <article className="principal-insight-card">
@@ -500,6 +452,10 @@ function Principal() {
             totais.saldoContas >= 0 ? 'positive' : 'negative'
           }`}
           title="Saldo Total (Contas + Receitas - Despesas)"
+          onClick={() => navigate('/layout/resumo-financeiro')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/layout/resumo-financeiro')}
         >
           <div className="principal-card__icon">
             <FaChartLine />

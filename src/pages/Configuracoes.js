@@ -529,7 +529,7 @@ function Configuracoes() {
                 </div>
 
                 <div className="form-group">
-                  <label>Dias antes do vencimento:</label>
+                  <label>Antecedência do lembrete:</label>
                   <input
                     type="number"
                     min="0"
@@ -540,7 +540,7 @@ function Configuracoes() {
                 </div>
 
                 <div className="form-group">
-                  <label>Horário dos lembretes:</label>
+                  <label>Horário das Notificações:</label>
                   <input
                     type="time"
                     value={lembretesConfig.lembretesHorario}

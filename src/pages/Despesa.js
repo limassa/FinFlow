@@ -1422,7 +1422,7 @@ function Despesa() {
                               const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                               return (
                                 <span className="conta-com-badge">
-                                  <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                                  <span className="bank-badge bank-badge-list" style={{ backgroundColor: b.cor }}>
                                     {b.abbr}
                                   </span>
                                   {conta.conta_nome || conta.Conta_Nome}
@@ -1432,13 +1432,18 @@ function Despesa() {
                           </>
                         ) : '-'}
                       </div>
-                      <div className="grid-cell">
-                        <input
+                      <div className="grid-cell grid-cell-status">
+                        <label className="status-pago-wrap">
+                          <input
                           type="checkbox"
                           checked={despesa.despesa_pago || false}
                           onChange={() => handleTogglePago(despesa)}
                           title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
                         />
+                          <span className={`status-badge ${despesa.despesa_pago ? 'pago' : 'pendente'}`}>
+                            {despesa.despesa_pago ? 'Pago' : 'Pendente'}
+                          </span>
+                        </label>
                       </div>
                       <div className="grid-cell acoes">
                         <button 
@@ -1493,7 +1498,7 @@ function Despesa() {
                           const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                           return (
                             <span className="conta-com-badge">
-                              <span className="bank-badge bank-badge-sm" style={{ backgroundColor: b.cor }}>
+                              <span className="bank-badge bank-badge-list" style={{ backgroundColor: b.cor }}>
                                 {b.abbr}
                               </span>
                               {conta.conta_nome || conta.Conta_Nome}
@@ -1503,13 +1508,18 @@ function Despesa() {
                       </>
                     ) : '-'}
                   </div>
-                  <div className="grid-cell">
-                    <input
+                  <div className="grid-cell grid-cell-status">
+                    <label className="status-pago-wrap">
+                      <input
                       type="checkbox"
                       checked={despesa.despesa_pago || false}
                       onChange={() => handleTogglePago(despesa)}
                       title={despesa.despesa_pago ? "Marcar como não pago" : "Marcar como pago"}
                     />
+                      <span className={`status-badge ${despesa.despesa_pago ? 'pago' : 'pendente'}`}>
+                        {despesa.despesa_pago ? 'Pago' : 'Pendente'}
+                      </span>
+                    </label>
                   </div>
                   <div className="grid-cell acoes">
                     <button 

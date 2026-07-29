@@ -6,6 +6,7 @@ import Cadastro from './pages/Cadastro';
 import Login from './pages/Login';
 import Home from './pages/Home';  
 import Principal from './pages/Principal';
+import ResumoFinanceiro from './pages/ResumoFinanceiro';
 import Receita from './pages/Receita';
 import Despesa from './pages/Despesa';
 import FaleConosco from './pages/FaleConosco';
@@ -51,6 +52,7 @@ root.render(
         <Route path="/app" element={<App />}/>
         <Route path="/layout" element={<Layout />}>
           <Route path="principal" element={<Principal />} />
+          <Route path="resumo-financeiro" element={<ResumoFinanceiro />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="configuracoes" element={<Configuracoes />} />
           <Route path="sobre" element={<Sobre />} />
