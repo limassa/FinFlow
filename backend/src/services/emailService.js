@@ -111,6 +111,7 @@ class EmailService {
     this.transporter = null;
     this.configuracaoAtual = null;
     this.tipoAtual = null;
+    this.lastEmailError = null;
   }
   
   // Método para testar e configurar o melhor transporter
@@ -246,6 +247,7 @@ class EmailService {
       if (error) {
         const msg = (error && error.message) ? error.message : String(error);
         console.error('❌ Resend falhou:', msg);
+        this.lastEmailError = msg;
         if (error.message && error.message.includes('not verified')) {
           console.error('   💡 Solução: Verifique o domínio no Resend ou configure RESEND_VERIFIED_DOMAIN');
           console.error('   📖 Veja: backend/CONFIGURAR_RESEND.md');
@@ -557,9 +559,10 @@ class EmailService {
   
   async sendPasswordResetEmail(user, resetToken) {
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-    
+    this.lastEmailError = null;
+
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@claricash.com.br',
+      from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || 'noreply@claricash.com.br',
       to: user.email,
       subject: 'Redefinição de Senha - Claricash',
       html: `
@@ -594,37 +597,85 @@ class EmailService {
         </div>
       `
     };
-    
-    try {
-      if (!this.transporter) {
-        const configurado = await this.configurarTransporter();
-        if (!configurado) {
-          return this.fallbackPasswordReset(user, resetToken);
-        }
+
+    const temResend = !!process.env.RESEND_API_KEY;
+    const temSendGrid = !!process.env.SENDGRID_API_KEY;
+    const temGmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    console.log(
+      '📧 Redefinição: RESEND=' + (temResend ? 'sim' : 'não') +
+      ', SENDGRID=' + (temSendGrid ? 'sim' : 'não') +
+      ', Gmail=' + (temGmail ? 'sim' : 'não') +
+      ', provedorAtual=' + (this.tipoAtual || 'nenhum')
+    );
+
+    // Priorizar Resend quando disponível (mesmo padrão do boas-vindas)
+    if (temResend && this.tipoAtual !== 'resend') {
+      this.transporter = null;
+      this.tipoAtual = null;
+    }
+
+    if (!this.transporter) {
+      const configurado = await this.configurarTransporter();
+      if (!configurado) {
+        this.lastEmailError = 'Nenhum provedor de email configurado no servidor.';
+        return this.fallbackPasswordReset(user, resetToken);
       }
-      
-      if (this.tipoAtual === 'sendgrid') {
-        const resultado = await this.sendEmailSendGrid(mailOptions);
-        if (resultado) {
-          console.log('✅ Email de redefinição enviado via SendGrid!');
-          return true;
-        }
-      } else if (this.tipoAtual === 'resend') {
+    }
+
+    try {
+      // 1) Tentar provedor atual
+      if (this.tipoAtual === 'resend') {
         const resultado = await this.sendEmailResend(mailOptions);
         if (resultado === true) {
           console.log('✅ Email de redefinição enviado via Resend!');
           return true;
         }
+        this.lastEmailError = 'Resend não conseguiu enviar o email (domínio/API).';
+        console.log('📧 Resend falhou na redefinição. Tentando fallback...');
+      } else if (this.tipoAtual === 'sendgrid') {
+        const resultado = await this.sendEmailSendGrid(mailOptions);
+        if (resultado) {
+          console.log('✅ Email de redefinição enviado via SendGrid!');
+          return true;
+        }
       } else if (this.tipoAtual === 'nodemailer') {
         const info = await this.transporter.sendMail(mailOptions);
-        console.log('✅ Email de redefinição enviado via Nodemailer!');
+        console.log('✅ Email de redefinição enviado via Nodemailer!', info?.messageId || '');
         return true;
       }
-      
+
+      // 2) Se Resend estava ativo e falhou, tentar Gmail
+      if (temGmail) {
+        const gmailOk = await this.tentarEnviarComGmail(mailOptions);
+        if (gmailOk) {
+          console.log('✅ Email de redefinição enviado via Gmail (fallback)!');
+          return true;
+        }
+      }
+
+      // 3) Se ainda não enviou e há SendGrid, tentar
+      if (temSendGrid && this.tipoAtual !== 'sendgrid') {
+        const sgOk = await this.sendEmailSendGrid(mailOptions);
+        if (sgOk) {
+          console.log('✅ Email de redefinição enviado via SendGrid (fallback)!');
+          return true;
+        }
+      }
+
       return this.fallbackPasswordReset(user, resetToken);
-      
     } catch (error) {
       console.error('❌ Erro ao enviar email de redefinição:', error.message);
+      this.lastEmailError = error.message;
+
+      if (temGmail) {
+        try {
+          const gmailOk = await this.tentarEnviarComGmail(mailOptions);
+          if (gmailOk) return true;
+        } catch (e) {
+          console.error('❌ Fallback Gmail também falhou:', e.message);
+        }
+      }
+
       return this.fallbackPasswordReset(user, resetToken);
     }
   }
@@ -635,8 +686,10 @@ class EmailService {
     console.log(`   Para: ${user.email}`);
     console.log(`   Token: ${resetToken}`);
     console.log(`   Link: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`);
+    console.log(`   Motivo: ${this.lastEmailError || 'provedor indisponível'}`);
     console.log('   Status: Email NÃO enviado (sistema de email indisponível)');
-    console.log('   Configure RESEND_API_KEY, SENDGRID_API_KEY ou EMAIL_USER/EMAIL_PASS no .env');
+    console.log('   💡 Confira no Railway: RESEND_API_KEY, RESEND_FROM_EMAIL, RESEND_VERIFIED_DOMAIN');
+    console.log('   💡 Domínio precisa estar verificado em https://resend.com/domains');
     console.log('📧 ======================================');
     
     return false;
@@ -1010,7 +1063,12 @@ class EmailService {
       configurado: !!this.transporter,
       configuracaoAtual: this.configuracaoAtual,
       tipoAtual: this.tipoAtual,
+      resendDisponivel: !!process.env.RESEND_API_KEY,
       sendgridDisponivel: !!process.env.SENDGRID_API_KEY,
+      gmailDisponivel: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS),
+      resendFrom: process.env.RESEND_FROM_EMAIL || null,
+      resendDomain: process.env.RESEND_VERIFIED_DOMAIN || null,
+      lastEmailError: this.lastEmailError || null,
       timestamp: new Date().toISOString()
     };
   }

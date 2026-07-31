@@ -847,8 +847,13 @@ app.post('/api/forgot-password', async (req, res) => {
     if (emailSent) {
       res.json({ message: 'Email de redefinição enviado com sucesso! Verifique sua caixa de entrada e spam.' });
     } else {
+      const detalhe = emailService.lastEmailError
+        ? ` Detalhe técnico: ${emailService.lastEmailError}`
+        : '';
       res.status(500).json({
-        error: 'Não foi possível enviar o email de redefinição. Verifique se o servidor está configurado para envio de emails (RESEND_API_KEY, SENDGRID_API_KEY ou EMAIL_USER/EMAIL_PASS). Tente novamente mais tarde ou entre em contato com o suporte.'
+        error:
+          'Não foi possível enviar o email de redefinição no momento. Tente novamente em alguns minutos ou fale conosco pelo suporte.' +
+          (process.env.NODE_ENV === 'development' ? detalhe : '')
       });
     }
   } catch (err) {
