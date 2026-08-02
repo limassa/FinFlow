@@ -1770,7 +1770,7 @@
 
 /* Desenvolvido por - no banner de login */
 .banner-developed-by {
-  margin-top: 72px;
+  margin-top: 24px;
   padding-top: 0;
   display: flex;
   flex-direction: column;
@@ -7673,15 +7673,17 @@ select.form-input:focus {
 }
 
 
-.login-stores {
-  margin: 18px 0 8px;
+.banner-stores {
+  margin-top: 28px;
   text-align: center;
+  position: relative;
+  z-index: 2;
 }
-.login-stores__label {
+.banner-stores__label {
   margin: 0 0 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.9);
 }
 .store-badges {
   display: flex;

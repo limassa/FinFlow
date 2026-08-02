@@ -1,10 +1,11 @@
 import React from 'react';
+import StoreBadges from './StoreBadges';
 import '../App.css';
 
 // Logo da empresa (public/logo_nova.png) - URL segura para produção
 const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
 
-function AuthBanner({ children, title, subtitle }) {
+function AuthBanner({ children, title, subtitle, showStoreBadges = false }) {
   return (
     <div className="auth-container">
       <div className="auth-banner">
@@ -52,9 +53,15 @@ function AuthBanner({ children, title, subtitle }) {
                 </>
               )}
             </div>
+
+            {showStoreBadges ? (
+              <div className="banner-stores">
+                <p className="banner-stores__label">Baixe o app Claricash</p>
+                <StoreBadges />
+              </div>
+            ) : null}
           </div>
 
-          {/* Desenvolvido por - embaixo */}
           <a
             href="https://lizsoftware.com.br"
             target="_blank"
@@ -86,4 +93,4 @@ function AuthBanner({ children, title, subtitle }) {
   );
 }
 
-export default AuthBanner; 
+export default AuthBanner;

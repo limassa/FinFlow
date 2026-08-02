@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../theme/theme';
+import StoreBadges from '../components/StoreBadges';
 
 const FEATURES = [
   'Registrar receitas e despesas.',
@@ -95,6 +96,14 @@ export default function SobreScreen() {
           <Text style={styles.sectionText}>
             Acreditamos que organizar as finanças é o primeiro passo para conquistar sonhos.
           </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Baixe o app</Text>
+          <Text style={styles.sectionText}>
+            Leve o Claricash no celular e acompanhe suas finanças onde estiver.
+          </Text>
+          <StoreBadges style={styles.storeBadges} />
         </View>
 
         <View style={styles.section}>
@@ -202,6 +211,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: 10,
     lineHeight: 22,
+  },
+  storeBadges: {
+    justifyContent: 'flex-start',
+    marginTop: 4,
   },
   logoWrap: {
     marginBottom: 12,

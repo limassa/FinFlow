@@ -16,6 +16,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/theme';
+import StoreBadges from '../components/StoreBadges';
+
+const FEATURES = [
+  { icon: 'cash-outline', label: 'Controle de Receitas' },
+  { icon: 'card-outline', label: 'Gestão de Despesas' },
+  { icon: 'bar-chart-outline', label: 'Relatórios Detalhados' },
+];
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -118,8 +125,21 @@ export default function LoginScreen({ navigation }) {
               Não tem uma conta? Cadastre-se
             </Text>
           </TouchableOpacity>
+        </View>
 
-          {/* Desenvolvido por - igual ao web */}
+        <View style={styles.blueFooter}>
+          <View style={styles.features}>
+            {FEATURES.map((item) => (
+              <View key={item.label} style={styles.featureItem}>
+                <Ionicons name={item.icon} size={18} color="#fff" />
+                <Text style={styles.featureText}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.storeLabel}>Baixe o app Claricash</Text>
+          <StoreBadges />
+
           <TouchableOpacity
             style={styles.developedBy}
             onPress={() => Linking.openURL('https://lizsoftware.com.br')}
@@ -143,6 +163,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
+    paddingBottom: 0,
   },
   logoContainer: {
     alignItems: 'center',
@@ -231,21 +252,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  developedBy: {
+  blueFooter: {
     marginTop: 24,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginHorizontal: -20,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 36,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+  },
+  features: {
+    width: '100%',
+    marginBottom: 20,
+    gap: 10,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  featureText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  storeLabel: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  developedBy: {
+    marginTop: 20,
     alignItems: 'center',
   },
   developedByLabel: {
     fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 8,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 6,
   },
   developedByLink: {
     fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: '700',
   },
 });
