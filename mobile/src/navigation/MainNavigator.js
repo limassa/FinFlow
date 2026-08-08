@@ -24,6 +24,7 @@ import CategoriasScreen from '../screens/CategoriasScreen';
 import OrcamentoScreen from '../screens/OrcamentoScreen';
 import CartaoCreditoScreen from '../screens/CartaoCreditoScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import PanoramaFinanceiroScreen from '../screens/PanoramaFinanceiroScreen';
 import AppMenuModal from '../components/AppMenuModal';
 import OfflineBanner from '../components/OfflineBanner';
 import { HeaderIconButton } from '../components/HeaderIconButton';
@@ -55,6 +56,11 @@ function MainMenuStack() {
         name="Dashboard"
         component={DashboardScreen}
         options={getMenuScreenOptions(openMenu, () => ({ title: 'Dashboard' }))}
+      />
+      <Stack.Screen
+        name="PanoramaFinanceiro"
+        component={PanoramaFinanceiroScreen}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Panorama Financeiro' }))}
       />
       <Stack.Screen
         name="Calendario"

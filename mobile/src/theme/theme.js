@@ -18,10 +18,16 @@ export const lightColors = {
   card: '#ffffff',
   tabBar: '#ffffff',
   header: '#2563EB',
+  menuPanel: '#ffffff',
+  menuHeader: '#2563EB',
   offlineBanner: '#92400e',
   offlineBannerBg: '#fef3c7',
 };
 
+/**
+ * Escuro: fundo mais profundo + cards elevados (#2A3548) para contraste
+ * claro entre superfície e conteúdo.
+ */
 export const darkColors = {
   primary: '#60A5FA',
   primaryDark: '#818CF8',
@@ -29,15 +35,17 @@ export const darkColors = {
   success: '#34D399',
   error: '#F87171',
   warning: '#FBBF24',
-  background: '#0f172a',
-  surface: '#1e293b',
-  text: '#f1f5f9',
-  textSecondary: '#94a3b8',
-  border: '#334155',
-  placeholder: '#64748b',
-  card: '#1e293b',
-  tabBar: '#0f172a',
-  header: '#1e293b',
+  background: '#0B1220',
+  surface: '#1A2435',
+  text: '#F1F5F9',
+  textSecondary: '#A8B3C7',
+  border: '#3D4F66',
+  placeholder: '#7B8BA3',
+  card: '#243044',
+  tabBar: '#0B1220',
+  header: '#152033',
+  menuPanel: '#1A2435',
+  menuHeader: '#1E3A5F',
   offlineBanner: '#fde68a',
   offlineBannerBg: '#78350f',
 };

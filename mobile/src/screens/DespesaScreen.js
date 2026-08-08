@@ -611,7 +611,13 @@ export default function DespesaScreen() {
     const conta = contas.find(c => c.conta_id === despesa.conta_id);
     const isSelected = selectedIds.has(despesa.despesa_id);
     return (
-      <View key={despesa.despesa_id} style={styles.despesaCard}>
+      <View
+        key={despesa.despesa_id}
+        style={[
+          styles.despesaCard,
+          { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 },
+        ]}
+      >
         <TouchableOpacity
           style={styles.cardCheckbox}
           onPress={() => toggleSelect(despesa.despesa_id)}
@@ -625,13 +631,31 @@ export default function DespesaScreen() {
         <View style={styles.despesaCardContent}>
           <View style={styles.despesaHeader}>
             <View style={styles.despesaInfo}>
-              <Text style={styles.despesaDescricao}>{despesa.despesa_descricao}</Text>
-              <Text style={styles.despesaValor}>{formatarValor(despesa.despesa_valor)}</Text>
+              <Text style={[styles.despesaDescricao, { color: colors.text }]}>
+                {despesa.despesa_descricao}
+              </Text>
+              <Text style={[styles.despesaValor, { color: colors.error }]}>
+                {formatarValor(despesa.despesa_valor)}
+              </Text>
             </View>
-            <Switch
-              value={despesa.despesa_pago || false}
-              onValueChange={() => handleTogglePago(despesa)}
-            />
+            <View style={styles.statusToggle}>
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor: despesa.despesa_pago ? '#22C55E' : '#EF4444',
+                  },
+                ]}
+                accessibilityLabel={despesa.despesa_pago ? 'Pago' : 'Pendente'}
+              />
+              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>
+                {despesa.despesa_pago ? 'Pago' : 'Pendente'}
+              </Text>
+              <Switch
+                value={despesa.despesa_pago || false}
+                onValueChange={() => handleTogglePago(despesa)}
+              />
+            </View>
           </View>
           <View style={styles.despesaDetails}>
             <Text style={styles.despesaDetail}>
@@ -1743,6 +1767,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  statusToggle: {
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statusLabel: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   despesaInfo: {
     flex: 1,

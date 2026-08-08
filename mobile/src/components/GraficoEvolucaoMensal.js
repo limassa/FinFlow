@@ -5,8 +5,8 @@ import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
-import { colors } from '../theme/theme';
 
 const screenWidth = Dimensions.get('window').width;
 /** Janela visível: 3 dias antes + dia central + 3 dias depois = 7 dias */
@@ -50,7 +50,9 @@ function parseLocalDate(raw) {
 
 export default function GraficoEvolucaoMensal() {
   const { getUserId } = useAuth();
+  const { colors, isDark } = useTheme();
   const userId = getUserId();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [receitas, setReceitas] = useState([]);
   const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -198,12 +200,14 @@ export default function GraficoEvolucaoMensal() {
   }
 
   const chartConfig = {
-    backgroundColor: colors.background,
-    backgroundGradientFrom: '#fff',
-    backgroundGradientTo: '#fff',
+    backgroundColor: colors.card,
+    backgroundGradientFrom: colors.card,
+    backgroundGradientTo: colors.card,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(34, 34, 34, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+    color: (opacity = 1) =>
+      isDark ? `rgba(241, 245, 249, ${opacity})` : `rgba(34, 34, 34, ${opacity})`,
+    labelColor: (opacity = 1) =>
+      isDark ? `rgba(168, 179, 199, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
     style: { borderRadius: 16 },
     propsForDots: {
       r: '3',
@@ -265,55 +269,59 @@ export default function GraficoEvolucaoMensal() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
-    gap: 4,
-  },
-  navBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  periodBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  periodText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  chart: {
-    borderRadius: 16,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: colors.textSecondary,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-});
+function createStyles(colors, isDark) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginVertical: 8,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    navRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: 12,
+      gap: 4,
+    },
+    navBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(96, 165, 250, 0.12)' : '#EFF6FF',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    periodBtn: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    periodText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    chart: {
+      borderRadius: 16,
+    },
+    loadingText: {
+      marginTop: 8,
+      color: colors.textSecondary,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+    },
+  });
+}

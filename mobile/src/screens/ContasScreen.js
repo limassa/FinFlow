@@ -21,6 +21,7 @@ import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import Select from '../components/Select';
 import BankSelector from '../components/BankSelector';
 import { getBancoById } from '../utils/banks';
@@ -30,6 +31,7 @@ const tiposConta = ['Conta Corrente', 'Conta Poupança', 'Carteira', 'Cartão de
 export default function ContasScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
   const userId = getUserId();
   
   useLayoutEffect(() => {
@@ -193,11 +195,11 @@ export default function ContasScreen() {
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Qtde</Text>
-          <Text style={styles.statValue}>{contas.length}</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Qtde</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{contas.length}</Text>
         </View>
       </View>
 
@@ -221,7 +223,13 @@ export default function ContasScreen() {
               }
               
               return (
-                <View key={contaId} style={styles.contaCard}>
+                <View
+                  key={contaId}
+                  style={[
+                    styles.contaCard,
+                    { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 },
+                  ]}
+                >
                   <View style={styles.contaHeader}>
                     <View style={styles.contaInfo}>
                       <View style={styles.contaNomeRow}>
@@ -233,11 +241,17 @@ export default function ContasScreen() {
                             </View>
                           ) : null;
                         })()}
-                        <Text style={styles.contaNome}>{conta.conta_nome || conta.Conta_Nome || conta.nome}</Text>
+                        <Text style={[styles.contaNome, { color: colors.text }]}>
+                          {conta.conta_nome || conta.Conta_Nome || conta.nome}
+                        </Text>
                       </View>
-                      <Text style={styles.contaTipo}>{conta.conta_tipo || conta.Conta_Tipo || conta.tipo}</Text>
+                      <Text style={[styles.contaTipo, { color: colors.textSecondary }]}>
+                        {conta.conta_tipo || conta.Conta_Tipo || conta.tipo}
+                      </Text>
                     </View>
-                    <Text style={styles.contaSaldo}>{formatarValor(conta.conta_saldo || conta.Conta_Saldo || conta.saldo || 0)}</Text>
+                    <Text style={[styles.contaSaldo, { color: colors.primary }]}>
+                      {formatarValor(conta.conta_saldo || conta.Conta_Saldo || conta.saldo || 0)}
+                    </Text>
                   </View>
                   <View style={styles.contaActions}>
                     <TouchableOpacity

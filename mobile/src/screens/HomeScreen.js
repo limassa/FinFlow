@@ -16,7 +16,6 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
-import { colors } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useOffline } from '../context/OfflineContext';
 import { HeaderGreetingTitle } from '../navigation/menuHeaderOptions';
@@ -86,7 +85,7 @@ function parseLocalDate(raw) {
 
 function getSemanaRange(ref = new Date()) {
   const hoje = startOfLocalDay(ref);
-  const diaSemana = hoje.getDay(); // 0 = domingo
+  const diaSemana = hoje.getDay();
   const inicio = new Date(hoje);
   inicio.setDate(hoje.getDate() - diaSemana);
   const fim = new Date(inicio);
@@ -95,11 +94,11 @@ function getSemanaRange(ref = new Date()) {
   return { inicio, fim, hoje };
 }
 
-function dicaDoDia() {
+function dicaInicial() {
   const agora = new Date();
   const inicioAno = new Date(agora.getFullYear(), 0, 0);
   const diaDoAno = Math.floor((agora - inicioAno) / (1000 * 60 * 60 * 24));
-  return DICAS_ECONOMIA[diaDoAno % DICAS_ECONOMIA.length];
+  return diaDoAno % DICAS_ECONOMIA.length;
 }
 
 function fotoUriFromApi(foto) {
@@ -110,9 +109,10 @@ function fotoUriFromApi(foto) {
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { user, getUserId } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { saveCache, loadCache } = useOffline();
   const userId = getUserId();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const primeiroNome = useMemo(() => extrairPrimeiroNome(user), [user]);
   const saudacao = useMemo(() => {
     const base = saudacaoPorHorario();
@@ -128,14 +128,15 @@ export default function HomeScreen() {
     despesasMes: 0,
   });
   const [vencimentos, setVencimentos] = useState({ hoje: 0, semana: 0 });
-  const [orcamento, setOrcamento] = useState(null); // { totalOrcado, totalRealizado } | null
+  const [orcamento, setOrcamento] = useState(null);
   const [userFoto, setUserFoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [versao, setVersao] = useState(null);
+  const [dicaIdx, setDicaIdx] = useState(dicaInicial);
 
   const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
-  const dica = useMemo(() => dicaDoDia(), []);
+  const dica = DICAS_ECONOMIA[dicaIdx % DICAS_ECONOMIA.length];
 
   useLayoutEffect(() => {
     const fotoUri = fotoUriFromApi(userFoto);
@@ -372,9 +373,13 @@ export default function HomeScreen() {
   const saldoOrcamento = orcamento
     ? orcamento.totalOrcado - orcamento.totalRealizado
     : null;
-  const pctDisponivel =
+  const pctOrcamento =
     orcamento && orcamento.totalOrcado > 0
-      ? Math.max(0, Math.min(100, (saldoOrcamento / orcamento.totalOrcado) * 100))
+      ? Math.max(0, Math.min(100, Math.round((orcamento.totalRealizado / orcamento.totalOrcado) * 100)))
+      : 0;
+  const pctRestante =
+    orcamento && orcamento.totalOrcado > 0
+      ? Math.max(0, Math.min(100, Math.round((Math.max(0, saldoOrcamento) / orcamento.totalOrcado) * 100)))
       : 0;
 
   const textoVencimentoHoje =
@@ -385,15 +390,15 @@ export default function HomeScreen() {
         : `Você tem ${vencimentos.hoje} contas vencendo hoje.`;
 
   const textoVencimentoSemana =
-    vencimentos.semana === 0
-      ? 'Nenhuma conta vencendo esta semana.'
-      : vencimentos.semana === 1
-        ? 'Você possui 1 conta vencendo esta semana.'
-        : `Você possui ${vencimentos.semana} contas vencendo esta semana.`;
+    vencimentos.semana === 1
+      ? 'Você possui 1 conta vencendo esta semana.'
+      : vencimentos.semana > 1
+        ? `Você possui ${vencimentos.semana} contas vencendo esta semana.`
+        : null;
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -408,38 +413,65 @@ export default function HomeScreen() {
         <View style={styles.welcomeCard}>
           <Text style={styles.welcomeDay}>Hoje é {diaSemanaLabel}</Text>
           <Text style={styles.welcomeLine}>{textoVencimentoHoje}</Text>
-          <Text style={styles.welcomeLineMuted}>{textoVencimentoSemana}</Text>
+          {textoVencimentoSemana ? (
+            <Text style={styles.welcomeLineMuted}>{textoVencimentoSemana}</Text>
+          ) : null}
         </View>
 
-        {orcamento ? (
-          <View style={styles.budgetCard}>
-            <Text style={styles.budgetLabel}>Saldo do mês</Text>
-            <Text
-              style={[
-                styles.budgetValue,
-                saldoOrcamento >= 0 ? styles.summaryPositive : styles.summaryNegative,
-              ]}
-            >
-              {formatarValor(saldoOrcamento)}
-            </Text>
-            <View style={styles.budgetBarTrack}>
-              <View
-                style={[
-                  styles.budgetBarFill,
-                  {
-                    width: `${pctDisponivel}%`,
-                    backgroundColor:
-                      pctDisponivel > 30
-                        ? colors.success
-                        : pctDisponivel > 10
-                          ? '#F59E0B'
-                          : colors.error,
-                  },
-                ]}
-              />
-            </View>
+        <TouchableOpacity
+          style={styles.budgetCard}
+          onPress={() => navigation.navigate('Orcamento')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.budgetHeader}>
+            <Ionicons name="flag-outline" size={20} color={colors.primary} />
+            <Text style={styles.budgetTitle}>Objetivo do Mês</Text>
           </View>
-        ) : null}
+          {orcamento ? (
+            <>
+              <Text style={styles.budgetObjetivo}>
+                Controlar gastos em até {formatarValor(orcamento.totalOrcado)}
+              </Text>
+              <View style={styles.budgetBarTrack}>
+                <View
+                  style={[
+                    styles.budgetBarFill,
+                    {
+                      width: `${pctOrcamento}%`,
+                      backgroundColor:
+                        pctOrcamento <= 70
+                          ? colors.success
+                          : pctOrcamento <= 90
+                            ? '#F59E0B'
+                            : colors.error,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.budgetPct}>{pctOrcamento}% utilizado</Text>
+              <Text style={styles.budgetMeta}>Orçado: {formatarValor(orcamento.totalOrcado)}</Text>
+              <Text style={styles.budgetMeta}>Já gasto: {formatarValor(orcamento.totalRealizado)}</Text>
+              <Text
+                style={[
+                  styles.budgetMeta,
+                  saldoOrcamento >= 0 ? styles.summaryPositive : styles.summaryNegative,
+                ]}
+              >
+                {saldoOrcamento >= 0
+                  ? `Restam ${formatarValor(saldoOrcamento)} (${pctRestante}%)`
+                  : `Excedeu ${formatarValor(Math.abs(saldoOrcamento))}`}
+              </Text>
+            </>
+          ) : (
+            <View>
+              <Text style={styles.budgetEmpty}>
+                Você ainda não definiu um objetivo para este mês. Que tal criar um orçamento e
+                acompanhar suas metas de perto?
+              </Text>
+              <Text style={styles.budgetCta}>Definir orçamento →</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         <View style={styles.tipCard}>
           <View style={styles.tipHeader}>
@@ -447,11 +479,17 @@ export default function HomeScreen() {
             <Text style={styles.tipTitle}>Dica do dia</Text>
           </View>
           <Text style={styles.tipText}>{dica}</Text>
+          <TouchableOpacity
+            onPress={() => setDicaIdx((i) => (i + 1) % DICAS_ECONOMIA.length)}
+            style={styles.tipNext}
+          >
+            <Text style={styles.tipNextText}>Ver outra Dica</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.cardsContainer}>
           <TouchableOpacity
-            style={[styles.card, styles.cardReceita]}
+            style={styles.card}
             onPress={() => navigation.navigate('Receita')}
           >
             <View style={[styles.cardIcon, styles.cardIconReceita]}>
@@ -462,12 +500,13 @@ export default function HomeScreen() {
               <Text style={[styles.cardValue, styles.cardValueReceita]}>
                 {formatarValor(totais.totalReceitas)}
               </Text>
-              <Text style={styles.cardDescription}>Receitas Recebidas</Text>
+              <Text style={styles.cardDescription}>Ver detalhes</Text>
             </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.card, styles.cardDespesa]}
+            style={styles.card}
             onPress={() => navigation.navigate('Despesa')}
           >
             <View style={[styles.cardIcon, styles.cardIconDespesa]}>
@@ -478,15 +517,15 @@ export default function HomeScreen() {
               <Text style={[styles.cardValue, styles.cardValueDespesa]}>
                 {formatarValor(totais.totalDespesas)}
               </Text>
-              <Text style={styles.cardDescription}>Despesas Pagas</Text>
+              <Text style={styles.cardDescription}>Ver detalhes</Text>
             </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <View
-            style={[
-              styles.card,
-              totais.saldoContas >= 0 ? styles.cardSaldoPositive : styles.cardSaldoNegative,
-            ]}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('PanoramaFinanceiro')}
+            activeOpacity={0.85}
           >
             <View
               style={[
@@ -494,7 +533,7 @@ export default function HomeScreen() {
                 totais.saldoContas >= 0 ? styles.cardIconSaldo : styles.cardIconSaldoNeg,
               ]}
             >
-              <Ionicons name="trending-up" size={28} color="#fff" />
+              <Ionicons name="analytics-outline" size={28} color="#fff" />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardLabel}>Saldo Total</Text>
@@ -506,9 +545,10 @@ export default function HomeScreen() {
               >
                 {formatarValor(totais.saldoContas)}
               </Text>
-              <Text style={styles.cardDescription}>Saldo Disponível</Text>
+              <Text style={styles.cardDescription}>Ver panorama</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.summaryContainer}>
@@ -603,301 +643,338 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  welcomeCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  welcomeDay: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  welcomeLine: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  welcomeLineMuted: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  budgetCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  budgetLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  budgetValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  budgetBarTrack: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E2E8F0',
-    overflow: 'hidden',
-  },
-  budgetBarFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  tipCard: {
-    backgroundColor: '#EFF6FF',
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(37, 99, 235, 0.12)',
-  },
-  tipHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  tipTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  tipText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 21,
-  },
-  cardsContainer: {
-    padding: 16,
-    paddingTop: 16,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.08)',
-  },
-  cardReceita: {},
-  cardDespesa: {},
-  cardSaldoPositive: {},
-  cardSaldoNegative: {},
-  cardIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    marginRight: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardIconReceita: {
-    backgroundColor: '#059669',
-  },
-  cardIconDespesa: {
-    backgroundColor: '#DC2626',
-  },
-  cardIconSaldo: {
-    backgroundColor: '#2563EB',
-  },
-  cardIconSaldoNeg: {
-    backgroundColor: '#DC2626',
-  },
-  cardValueReceita: {
-    color: '#059669',
-  },
-  cardValueDespesa: {
-    color: '#DC2626',
-  },
-  cardValueSaldo: {
-    color: '#2563EB',
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  cardValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  cardDescription: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  summaryContainer: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  summaryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  summaryLabel: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  summaryPositive: {
-    color: colors.success,
-  },
-  summaryNegative: {
-    color: colors.error,
-  },
-  summaryMessage: {
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  dashboardCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    gap: 12,
-  },
-  dashboardIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dashboardText: {
-    flex: 1,
-  },
-  dashboardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    marginBottom: 16,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  versionContainer: {
-    alignItems: 'center',
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  versionText: {
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '500',
-  },
-  companyFooter: {
-    alignItems: 'center',
-    padding: 20,
-    marginBottom: 24,
-  },
-  companyFooterLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  companyLogo: {
-    width: 48,
-    height: 48,
-    marginBottom: 6,
-  },
-  companyFooterLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-});
+function createStyles(colors, isDark) {
+  const cardShadow = isDark
+    ? { shadowOpacity: 0, elevation: 0 }
+    : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 2,
+      };
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    scrollView: {
+      flex: 1,
+    },
+    welcomeCard: {
+      backgroundColor: colors.card,
+      marginHorizontal: 16,
+      marginTop: 16,
+      padding: 16,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+    },
+    welcomeDay: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    welcomeLine: {
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 20,
+      marginBottom: 4,
+    },
+    welcomeLineMuted: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    budgetCard: {
+      backgroundColor: colors.card,
+      marginHorizontal: 16,
+      marginTop: 12,
+      padding: 16,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+    },
+    budgetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+    },
+    budgetTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    budgetObjetivo: {
+      fontSize: 14,
+      color: colors.text,
+      marginBottom: 10,
+      lineHeight: 20,
+    },
+    budgetBarTrack: {
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: isDark ? '#334155' : '#E2E8F0',
+      overflow: 'hidden',
+      marginBottom: 8,
+    },
+    budgetBarFill: {
+      height: '100%',
+      borderRadius: 5,
+    },
+    budgetPct: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    budgetMeta: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    budgetEmpty: {
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 21,
+      marginBottom: 10,
+    },
+    budgetCta: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    tipCard: {
+      backgroundColor: isDark ? 'rgba(96, 165, 250, 0.1)' : '#EFF6FF',
+      marginHorizontal: 16,
+      marginTop: 12,
+      padding: 16,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(96, 165, 250, 0.25)' : 'rgba(37, 99, 235, 0.12)',
+    },
+    tipHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 8,
+    },
+    tipTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    tipText: {
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 21,
+    },
+    tipNext: {
+      marginTop: 10,
+      alignSelf: 'flex-start',
+    },
+    tipNextText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    cardsContainer: {
+      padding: 16,
+      paddingTop: 16,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+    },
+    cardIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 14,
+      marginRight: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cardIconReceita: {
+      backgroundColor: '#059669',
+    },
+    cardIconDespesa: {
+      backgroundColor: '#DC2626',
+    },
+    cardIconSaldo: {
+      backgroundColor: '#2563EB',
+    },
+    cardIconSaldoNeg: {
+      backgroundColor: '#DC2626',
+    },
+    cardValueReceita: {
+      color: isDark ? '#34D399' : '#059669',
+    },
+    cardValueDespesa: {
+      color: isDark ? '#F87171' : '#DC2626',
+    },
+    cardValueSaldo: {
+      color: isDark ? '#60A5FA' : '#2563EB',
+    },
+    cardContent: {
+      flex: 1,
+    },
+    cardLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    cardValue: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    cardDescription: {
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    summaryContainer: {
+      backgroundColor: colors.card,
+      margin: 16,
+      marginTop: 0,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+    },
+    summaryTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    summaryItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    summaryLabel: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    summaryValue: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    summaryPositive: {
+      color: colors.success,
+    },
+    summaryNegative: {
+      color: colors.error,
+    },
+    summaryMessage: {
+      marginTop: 4,
+      fontSize: 14,
+      fontWeight: '600',
+      lineHeight: 20,
+    },
+    dashboardCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      marginHorizontal: 16,
+      marginTop: 4,
+      marginBottom: 8,
+      padding: 16,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 12,
+      ...cardShadow,
+    },
+    dashboardIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dashboardText: {
+      flex: 1,
+    },
+    dashboardTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    actionsContainer: {
+      flexDirection: 'row',
+      padding: 16,
+      gap: 12,
+      marginBottom: 16,
+    },
+    actionButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    actionButtonText: {
+      marginLeft: 8,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    versionContainer: {
+      alignItems: 'center',
+      padding: 16,
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    versionText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    companyFooter: {
+      alignItems: 'center',
+      padding: 20,
+      marginBottom: 24,
+    },
+    companyFooterLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 6,
+    },
+    companyLogo: {
+      width: 48,
+      height: 48,
+      marginBottom: 6,
+    },
+    companyFooterLink: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+  });
+}

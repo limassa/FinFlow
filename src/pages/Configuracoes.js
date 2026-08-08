@@ -595,7 +595,7 @@ function Configuracoes() {
                   <button type="button" className="link-button" onClick={() => navigate('/privacy-policy')} style={{ fontSize: 16, color: 'var(--primary, #4a67af)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <FaShieldAlt /> Política de Privacidade
                   </button>
-                  <p style={{ marginTop: 4, fontSize: 14, color: '#666' }}>Leia nossa política de privacidade (sempre disponível no sistema).</p>
+                  <p style={{ marginTop: 4, fontSize: 14, color: '#666' }}>Leia nossa política de privacidade.</p>
                 </div>
                 <div className="form-group">
                   <label>

@@ -1,129 +1,156 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
-import { colors } from '../theme/theme';
+import { getColorForTipo, getIconNameForTipo } from '../utils/categoryIcons';
 
 const screenWidth = Dimensions.get('window').width;
 const chartWidth = screenWidth - 40;
-/** Com hasLegend=false o pizza fica à esquerda; paddingLeft centraliza o disco */
 const pieDiameter = 180;
 const paddingLeft = Math.max(0, Math.round(chartWidth / 2 - pieDiameter / 2));
 
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+function parseLocalDate(raw) {
+  if (!raw) return null;
+  const ymd = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const [y, m, day] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, day);
+}
+
+function shiftMonth(base, delta) {
+  return new Date(base.getFullYear(), base.getMonth() + delta, 1);
+}
+
 export default function GraficosPizza() {
   const { getUserId } = useAuth();
+  const { colors, isDark } = useTheme();
   const userId = getUserId();
-  const [dadosReceitas, setDadosReceitas] = useState(null);
-  const [dadosDespesas, setDadosDespesas] = useState(null);
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const [receitasRaw, setReceitasRaw] = useState([]);
+  const [despesasRaw, setDespesasRaw] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentChart, setCurrentChart] = useState(0); // 0 = receitas, 1 = despesas
+  const [mesRef, setMesRef] = useState(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [receitasRes, despesasRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
-        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`)
+        axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
       ]);
 
-      const receitas = receitasRes.data.map(receita => ({
+      const receitas = (receitasRes.data || []).map((receita) => ({
         ...receita,
-        receita_id: receita.receita_id || receita.Receita_Id || receita.id,
-        receita_descricao: receita.receita_descricao || receita.Receita_Descricao || receita.descricao,
         receita_valor: receita.receita_valor || receita.Receita_Valor || receita.valor,
         receita_data: receita.receita_data || receita.Receita_Data || receita.data,
         receita_tipo: receita.receita_tipo || receita.Receita_Tipo || receita.tipo,
-        receita_recebido: receita.receita_recebido !== undefined ? receita.receita_recebido : (receita.Receita_Recebido !== undefined ? receita.Receita_Recebido : receita.recebido),
-        conta_id: receita.conta_id || receita.Conta_id || receita.Conta_Id
+        receita_recebido:
+          receita.receita_recebido !== undefined
+            ? receita.receita_recebido
+            : receita.Receita_Recebido !== undefined
+              ? receita.Receita_Recebido
+              : receita.recebido,
       }));
 
-      const despesas = despesasRes.data.map(despesa => ({
+      const despesas = (despesasRes.data || []).map((despesa) => ({
         ...despesa,
-        despesa_id: despesa.despesa_id || despesa.Despesa_Id || despesa.id,
-        despesa_descricao: despesa.despesa_descricao || despesa.Despesa_Descricao || despesa.descricao,
         despesa_valor: despesa.despesa_valor || despesa.Despesa_Valor || despesa.valor,
         despesa_data: despesa.despesa_data || despesa.Despesa_Data || despesa.data,
-        despesa_dtvencimento: despesa.despesa_dtvencimento || despesa.Despesa_DtVencimento || despesa.dataVencimento,
         despesa_tipo: despesa.despesa_tipo || despesa.Despesa_Tipo || despesa.tipo,
-        despesa_pago: despesa.despesa_pago !== undefined ? despesa.despesa_pago : (despesa.Despesa_Pago !== undefined ? despesa.Despesa_Pago : despesa.pago),
-        conta_id: despesa.conta_id || despesa.Conta_id || despesa.Conta_Id
+        despesa_pago:
+          despesa.despesa_pago !== undefined
+            ? despesa.despesa_pago
+            : despesa.Despesa_Pago !== undefined
+              ? despesa.Despesa_Pago
+              : despesa.pago,
       }));
 
-      const hoje = new Date();
-      const mesAtual = hoje.getMonth();
-      const anoAtual = hoje.getFullYear();
-
-      const receitasMes = receitas.filter(r => {
-        const data = new Date(r.receita_data);
-        return data.getMonth() === mesAtual &&
-               data.getFullYear() === anoAtual &&
-               r.receita_recebido;
-      });
-
-      const receitasPorTipo = {};
-      receitasMes.forEach(r => {
-        const tipo = r.receita_tipo || 'Outros';
-        const valor = parseFloat(r.receita_valor || 0);
-        if (isNaN(valor)) return;
-        receitasPorTipo[tipo] = (receitasPorTipo[tipo] || 0) + valor;
-      });
-
-      const receitasChart = Object.keys(receitasPorTipo).map((tipo, index) => ({
-        name: tipo,
-        value: receitasPorTipo[tipo],
-        color: ['#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6', '#EF4444', '#10B981', '#06B6D4'][index % 7],
-      }));
-
-      const despesasMes = despesas.filter(d => {
-        const data = new Date(d.despesa_data);
-        return data.getMonth() === mesAtual &&
-               data.getFullYear() === anoAtual &&
-               d.despesa_pago;
-      });
-
-      const despesasPorTipo = {};
-      despesasMes.forEach(d => {
-        const tipo = d.despesa_tipo || 'Outros';
-        const valor = parseFloat(d.despesa_valor || 0);
-        if (isNaN(valor)) return;
-        despesasPorTipo[tipo] = (despesasPorTipo[tipo] || 0) + valor;
-      });
-
-      const despesasChart = Object.keys(despesasPorTipo).map((tipo, index) => ({
-        name: tipo,
-        value: despesasPorTipo[tipo],
-        color: ['#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E', '#10B981'][index % 7],
-      }));
-
-      setDadosReceitas(receitasChart.length > 0 ? receitasChart : null);
-      setDadosDespesas(despesasChart.length > 0 ? despesasChart : null);
+      setReceitasRaw(receitas);
+      setDespesasRaw(despesas);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (userId) {
-      fetchData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  useEffect(() => {
+    if (userId) fetchData();
+  }, [userId, fetchData]);
+
   useFocusEffect(
-    React.useCallback(() => {
-      if (userId) {
-        fetchData();
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId])
+    useCallback(() => {
+      if (userId) fetchData();
+    }, [userId, fetchData])
   );
+
+  const { dadosReceitas, dadosDespesas } = useMemo(() => {
+    const mes = mesRef.getMonth();
+    const ano = mesRef.getFullYear();
+
+    const receitasMes = receitasRaw.filter((r) => {
+      const data = parseLocalDate(r.receita_data);
+      return data && data.getMonth() === mes && data.getFullYear() === ano && r.receita_recebido;
+    });
+
+    const receitasPorTipo = {};
+    receitasMes.forEach((r) => {
+      const tipo = r.receita_tipo || 'Outros';
+      const valor = parseFloat(r.receita_valor || 0);
+      if (isNaN(valor)) return;
+      receitasPorTipo[tipo] = (receitasPorTipo[tipo] || 0) + valor;
+    });
+
+    const receitasChart = Object.keys(receitasPorTipo).map((tipo) => ({
+      name: tipo,
+      value: receitasPorTipo[tipo],
+      color: getColorForTipo(tipo, 'receita'),
+      icon: getIconNameForTipo(tipo, 'receita'),
+    }));
+
+    const despesasMes = despesasRaw.filter((d) => {
+      const data = parseLocalDate(d.despesa_data);
+      return data && data.getMonth() === mes && data.getFullYear() === ano && d.despesa_pago;
+    });
+
+    const despesasPorTipo = {};
+    despesasMes.forEach((d) => {
+      const tipo = d.despesa_tipo || 'Outros';
+      const valor = parseFloat(d.despesa_valor || 0);
+      if (isNaN(valor)) return;
+      despesasPorTipo[tipo] = (despesasPorTipo[tipo] || 0) + valor;
+    });
+
+    const despesasChart = Object.keys(despesasPorTipo).map((tipo) => ({
+      name: tipo,
+      value: despesasPorTipo[tipo],
+      color: getColorForTipo(tipo, 'despesa'),
+      icon: getIconNameForTipo(tipo, 'despesa'),
+    }));
+
+    return {
+      dadosReceitas: receitasChart.length > 0 ? receitasChart : null,
+      dadosDespesas: despesasChart.length > 0 ? despesasChart : null,
+    };
+  }, [receitasRaw, despesasRaw, mesRef]);
 
   if (loading) {
     return (
@@ -136,6 +163,7 @@ export default function GraficosPizza() {
 
   const chartData = currentChart === 0 ? dadosReceitas : dadosDespesas;
   const hasData = chartData && chartData.length > 0;
+  const mesLabel = `${MESES[mesRef.getMonth()]} ${mesRef.getFullYear()}`;
 
   return (
     <View style={styles.container}>
@@ -148,7 +176,7 @@ export default function GraficosPizza() {
         </TouchableOpacity>
 
         <Text style={styles.title}>
-          {currentChart === 0 ? 'Receitas' : 'Despesas'} - Mês Atual
+          {currentChart === 0 ? 'Receitas' : 'Despesas'}
         </Text>
 
         <TouchableOpacity
@@ -156,6 +184,22 @@ export default function GraficosPizza() {
           onPress={() => setCurrentChart((prev) => (prev + 1) % 2)}
         >
           <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.monthNav}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setMesRef((m) => shiftMonth(m, -1))}
+        >
+          <Ionicons name="chevron-back" size={18} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={styles.monthLabel}>{mesLabel}</Text>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setMesRef((m) => shiftMonth(m, 1))}
+        >
+          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -167,7 +211,8 @@ export default function GraficosPizza() {
               width={chartWidth}
               height={220}
               chartConfig={{
-                color: (opacity = 1) => `rgba(34, 34, 34, ${opacity})`,
+                color: (opacity = 1) =>
+                  isDark ? `rgba(241, 245, 249, ${opacity})` : `rgba(34, 34, 34, ${opacity})`,
               }}
               accessor="value"
               backgroundColor="transparent"
@@ -179,7 +224,9 @@ export default function GraficosPizza() {
           <View style={styles.legend}>
             {chartData.map((item) => (
               <View key={`${item.name}-${item.color}`} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                <View style={[styles.legendIconWrap, { backgroundColor: `${item.color}22` }]}>
+                  <Ionicons name={item.icon} size={14} color={item.color} />
+                </View>
                 <Text style={styles.legendLabel} numberOfLines={1}>
                   {item.name}
                 </Text>
@@ -191,7 +238,7 @@ export default function GraficosPizza() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            Nenhuma {currentChart === 0 ? 'receita' : 'despesa'} registrada este mês
+            Nenhuma {currentChart === 0 ? 'receita' : 'despesa'} registrada em {mesLabel}
           </Text>
         </View>
       )}
@@ -199,76 +246,98 @@ export default function GraficosPizza() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  navButton: {
-    padding: 8,
-  },
-  chartWrap: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  legend: {
-    width: '100%',
-    marginTop: 12,
-    gap: 10,
-    paddingHorizontal: 4,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 2,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  legendLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  legendValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  emptyContainer: {
-    height: 220,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: colors.textSecondary,
-  },
-});
+function createStyles(colors, isDark) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginVertical: 8,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginBottom: 8,
+    },
+    monthNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginBottom: 12,
+    },
+    monthLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      flex: 1,
+      textAlign: 'center',
+    },
+    navButton: {
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(96, 165, 250, 0.12)' : '#EFF6FF',
+    },
+    chartWrap: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'visible',
+    },
+    legend: {
+      width: '100%',
+      marginTop: 12,
+      gap: 10,
+      paddingHorizontal: 4,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 2,
+    },
+    legendIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    legendLabel: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    legendValue: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    emptyContainer: {
+      height: 220,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+    },
+    loadingText: {
+      marginTop: 8,
+      color: colors.textSecondary,
+    },
+  });
+}

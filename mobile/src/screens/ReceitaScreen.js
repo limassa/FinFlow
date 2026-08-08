@@ -596,7 +596,13 @@ export default function ReceitaScreen() {
     const conta = contas.find(c => c.conta_id === receita.conta_id);
     const isSelected = selectedIds.has(receita.receita_id);
     return (
-      <View key={receita.receita_id} style={styles.receitaCard}>
+      <View
+        key={receita.receita_id}
+        style={[
+          styles.receitaCard,
+          { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 },
+        ]}
+      >
         <TouchableOpacity
           style={styles.cardCheckbox}
           onPress={() => toggleSelect(receita.receita_id)}
@@ -610,13 +616,31 @@ export default function ReceitaScreen() {
         <View style={styles.receitaCardContent}>
           <View style={styles.receitaHeader}>
             <View style={styles.receitaInfo}>
-              <Text style={styles.receitaDescricao}>{receita.receita_descricao}</Text>
-              <Text style={styles.receitaValor}>{formatarValor(receita.receita_valor)}</Text>
+              <Text style={[styles.receitaDescricao, { color: colors.text }]}>
+                {receita.receita_descricao}
+              </Text>
+              <Text style={[styles.receitaValor, { color: colors.success }]}>
+                {formatarValor(receita.receita_valor)}
+              </Text>
             </View>
-            <Switch
-              value={receita.receita_recebido || false}
-              onValueChange={() => handleToggleRecebido(receita)}
-            />
+            <View style={styles.statusToggle}>
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor: receita.receita_recebido ? '#22C55E' : '#EF4444',
+                  },
+                ]}
+                accessibilityLabel={receita.receita_recebido ? 'Recebido' : 'Pendente'}
+              />
+              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>
+                {receita.receita_recebido ? 'Recebido' : 'Pendente'}
+              </Text>
+              <Switch
+                value={receita.receita_recebido || false}
+                onValueChange={() => handleToggleRecebido(receita)}
+              />
+            </View>
           </View>
           <View style={styles.receitaDetails}>
             <Text style={styles.receitaDetail}>
@@ -1488,6 +1512,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  statusToggle: {
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statusLabel: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   receitaInfo: {
     flex: 1,
