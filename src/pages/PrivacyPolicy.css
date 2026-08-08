@@ -10,14 +10,18 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  /* overflow:hidden cortava o topo e fazia o Voltar sumir no primeiro paint */
+  overflow: visible;
 }
 
 .privacy-header {
   background: linear-gradient(135deg, #4a67af 0%, #2d199c 100%);
   color: white;
   padding: 30px;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-radius: 12px 12px 0 0;
 }
 
 .privacy-back-button {
@@ -34,6 +38,10 @@
   margin-bottom: 20px;
   transition: all 0.3s ease;
   text-decoration: none;
+  position: relative;
+  z-index: 41;
+  visibility: visible;
+  opacity: 1;
 }
 
 .privacy-back-button:hover {

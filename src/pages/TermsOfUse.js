@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaArrowLeft, FaFileContract } from 'react-icons/fa';
 import '../App.css';
@@ -6,6 +6,10 @@ import './PrivacyPolicy.css';
 
 function TermsOfUse() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleVoltar = () => {
     if (window.history.length > 2) navigate(-1);

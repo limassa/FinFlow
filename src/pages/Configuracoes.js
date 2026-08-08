@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUser, FaBell, FaPalette, FaShieldAlt, FaTrash, FaSave, FaEye, FaEyeSlash, FaCamera } from 'react-icons/fa';
+import { FaUser, FaBell, FaPalette, FaShieldAlt, FaTrash, FaSave, FaEye, FaEyeSlash, FaCamera, FaFileContract } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getUsuarioLogado } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -646,35 +646,11 @@ function Configuracoes() {
             <div className="config-section">
               <h3>Privacidade e Dados</h3>
               <div className="config-form">
-                <div className="form-group" style={{ marginBottom: 20 }}>
+                <div className="form-group privacy-links-group" style={{ marginBottom: 20, textAlign: 'left' }}>
                   <button
                     type="button"
-                    className="link-button"
                     onClick={() => navigate('/privacy-policy')}
                     style={{
-                      fontSize: 16,
-                      color: 'var(--primary, #2563EB)',
-                      fontWeight: 600,
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    <FaShieldAlt /> Política de Privacidade
-                  </button>
-                  <p style={{ marginTop: 4, fontSize: 14, color: '#666' }}>
-                    Leia nossa política de privacidade.
-                  </p>
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => navigate('/terms-of-use')}
-                    style={{
-                      marginTop: 12,
                       fontSize: 15,
                       color: 'var(--primary, #2563EB)',
                       fontWeight: 600,
@@ -682,15 +658,51 @@ function Configuracoes() {
                       border: 'none',
                       cursor: 'pointer',
                       padding: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      textAlign: 'left',
+                      width: 'fit-content',
+                      textDecoration: 'none',
                     }}
                   >
-                    Termos de Uso
+                    <FaShieldAlt /> Política de Privacidade
                   </button>
+                  <p style={{ marginTop: 4, marginBottom: 0, fontSize: 13, color: '#64748b', textAlign: 'left' }}>
+                    Leia nossa política de privacidade.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/terms-of-use')}
+                    style={{
+                      marginTop: 14,
+                      fontSize: 15,
+                      color: 'var(--primary, #2563EB)',
+                      fontWeight: 600,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      textAlign: 'left',
+                      width: 'fit-content',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <FaFileContract /> Termos de Uso
+                  </button>
+                  <p style={{ marginTop: 4, marginBottom: 0, fontSize: 13, color: '#64748b', textAlign: 'left' }}>
+                    Leia os termos de uso do Claricash.
+                  </p>
                 </div>
 
-                <h4 style={{ margin: '8px 0 10px', fontSize: 15 }}>Experiência e melhorias</h4>
+                <h4 style={{ margin: '8px 0 10px', fontSize: 15, fontWeight: 600, color: '#334155', textAlign: 'left' }}>
+                  Experiência e melhorias
+                </h4>
                 <div className="form-group">
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, textAlign: 'left' }}>
                     <input
                       type="checkbox"
                       checked={!!privacidadeConfig.melhorarClaricash}
@@ -701,10 +713,10 @@ function Configuracoes() {
                       }}
                       style={{ marginTop: 3 }}
                     />
-                    <span>
-                      <strong>Ajudar a melhorar o Claricash</strong>
+                    <span style={{ textAlign: 'left' }}>
+                      <strong style={{ fontSize: 14, color: '#334155' }}>Ajudar a melhorar o Claricash</strong>
                       <br />
-                      <span style={{ fontSize: 13, color: '#64748b' }}>
+                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 400 }}>
                         Permitir o uso de informações anônimas sobre o uso do aplicativo para
                         melhorar nossos recursos.
                       </span>
@@ -712,9 +724,11 @@ function Configuracoes() {
                   </label>
                 </div>
 
-                <h4 style={{ margin: '20px 0 10px', fontSize: 15 }}>Comunicação</h4>
+                <h4 style={{ margin: '20px 0 10px', fontSize: 15, fontWeight: 600, color: '#334155', textAlign: 'left' }}>
+                  Comunicação
+                </h4>
                 <div className="form-group">
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, textAlign: 'left' }}>
                     <input
                       type="checkbox"
                       checked={!!privacidadeConfig.novidadesOfertas}
@@ -725,10 +739,10 @@ function Configuracoes() {
                       }}
                       style={{ marginTop: 3 }}
                     />
-                    <span>
-                      <strong>Receber novidades e ofertas</strong>
+                    <span style={{ textAlign: 'left' }}>
+                      <strong style={{ fontSize: 14, color: '#334155' }}>Receber novidades e ofertas</strong>
                       <br />
-                      <span style={{ fontSize: 13, color: '#64748b' }}>
+                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 400 }}>
                         Receba novidades, dicas e informações sobre o Claricash.
                       </span>
                     </span>
@@ -739,27 +753,36 @@ function Configuracoes() {
                   <FaSave /> Salvar preferências
                 </button>
 
-                <h4 style={{ margin: '28px 0 10px', fontSize: 15, color: '#DC2626' }}>Seus dados</h4>
-                <p style={{ fontSize: 14, color: '#64748b', marginBottom: 12 }}>
+                <h4 style={{ margin: '28px 0 10px', fontSize: 15, fontWeight: 600, color: '#DC2626', textAlign: 'left' }}>
+                  Seus dados
+                </h4>
+                <p style={{ fontSize: 13, color: '#64748b', marginBottom: 8, fontWeight: 400, textAlign: 'left', lineHeight: 1.5 }}>
                   Exclui sua conta e os dados associados, observadas as hipóteses legais de
-                  conservação.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/account-deletion-policy')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--primary, #2563EB)',
-                      cursor: 'pointer',
-                      padding: 0,
-                      fontWeight: 600,
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    Política de Exclusão de Conta e Dados
-                  </button>
+                  conservação.
                 </p>
-                <div className="form-actions">
+                <button
+                  type="button"
+                  onClick={() => navigate('/account-deletion-policy')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary, #2563EB)',
+                    cursor: 'pointer',
+                    padding: 0,
+                    marginBottom: 14,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    textAlign: 'left',
+                    width: 'fit-content',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <FaShieldAlt /> Política de Exclusão de Conta e Dados
+                </button>
+                <div className="form-actions" style={{ marginTop: 4 }}>
                   <button type="button" onClick={abrirModalExcluir} className="btn-excluir">
                     <FaTrash /> Excluir Conta
                   </button>

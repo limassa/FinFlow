@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaArrowLeft, FaShieldAlt, FaLock, FaUserShield, FaEnvelope } from 'react-icons/fa';
 import '../App.css';
@@ -6,6 +6,10 @@ import './PrivacyPolicy.css';
 
 function PrivacyPolicy() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleVoltar = () => {
     if (window.history.length > 2) {
