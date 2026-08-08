@@ -9,7 +9,8 @@ import {
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +42,7 @@ export default function CadastroScreen({ navigation }) {
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaConfirm, setSenhaConfirm] = useState('');
+  const [aceitouTermos, setAceitouTermos] = useState(false);
   const [loading, setLoading] = useState(false);
   const { cadastro } = useAuth();
 
@@ -58,6 +60,13 @@ export default function CadastroScreen({ navigation }) {
     }
     if (!senhaOk) {
       Alert.alert('Erro', 'A senha não atende a todos os requisitos de segurança');
+      return;
+    }
+    if (!aceitouTermos) {
+      Alert.alert(
+        'Atenção',
+        'É necessário ler e concordar com os Termos de Uso e a Política de Privacidade.'
+      );
       return;
     }
 
@@ -153,9 +162,41 @@ export default function CadastroScreen({ navigation }) {
           )}
 
           <TouchableOpacity
-            style={[styles.button, (loading || !senhaOk || senha !== senhaConfirm) && styles.buttonDisabled]}
+            style={styles.termsRow}
+            onPress={() => setAceitouTermos((v) => !v)}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={aceitouTermos ? 'checkbox' : 'square-outline'}
+              size={22}
+              color={aceitouTermos ? colors.primary : colors.textSecondary}
+            />
+            <Text style={styles.termsText}>
+              Li e concordo com os{' '}
+              <Text
+                style={styles.termsLink}
+                onPress={() => Linking.openURL('https://claricash.com.br/terms-of-use')}
+              >
+                Termos de Uso
+              </Text>
+              {' '}e a{' '}
+              <Text
+                style={styles.termsLink}
+                onPress={() => Linking.openURL('https://claricash.com.br/privacy-policy')}
+              >
+                Política de Privacidade
+              </Text>
+              .
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              (loading || !senhaOk || senha !== senhaConfirm || !aceitouTermos) && styles.buttonDisabled,
+            ]}
             onPress={handleCadastro}
-            disabled={loading || !senhaOk || senha !== senhaConfirm}
+            disabled={loading || !senhaOk || senha !== senhaConfirm || !aceitouTermos}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -274,6 +315,24 @@ const styles = StyleSheet.create({
     color: colors.error,
     marginTop: -8,
     marginBottom: 12,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 19,
+  },
+  termsLink: {
+    color: colors.primary,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
 

@@ -24,6 +24,8 @@ import CalculadoraJuros from './pages/CalculadoraJuros';
 import CalculadoraRetiradas from './pages/CalculadoraRetiradas';
 import CalculadoraAporteMeta from './pages/CalculadoraAporteMeta';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
+import AccountDeletionPolicy from './pages/AccountDeletionPolicy';
 import CartaoCredito from './pages/CartaoCredito';
 import Orcamento from './pages/Orcamento';
 import Categorias from './pages/Categorias';
@@ -45,6 +47,8 @@ root.render(
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/fale-conosco" element={<FaleConosco />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-use" element={<TermsOfUse />} />
+        <Route path="/account-deletion-policy" element={<AccountDeletionPolicy />} />
         <Route path="/calculadora-juros" element={<CalculadoraJuros />} />
         <Route path="/calculadora-retiradas" element={<CalculadoraRetiradas />} />
         <Route path="/calculadora-aporte-meta" element={<CalculadoraAporteMeta />} />

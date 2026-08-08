@@ -1097,6 +1097,29 @@ app.put('/api/user/lembretes', async (req, res) => {
   }
 });
 
+// Exclusão de conta (LGPD)
+app.delete('/api/user/excluir', async (req, res) => {
+  const { userId, confirmacao } = req.body || {};
+  if (!userId) {
+    return res.status(400).json({ error: 'userId é obrigatório' });
+  }
+  if (String(confirmacao || '').trim().toUpperCase() !== 'EXCLUIR') {
+    return res.status(400).json({ error: 'Confirmação inválida. Digite EXCLUIR para confirmar.' });
+  }
+  try {
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    await userRepository.deleteAccount(userId);
+    console.log(`🗑️ Conta excluída (userId=${userId})`);
+    res.json({ success: true, message: 'Conta excluída com sucesso' });
+  } catch (err) {
+    console.error('Erro ao excluir conta:', err);
+    res.status(500).json({ error: 'Erro ao excluir conta' });
+  }
+});
+
 // Rotas para gerenciar perfil do usuário
 app.get('/api/user/perfil', async (req, res) => {
   const { userId } = req.query;

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import '../App.css';
-import { funcoes } from '../functions/function.js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import InputMask from 'react-input-mask';
 import AuthBanner from '../components/AuthBanner';
 import PasswordStrength from '../components/PasswordStrength';
@@ -15,6 +14,7 @@ function Cadastro() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaConfirm, setSenhaConfirm] = useState('');
+  const [aceitouTermos, setAceitouTermos] = useState(false);
 
   const handleCadastro = async (e) => {
     e.preventDefault();
@@ -27,6 +27,11 @@ function Cadastro() {
     
     if (senha !== senhaConfirm) {
       alert('As senhas não coincidem!');
+      return;
+    }
+
+    if (!aceitouTermos) {
+      alert('É necessário ler e concordar com os Termos de Uso e a Política de Privacidade.');
       return;
     }
 
@@ -140,10 +145,34 @@ function Cadastro() {
             <p className="form-error-msg">As senhas não coincidem.</p>
           )}
         </div>
+
+        <div className="form-group" style={{ marginTop: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, lineHeight: 1.45, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={aceitouTermos}
+              onChange={(e) => setAceitouTermos(e.target.checked)}
+              style={{ marginTop: 3 }}
+              required
+            />
+            <span>
+              Li e concordo com os{' '}
+              <Link to="/terms-of-use" target="_blank" rel="noopener noreferrer">
+                Termos de Uso
+              </Link>{' '}
+              e a{' '}
+              <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer">
+                Política de Privacidade
+              </Link>
+              .
+            </span>
+          </label>
+        </div>
         
         <button
           type="submit"
           className="form-button primary"
+          disabled={!aceitouTermos}
         >
           Criar conta
         </button>

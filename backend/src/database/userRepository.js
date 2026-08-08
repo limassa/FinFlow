@@ -208,19 +208,32 @@ const userRepository = {
   },
 
   // Métodos para Receitas (padrão: PascalCase, fallback: minúsculas)
-  async getReceitas(userId, mes = null) {
-    const paramsMes = mes ? [userId, mes + '-01'] : [userId];
+  async getReceitas(userId, mes = null, ano = null) {
+    const params = [userId];
     let result;
     try {
       let query = 'SELECT * FROM "Receita" WHERE "Usuario_Id" = $1 AND "Receita_Ativo" = TRUE';
-      if (mes) query += ' AND DATE_TRUNC(\'month\', "Receita_Data") = DATE_TRUNC(\'month\', $2::date)';
+      if (mes) {
+        params.push(`${mes}-01`);
+        query += ` AND DATE_TRUNC('month', "Receita_Data") = DATE_TRUNC('month', $${params.length}::date)`;
+      } else if (ano) {
+        params.push(Number(ano));
+        query += ` AND EXTRACT(YEAR FROM "Receita_Data") = $${params.length}`;
+      }
       query += ' ORDER BY "Receita_Data" ASC';
-      result = await pool.query(query, paramsMes);
+      result = await pool.query(query, params);
     } catch (err) {
+      const paramsLow = [userId];
       let q = 'SELECT * FROM receita WHERE usuario_id = $1 AND receita_ativo = TRUE';
-      if (mes) q += ' AND DATE_TRUNC(\'month\', receita_data) = DATE_TRUNC(\'month\', $2::date)';
+      if (mes) {
+        paramsLow.push(`${mes}-01`);
+        q += ` AND DATE_TRUNC('month', receita_data) = DATE_TRUNC('month', $${paramsLow.length}::date)`;
+      } else if (ano) {
+        paramsLow.push(Number(ano));
+        q += ` AND EXTRACT(YEAR FROM receita_data) = $${paramsLow.length}`;
+      }
       q += ' ORDER BY receita_data ASC';
-      result = await pool.query(q, paramsMes);
+      result = await pool.query(q, paramsLow);
     }
     return result.rows.map(normalizarReceita);
   },
@@ -1390,6 +1403,95 @@ const userRepository = {
     }
 
     return stats;
+  },
+
+  /**
+   * Exclusão de conta: desativa usuário, anonimiza dados pessoais e
+   * desativa registros financeiros associados nos sistemas ativos.
+   */
+  async deleteAccount(userId) {
+    const id = Number(userId);
+    if (!Number.isFinite(id)) {
+      throw new Error('userId inválido');
+    }
+
+    const anonEmail = `deleted_${id}_${Date.now()}@deleted.claricash.local`;
+    const client = await pool.connect();
+
+    const tryQuery = async (sqlPascal, sqlLower) => {
+      try {
+        await client.query(sqlPascal, [id]);
+      } catch (_) {
+        if (sqlLower) {
+          try {
+            await client.query(sqlLower, [id]);
+          } catch (err2) {
+            console.warn('⚠️ deleteAccount etapa ignorada:', err2.message);
+          }
+        }
+      }
+    };
+
+    try {
+      await client.query('BEGIN');
+
+      await tryQuery(
+        'UPDATE "Receita" SET "Receita_Ativo" = FALSE WHERE "Usuario_Id" = $1',
+        'UPDATE receita SET receita_ativo = FALSE WHERE usuario_id = $1'
+      );
+      await tryQuery(
+        'UPDATE "Despesa" SET "Despesa_Ativo" = FALSE WHERE "Usuario_Id" = $1',
+        'UPDATE despesa SET despesa_ativo = FALSE WHERE usuario_id = $1'
+      );
+      await tryQuery(
+        'UPDATE "Conta" SET "Conta_Ativo" = FALSE WHERE "Usuario_Id" = $1',
+        'UPDATE conta SET conta_ativo = FALSE WHERE usuario_id = $1'
+      );
+      await tryQuery(
+        'UPDATE "Orcamento" SET "Orcamento_Ativo" = FALSE WHERE "Usuario_Id" = $1',
+        null
+      );
+      await tryQuery(
+        'UPDATE "Evento" SET "Evento_Ativo" = FALSE WHERE "Usuario_Id" = $1',
+        null
+      );
+
+      try {
+        await client.query(
+          `UPDATE "Usuario" SET
+            "Usuario_Ativo" = FALSE,
+            "Usuario_Email" = $2,
+            "Usuario_Nome" = 'Conta excluída',
+            "Usuario_Telefone" = NULL,
+            "Usuario_LembretesAtivos" = FALSE,
+            "Usuario_LembretesEmail" = FALSE,
+            "Usuario_LembretesWhatsApp" = FALSE,
+            "Usuario_Foto" = NULL
+          WHERE "Usuario_Id" = $1`,
+          [id, anonEmail]
+        );
+      } catch (_) {
+        await client.query(
+          `UPDATE usuario SET
+            usuario_ativo = FALSE,
+            usuario_email = $2,
+            usuario_nome = 'Conta excluída',
+            usuario_telefone = NULL,
+            usuario_lembretesativos = FALSE,
+            usuario_lembretesemail = FALSE
+          WHERE usuario_id = $1`,
+          [id, anonEmail]
+        );
+      }
+
+      await client.query('COMMIT');
+      return { success: true };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   // Outras funções reutilizáveis...

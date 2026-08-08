@@ -30,6 +30,7 @@ function Configuracoes() {
   // Configurações de lembretes / notificações
   const [lembretesConfig, setLembretesConfig] = useState({
     lembretesAtivos: true,
+    lembretesEmail: false,
     lembretesDiasAntes: 5,
     lembretesHorario: '18:15'
   });
@@ -71,10 +72,13 @@ function Configuracoes() {
 
   // Configurações de privacidade
   const [privacidadeConfig, setPrivacidadeConfig] = useState({
-    dadosAnonimos: false,
-    analytics: true,
-    marketing: false
+    melhorarClaricash: false,
+    novidadesOfertas: false,
   });
+  const [showExcluirModal, setShowExcluirModal] = useState(false);
+  const [excluirConfirmStep, setExcluirConfirmStep] = useState(1);
+  const [excluirTexto, setExcluirTexto] = useState('');
+  const [excluindoConta, setExcluindoConta] = useState(false);
 
   useEffect(() => {
     const userData = getUsuarioLogado();
@@ -103,6 +107,7 @@ function Configuracoes() {
         setLembretesConfig(prev => ({
           ...prev,
           lembretesAtivos: lembretes.lembretesAtivos,
+          lembretesEmail: !!lembretes.lembretesEmail,
           lembretesDiasAntes: lembretes.lembretesDiasAntes,
           lembretesHorario: lembretes.lembretesHorario || prev.lembretesHorario
         }));
@@ -133,7 +138,10 @@ function Configuracoes() {
         const saved = localStorage.getItem(`claricash_privacidade_${userId}`);
         if (saved) {
           const parsed = JSON.parse(saved);
-          setPrivacidadeConfig(prev => ({ ...prev, ...parsed }));
+          setPrivacidadeConfig({
+            melhorarClaricash: !!(parsed.melhorarClaricash ?? parsed.dadosAnonimos ?? parsed.analytics),
+            novidadesOfertas: !!(parsed.novidadesOfertas ?? parsed.marketing),
+          });
         }
       } catch (_) { /* ignorar falha ao ler localStorage */ }
     } catch (error) {
@@ -200,6 +208,8 @@ function Configuracoes() {
           body: JSON.stringify({
             userId: user.id,
             lembretesAtivos: lembretesConfig.lembretesAtivos,
+            lembretesEmail: lembretesConfig.lembretesEmail,
+            lembretesWhatsApp: false,
             lembretesDiasAntes: lembretesConfig.lembretesDiasAntes,
             lembretesHorario: lembretesConfig.lembretesHorario,
           }),
@@ -283,28 +293,46 @@ function Configuracoes() {
     e.target.value = '';
   };
 
-  const handleExcluirConta = async () => {
-    if (window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      try {
-        const response = await fetch(`${API_ENDPOINTS.USER_EXCLUIR}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId: user.id }),
-        });
+  const abrirModalExcluir = () => {
+    setExcluirConfirmStep(1);
+    setExcluirTexto('');
+    setShowExcluirModal(true);
+  };
 
-        if (response.ok) {
-          alert('Conta excluída com sucesso');
-          localStorage.removeItem('user');
-          navigate('/');
-        } else {
-          alert('Erro ao excluir conta');
-        }
-      } catch (error) {
-        console.error('Erro ao excluir conta:', error);
-        alert('Erro ao excluir conta');
+  const fecharModalExcluir = () => {
+    if (excluindoConta) return;
+    setShowExcluirModal(false);
+    setExcluirConfirmStep(1);
+    setExcluirTexto('');
+  };
+
+  const handleExcluirContaDefinitivo = async () => {
+    if (excluirTexto.trim().toUpperCase() !== 'EXCLUIR') {
+      alert('Digite EXCLUIR para confirmar.');
+      return;
+    }
+    setExcluindoConta(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USER_EXCLUIR}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, confirmacao: 'EXCLUIR' }),
+      });
+
+      if (response.ok) {
+        alert('Conta excluída com sucesso');
+        localStorage.removeItem('user');
+        localStorage.removeItem(`claricash_privacidade_${user.id}`);
+        navigate('/');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(data.error || 'Erro ao excluir conta');
       }
+    } catch (error) {
+      console.error('Erro ao excluir conta:', error);
+      alert('Erro ao excluir conta');
+    } finally {
+      setExcluindoConta(false);
     }
   };
 
@@ -528,15 +556,42 @@ function Configuracoes() {
                   ))}
                 </div>
 
+                <div className="form-group" style={{ marginTop: 20 }}>
+                  <h4 style={{ margin: '0 0 10px', fontSize: 15 }}>📧 Notificações por e-mail</h4>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!lembretesConfig.lembretesEmail}
+                      disabled={!lembretesConfig.lembretesAtivos}
+                      onChange={(e) =>
+                        setLembretesConfig((prev) => ({ ...prev, lembretesEmail: e.target.checked }))
+                      }
+                      style={{ marginTop: 3 }}
+                    />
+                    <span>
+                      Receber lembretes de vencimentos por e-mail
+                      <br />
+                      <span style={{ fontSize: 13, color: '#64748b' }}>
+                        O e-mail é enviado na antecedência informada abaixo (dias antes do vencimento),
+                        no horário configurado.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
                 <div className="form-group">
-                  <label>Antecedência do lembrete:</label>
+                  <label>Antecedência do lembrete (dias antes do vencimento):</label>
                   <input
                     type="number"
                     min="0"
                     max="30"
                     value={lembretesConfig.lembretesDiasAntes}
-                    onChange={(e) => setLembretesConfig({...lembretesConfig, lembretesDiasAntes: parseInt(e.target.value)})}
+                    onChange={(e) => setLembretesConfig({...lembretesConfig, lembretesDiasAntes: parseInt(e.target.value, 10) || 0})}
                   />
+                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#64748b' }}>
+                    0 = somente no dia do vencimento. Ex.: 5 = envia lembretes de despesas com vencimento
+                    nos próximos 5 dias.
+                  </p>
                 </div>
 
                 <div className="form-group">
@@ -591,54 +646,92 @@ function Configuracoes() {
             <div className="config-section">
               <h3>Privacidade e Dados</h3>
               <div className="config-form">
-                <div className="form-group" style={{ marginBottom: 16 }}>
-                  <button type="button" className="link-button" onClick={() => navigate('/privacy-policy')} style={{ fontSize: 16, color: 'var(--primary, #4a67af)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="form-group" style={{ marginBottom: 20 }}>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => navigate('/privacy-policy')}
+                    style={{
+                      fontSize: 16,
+                      color: 'var(--primary, #2563EB)',
+                      fontWeight: 600,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
                     <FaShieldAlt /> Política de Privacidade
                   </button>
-                  <p style={{ marginTop: 4, fontSize: 14, color: '#666' }}>Leia nossa política de privacidade.</p>
+                  <p style={{ marginTop: 4, fontSize: 14, color: '#666' }}>
+                    Leia nossa política de privacidade.
+                  </p>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => navigate('/terms-of-use')}
+                    style={{
+                      marginTop: 12,
+                      fontSize: 15,
+                      color: 'var(--primary, #2563EB)',
+                      fontWeight: 600,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Termos de Uso
+                  </button>
                 </div>
+
+                <h4 style={{ margin: '8px 0 10px', fontSize: 15 }}>Experiência e melhorias</h4>
                 <div className="form-group">
-                  <label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                     <input
                       type="checkbox"
-                      checked={privacidadeConfig.dadosAnonimos}
+                      checked={!!privacidadeConfig.melhorarClaricash}
                       onChange={(e) => {
-                        const next = { ...privacidadeConfig, dadosAnonimos: e.target.checked };
+                        const next = { ...privacidadeConfig, melhorarClaricash: e.target.checked };
                         setPrivacidadeConfig(next);
                         salvarPrivacidadeLocal(next);
                       }}
+                      style={{ marginTop: 3 }}
                     />
-                    Compartilhar dados anônimos para melhorias
+                    <span>
+                      <strong>Ajudar a melhorar o Claricash</strong>
+                      <br />
+                      <span style={{ fontSize: 13, color: '#64748b' }}>
+                        Permitir o uso de informações anônimas sobre o uso do aplicativo para
+                        melhorar nossos recursos.
+                      </span>
+                    </span>
                   </label>
                 </div>
 
+                <h4 style={{ margin: '20px 0 10px', fontSize: 15 }}>Comunicação</h4>
                 <div className="form-group">
-                  <label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                     <input
                       type="checkbox"
-                      checked={privacidadeConfig.analytics}
+                      checked={!!privacidadeConfig.novidadesOfertas}
                       onChange={(e) => {
-                        const next = { ...privacidadeConfig, analytics: e.target.checked };
+                        const next = { ...privacidadeConfig, novidadesOfertas: e.target.checked };
                         setPrivacidadeConfig(next);
                         salvarPrivacidadeLocal(next);
                       }}
+                      style={{ marginTop: 3 }}
                     />
-                    Permitir analytics
-                  </label>
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={privacidadeConfig.marketing}
-                      onChange={(e) => {
-                        const next = { ...privacidadeConfig, marketing: e.target.checked };
-                        setPrivacidadeConfig(next);
-                        salvarPrivacidadeLocal(next);
-                      }}
-                    />
-                    Receber emails de marketing
+                    <span>
+                      <strong>Receber novidades e ofertas</strong>
+                      <br />
+                      <span style={{ fontSize: 13, color: '#64748b' }}>
+                        Receba novidades, dicas e informações sobre o Claricash.
+                      </span>
+                    </span>
                   </label>
                 </div>
 
@@ -646,8 +739,28 @@ function Configuracoes() {
                   <FaSave /> Salvar preferências
                 </button>
 
-                <div className="form-actions" style={{ marginTop: 24 }}>
-                  <button onClick={handleExcluirConta} className="btn-excluir">
+                <h4 style={{ margin: '28px 0 10px', fontSize: 15, color: '#DC2626' }}>Seus dados</h4>
+                <p style={{ fontSize: 14, color: '#64748b', marginBottom: 12 }}>
+                  Exclui sua conta e os dados associados, observadas as hipóteses legais de
+                  conservação.{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/account-deletion-policy')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--primary, #2563EB)',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontWeight: 600,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Política de Exclusão de Conta e Dados
+                  </button>
+                </p>
+                <div className="form-actions">
+                  <button type="button" onClick={abrirModalExcluir} className="btn-excluir">
                     <FaTrash /> Excluir Conta
                   </button>
                 </div>
@@ -656,6 +769,121 @@ function Configuracoes() {
           )}
         </div>
       </div>
+
+      {showExcluirModal ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+          onClick={fecharModalExcluir}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              maxWidth: 480,
+              width: '100%',
+              padding: 24,
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {excluirConfirmStep === 1 ? (
+              <>
+                <h3 style={{ margin: '0 0 12px', color: '#DC2626' }}>⚠️ Excluir sua conta?</h3>
+                <p style={{ marginBottom: 10, fontWeight: 600 }}>Esta ação é permanente.</p>
+                <p style={{ marginBottom: 10, color: '#475569', lineHeight: 1.5 }}>
+                  Sua conta e os dados financeiros associados serão excluídos conforme nossa{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fecharModalExcluir();
+                      navigate('/account-deletion-policy');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563EB',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontWeight: 600,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Política de Exclusão de Conta e Dados
+                  </button>
+                  .
+                </p>
+                <p style={{ marginBottom: 20, color: '#475569' }}>
+                  Essa ação não poderá ser desfeita.
+                </p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-salvar" style={{ background: '#94a3b8' }} onClick={fecharModalExcluir}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-excluir"
+                    onClick={() => setExcluirConfirmStep(2)}
+                  >
+                    Excluir minha conta
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{ margin: '0 0 12px', color: '#DC2626' }}>🔴 Confirmação final</h3>
+                <p style={{ marginBottom: 12, color: '#475569' }}>
+                  Digite <strong>EXCLUIR</strong> para confirmar.
+                </p>
+                <input
+                  type="text"
+                  value={excluirTexto}
+                  onChange={(e) => setExcluirTexto(e.target.value)}
+                  placeholder="EXCLUIR"
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    marginBottom: 16,
+                    fontSize: 15,
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn-salvar"
+                    style={{ background: '#94a3b8' }}
+                    onClick={fecharModalExcluir}
+                    disabled={excluindoConta}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-excluir"
+                    onClick={handleExcluirContaDefinitivo}
+                    disabled={excluindoConta || excluirTexto.trim().toUpperCase() !== 'EXCLUIR'}
+                  >
+                    {excluindoConta ? 'Excluindo...' : 'Excluir definitivamente'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -10,12 +10,14 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  Linking
+  Linking,
+  Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useOffline } from '../context/OfflineContext';
@@ -55,6 +57,7 @@ export default function ConfiguracoesScreen() {
   // Configurações de lembretes
   const [lembretesConfig, setLembretesConfig] = useState({
     lembretesAtivos: true,
+    lembretesEmail: false,
     lembretesDiasAntes: 0,
     lembretesHorario: '18:15'
   });
@@ -101,10 +104,11 @@ export default function ConfiguracoesScreen() {
 
   // Configurações de privacidade
   const [privacidadeConfig, setPrivacidadeConfig] = useState({
-    dadosAnonimos: false,
-    analytics: true,
-    marketing: false
+    melhorarClaricash: false,
+    novidadesOfertas: false,
   });
+  const [excluirTexto, setExcluirTexto] = useState('');
+  const [showExcluirConfirm, setShowExcluirConfirm] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -138,6 +142,7 @@ export default function ConfiguracoesScreen() {
         setLembretesConfig(prev => ({
           ...prev,
           lembretesAtivos: lembretesRes.data.lembretesAtivos ?? true,
+          lembretesEmail: !!lembretesRes.data.lembretesEmail,
           lembretesDiasAntes:
             diasCarregados === 0 || diasCarregados === '0'
               ? 0
@@ -147,6 +152,17 @@ export default function ConfiguracoesScreen() {
           lembretesHorario: lembretesRes.data.lembretesHorario || '18:15'
         }));
       }
+
+      try {
+        const savedPriv = await AsyncStorage.getItem(`claricash_privacidade_${userId}`);
+        if (savedPriv) {
+          const parsed = JSON.parse(savedPriv);
+          setPrivacidadeConfig({
+            melhorarClaricash: !!(parsed.melhorarClaricash ?? parsed.dadosAnonimos ?? parsed.analytics),
+            novidadesOfertas: !!(parsed.novidadesOfertas ?? parsed.marketing),
+          });
+        }
+      } catch (_) { /* ignorar */ }
 
       if (notifPrefsRes.data?.prefs) {
         setNotifPrefs(prev => ({ ...prev, ...notifPrefsRes.data.prefs }));
@@ -320,6 +336,7 @@ export default function ConfiguracoesScreen() {
     // Garantir que dias seja um número válido
     const configToSave = {
       lembretesAtivos: lembretesConfig.lembretesAtivos,
+      lembretesEmail: !!lembretesConfig.lembretesEmail,
       lembretesDiasAntes: dias,
       lembretesHorario: lembretesConfig.lembretesHorario,
       lembretesWhatsApp: false,
@@ -384,8 +401,57 @@ export default function ConfiguracoesScreen() {
   };
 
   const handleSalvarPrivacidade = async () => {
-    // Por enquanto, apenas mostra mensagem (privacidade pode não ter endpoint no backend ainda)
-    Alert.alert('Info', 'Configurações de privacidade salvas!');
+    try {
+      await AsyncStorage.setItem(
+        `claricash_privacidade_${userId}`,
+        JSON.stringify(privacidadeConfig)
+      );
+      Alert.alert('Sucesso', 'Preferências de privacidade salvas!');
+    } catch (_) {
+      Alert.alert('Erro', 'Não foi possível salvar as preferências.');
+    }
+  };
+
+  const handleExcluirConta = () => {
+    Alert.alert(
+      '⚠️ Excluir sua conta?',
+      'Esta ação é permanente.\n\nSua conta e os dados financeiros associados serão excluídos conforme nossa Política de Exclusão de Conta e Dados.\n\nEssa ação não poderá ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir minha conta',
+          style: 'destructive',
+          onPress: () => setShowExcluirConfirm(true),
+        },
+      ]
+    );
+  };
+
+  const handleExcluirContaDefinitivo = async () => {
+    if (excluirTexto.trim().toUpperCase() !== 'EXCLUIR') {
+      Alert.alert('Atenção', 'Digite EXCLUIR para confirmar.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.delete(API_ENDPOINTS.USER_EXCLUIR, {
+        data: { userId, confirmacao: 'EXCLUIR' },
+      });
+      setShowExcluirConfirm(false);
+      Alert.alert('Conta excluída', 'Sua conta foi excluída com sucesso.', [
+        {
+          text: 'OK',
+          onPress: () => logout(),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert(
+        'Erro',
+        error.response?.data?.error || 'Não foi possível excluir a conta.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -700,6 +766,25 @@ export default function ConfiguracoesScreen() {
                 </Text>
               </View>
 
+              <Text style={[styles.sectionTitle, { marginTop: 8 }]}>📧 Notificações por e-mail</Text>
+              <View style={styles.switchGroup}>
+                <View style={styles.switchRow}>
+                  <Text style={[styles.switchLabel, { flex: 1, paddingRight: 12 }]}>
+                    Receber lembretes de vencimentos por e-mail
+                  </Text>
+                  <Switch
+                    value={!!lembretesConfig.lembretesEmail}
+                    disabled={!lembretesConfig.lembretesAtivos}
+                    onValueChange={(value) =>
+                      setLembretesConfig((prev) => ({ ...prev, lembretesEmail: value }))
+                    }
+                  />
+                </View>
+                <Text style={styles.helperText}>
+                  O e-mail é enviado na antecedência informada em “Dias antes”, no horário configurado.
+                </Text>
+              </View>
+
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Horário das Notificações:</Text>
                 <TimePicker
@@ -708,7 +793,7 @@ export default function ConfiguracoesScreen() {
                   placeholder="Selecione o horário"
                 />
                 <Text style={styles.helperText}>
-                  Horário em que a notificação do celular é disparada.
+                  Horário em que a notificação do celular e o e-mail de lembrete são disparados.
                 </Text>
               </View>
 
@@ -776,51 +861,138 @@ export default function ConfiguracoesScreen() {
                 style={styles.privacyPolicyLink}
                 onPress={() => Linking.openURL('https://claricash.com.br/privacy-policy')}
               >
-                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
                 <View style={styles.privacyPolicyLinkText}>
                   <Text style={styles.privacyPolicyLinkTitle}>Política de Privacidade</Text>
-                  <Text style={styles.privacyPolicyLinkSubtitle}>Leia como tratamos seus dados</Text>
+                  <Text style={styles.privacyPolicyLinkSubtitle}>Leia nossa política de privacidade.</Text>
                 </View>
                 <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
-              
+
+              <TouchableOpacity
+                style={styles.privacyPolicyLink}
+                onPress={() => Linking.openURL('https://claricash.com.br/terms-of-use')}
+              >
+                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                <View style={styles.privacyPolicyLinkText}>
+                  <Text style={styles.privacyPolicyLinkTitle}>Termos de Uso</Text>
+                  <Text style={styles.privacyPolicyLinkSubtitle}>Leia os termos de uso do Claricash.</Text>
+                </View>
+                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Experiência e melhorias</Text>
               <View style={styles.switchGroup}>
                 <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Compartilhar dados anônimos para melhorias</Text>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={styles.switchLabel}>Ajudar a melhorar o Claricash</Text>
+                    <Text style={styles.helperText}>
+                      Permitir o uso de informações anônimas sobre o uso do aplicativo para melhorar nossos recursos.
+                    </Text>
+                  </View>
                   <Switch
-                    value={privacidadeConfig.dadosAnonimos}
-                    onValueChange={(value) => setPrivacidadeConfig({ ...privacidadeConfig, dadosAnonimos: value })}
+                    value={!!privacidadeConfig.melhorarClaricash}
+                    onValueChange={(value) =>
+                      setPrivacidadeConfig({ ...privacidadeConfig, melhorarClaricash: value })
+                    }
                   />
                 </View>
               </View>
 
+              <Text style={styles.sectionTitle}>Comunicação</Text>
               <View style={styles.switchGroup}>
                 <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Permitir analytics</Text>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={styles.switchLabel}>Receber novidades e ofertas</Text>
+                    <Text style={styles.helperText}>
+                      Receba novidades, dicas e informações sobre o Claricash.
+                    </Text>
+                  </View>
                   <Switch
-                    value={privacidadeConfig.analytics}
-                    onValueChange={(value) => setPrivacidadeConfig({ ...privacidadeConfig, analytics: value })}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.switchGroup}>
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Receber emails de marketing</Text>
-                  <Switch
-                    value={privacidadeConfig.marketing}
-                    onValueChange={(value) => setPrivacidadeConfig({ ...privacidadeConfig, marketing: value })}
+                    value={!!privacidadeConfig.novidadesOfertas}
+                    onValueChange={(value) =>
+                      setPrivacidadeConfig({ ...privacidadeConfig, novidadesOfertas: value })
+                    }
                   />
                 </View>
               </View>
 
               <TouchableOpacity style={styles.saveButton} onPress={handleSalvarPrivacidade}>
                 <Ionicons name="save-outline" size={20} color="#fff" />
-                <Text style={styles.saveButtonText}>Salvar Configurações</Text>
+                <Text style={styles.saveButtonText}>Salvar preferências</Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.sectionTitle, { marginTop: 24, color: colors.error }]}>Seus dados</Text>
+              <Text style={styles.helperText}>
+                Exclui sua conta e os dados associados, observadas as hipóteses legais de conservação.
+              </Text>
+              <TouchableOpacity
+                style={[styles.privacyPolicyLink, { marginTop: 8 }]}
+                onPress={() => Linking.openURL('https://claricash.com.br/account-deletion-policy')}
+              >
+                <Ionicons name="document-outline" size={22} color={colors.primary} />
+                <View style={styles.privacyPolicyLinkText}>
+                  <Text style={styles.privacyPolicyLinkTitle}>Política de Exclusão de Conta e Dados</Text>
+                  <Text style={styles.privacyPolicyLinkSubtitle}>Saiba o que acontece ao excluir</Text>
+                </View>
+                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.error, marginTop: 12 }]}
+                onPress={handleExcluirConta}
+              >
+                <Ionicons name="trash-outline" size={20} color="#fff" />
+                <Text style={styles.saveButtonText}>Excluir Conta</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
+
+        <Modal
+          visible={showExcluirConfirm}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowExcluirConfirm(false)}
+        >
+          <View style={styles.excluirModalOverlay}>
+            <View style={[styles.excluirModalCard, { backgroundColor: themeColors.card || '#fff' }]}>
+              <Text style={[styles.excluirModalTitle, { color: colors.error }]}>
+                🔴 Confirmação final
+              </Text>
+              <Text style={[styles.helperText, { marginBottom: 12 }]}>
+                Digite EXCLUIR para confirmar.
+              </Text>
+              <TextInput
+                style={[styles.input, { marginBottom: 16 }]}
+                value={excluirTexto}
+                onChangeText={setExcluirTexto}
+                placeholder="EXCLUIR"
+                autoCapitalize="characters"
+              />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity
+                  style={[styles.saveButton, { flex: 1, backgroundColor: colors.textSecondary }]}
+                  onPress={() => {
+                    setShowExcluirConfirm(false);
+                    setExcluirTexto('');
+                  }}
+                >
+                  <Text style={styles.saveButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.saveButton, { flex: 1, backgroundColor: colors.error }]}
+                  onPress={handleExcluirContaDefinitivo}
+                  disabled={loading}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {loading ? 'Excluindo...' : 'Excluir definitivamente'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Botão de Logout */}
         <View style={styles.logoutSection}>
@@ -1103,5 +1275,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginBottom: 4,
+  },
+  excluirModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  excluirModalCard: {
+    borderRadius: 14,
+    padding: 20,
+  },
+  excluirModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
   },
 });

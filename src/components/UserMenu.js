@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUser, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera, FaChartLine } from 'react-icons/fa';
+import { FaUser, FaCog, FaInfoCircle, FaShieldAlt, FaSignOutAlt, FaChevronDown, FaCamera, FaChartLine, FaFileContract } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -187,6 +187,17 @@ function UserMenu() {
           >
             <FaShieldAlt />
             <span>Política de Privacidade</span>
+          </div>
+
+          <div
+            className="menu-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/terms-of-use');
+            }}
+          >
+            <FaFileContract />
+            <span>Termos de Uso</span>
           </div>
 
           <div className="menu-divider" />
