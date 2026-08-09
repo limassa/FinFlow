@@ -816,6 +816,8 @@ function Configuracoes() {
               maxWidth: 480,
               width: '100%',
               padding: 24,
+              boxSizing: 'border-box',
+              overflow: 'hidden',
               boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -875,7 +877,10 @@ function Configuracoes() {
                   placeholder="EXCLUIR"
                   autoFocus
                   style={{
+                    display: 'block',
                     width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
                     padding: '10px 12px',
                     borderRadius: 8,
                     border: '1px solid #cbd5e1',
