@@ -4,6 +4,7 @@ import { getIconForTipo } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
 import SelectWithIcons from '../components/SelectWithIcons';
 import BankSelector from '../components/BankSelector';
+import BankLogo from '../components/BankLogo';
 import axios from 'axios';
 import { getUsuarioLogado } from '../functions/auth';
 import { API_ENDPOINTS } from '../config/api';
@@ -275,9 +276,7 @@ function Contas() {
                       const bancoId = conta.conta_banco || conta.Conta_Banco;
                       const b = bancoId ? getBancoById(bancoId) : null;
                       return b ? (
-                        <span className="bank-badge bank-badge-inline" style={{ backgroundColor: b.cor }} title={b.nome}>
-                          {b.abbr}
-                        </span>
+                        <BankLogo banco={b} className="bank-badge-inline" size={28} />
                       ) : (
                         <span className="bank-badge bank-badge-inline" style={{ backgroundColor: '#64748b' }}>--</span>
                       );

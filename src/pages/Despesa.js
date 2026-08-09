@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { FaEdit, FaTrash, FaPlus, FaFilter, FaHome, FaBullseye, FaCheckCircle, FaExclamationCircle, FaChevronDown, FaChevronRight, FaChevronLeft, FaCreditCard, FaCalendarAlt } from 'react-icons/fa';
 import { getIconForTipo, getIconComponentByName, getColorForTipo } from '../utils/categoryIcons';
 import { getBancoById } from '../utils/banks';
+import BankLogo from '../components/BankLogo';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 import ConfirmacaoExclusao from '../components/ConfirmacaoExclusao';
 import ConfirmacaoEdicaoRecorrente from '../components/ConfirmacaoEdicaoRecorrente';
@@ -1422,9 +1423,7 @@ function Despesa() {
                               const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                               return (
                                 <span className="conta-com-badge">
-                                  <span className="bank-badge bank-badge-list" style={{ backgroundColor: b.cor }}>
-                                    {b.abbr}
-                                  </span>
+                                  <BankLogo banco={b} className="bank-badge-list" size={28} />
                                   {conta.conta_nome || conta.Conta_Nome}
                                 </span>
                               );
@@ -1500,9 +1499,7 @@ function Despesa() {
                           const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                           return (
                             <span className="conta-com-badge">
-                              <span className="bank-badge bank-badge-list" style={{ backgroundColor: b.cor }}>
-                                {b.abbr}
-                              </span>
+                              <BankLogo banco={b} className="bank-badge-list" size={28} />
                               {conta.conta_nome || conta.Conta_Nome}
                             </span>
                           );

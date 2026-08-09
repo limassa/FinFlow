@@ -30,6 +30,7 @@ import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import { syncDespesasNaoPagasNotifications } from '../services/despesasNotifications';
 import { getBancoById } from '../utils/banks';
+import BankLogo from '../components/BankLogo';
 import { extrairNomeBaseRecorrente, despesaEhRecorrente } from '../utils/recorrentes';
 import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
 import { useOffline } from '../context/OfflineContext';
@@ -681,9 +682,7 @@ export default function DespesaScreen() {
                   if (b) {
                     return (
                       <View style={styles.contaBadgeRow}>
-                        <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
-                          <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
-                        </View>
+                        <BankLogo banco={b} size={28} />
                         <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
                       </View>
                     );

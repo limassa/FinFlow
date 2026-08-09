@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { BANCOS, getBancoById } from '../utils/banks';
+import BankLogo from './BankLogo';
 import '../App.css';
 
 /**
- * Seletor de banco com badges coloridos (iniciais do banco)
+ * Seletor de banco com logo (fallback: iniciais)
  */
 function BankSelector({ value, onChange, placeholder = 'Selecione o banco', required = false }) {
   const [open, setOpen] = useState(false);
@@ -31,11 +32,7 @@ function BankSelector({ value, onChange, placeholder = 'Selecione o banco', requ
         aria-expanded={open}
       >
         <span className="bank-selector-value">
-          {selectedBanco ? (
-            <span className="bank-badge" style={{ backgroundColor: selectedBanco.cor }}>
-              {selectedBanco.abbr}
-            </span>
-          ) : null}
+          {selectedBanco ? <BankLogo banco={selectedBanco} size={28} /> : null}
           {selectedBanco ? selectedBanco.nome : placeholder}
         </span>
         <FaChevronDown className="bank-selector-chevron" />
@@ -56,9 +53,7 @@ function BankSelector({ value, onChange, placeholder = 'Selecione o banco', requ
               className={`bank-selector-option ${value === banco.id ? 'selected' : ''}`}
               onClick={() => { onChange(banco.id); setOpen(false); }}
             >
-              <span className="bank-badge" style={{ backgroundColor: banco.cor }}>
-                {banco.abbr}
-              </span>
+              <BankLogo banco={banco} size={28} />
               {banco.nome}
             </li>
           ))}

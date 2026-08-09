@@ -697,6 +697,20 @@
   align-items: center;
   gap: 10px;
 }
+.bank-logo {
+  display: inline-block;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+.bank-logo.bank-badge-list,
+.bank-logo.bank-badge-inline {
+  width: 28px;
+  height: 28px;
+}
 .bank-badge {
   display: inline-flex;
   align-items: center;

@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/theme';
 import { BANCOS, getBancoById } from '../utils/banks';
+import BankLogo from './BankLogo';
 
 export default function BankSelector({ value, onChange, placeholder = 'Selecione o banco', label }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -22,11 +23,7 @@ export default function BankSelector({ value, onChange, placeholder = 'Selecione
         onPress={() => setModalVisible(true)}
       >
         <View style={styles.valueRow}>
-          {selectedBanco && (
-            <View style={[styles.badge, { backgroundColor: selectedBanco.cor }]}>
-              <Text style={styles.badgeText}>{selectedBanco.abbr}</Text>
-            </View>
-          )}
+          {selectedBanco && <BankLogo banco={selectedBanco} size={28} />}
           <Text style={[styles.text, !value && styles.placeholder]}>
             {selectedBanco ? selectedBanco.nome : placeholder}
           </Text>
@@ -66,9 +63,7 @@ export default function BankSelector({ value, onChange, placeholder = 'Selecione
                     onPress={() => handleSelect(banco)}
                   >
                     <View style={styles.optionRow}>
-                      <View style={[styles.badge, { backgroundColor: banco.cor }]}>
-                        <Text style={styles.badgeText}>{banco.abbr}</Text>
-                      </View>
+                      <BankLogo banco={banco} size={28} />
                       <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                         {banco.nome}
                       </Text>
@@ -118,18 +113,6 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     color: colors.placeholder,
-  },
-  badge: {
-    width: 32,
-    height: 28,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,

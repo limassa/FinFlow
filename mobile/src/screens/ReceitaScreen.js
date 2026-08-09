@@ -29,6 +29,7 @@ import Select from '../components/Select';
 import SelectWithIcons from '../components/SelectWithIcons';
 import AccountSelector from '../components/AccountSelector';
 import { getBancoById } from '../utils/banks';
+import BankLogo from '../components/BankLogo';
 import { extrairNomeBaseRecorrente, receitaEhRecorrente } from '../utils/recorrentes';
 import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
 import { useOffline } from '../context/OfflineContext';
@@ -660,9 +661,7 @@ export default function ReceitaScreen() {
                   const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
                   return b ? (
                     <View style={styles.contaBadgeRow}>
-                      <View style={[styles.contaBankBadge, { backgroundColor: b.cor }]}>
-                        <Text style={styles.contaBankBadgeText}>{b.abbr}</Text>
-                      </View>
+                      <BankLogo banco={b} size={28} />
                       <Text style={styles.contaNomeText}>{conta.conta_nome}</Text>
                     </View>
                   ) : (

@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/theme';
 import { getBancoById } from '../utils/banks';
+import BankLogo from './BankLogo';
 
 export default function AccountSelector({ value, onChange, contas = [], placeholder = 'Selecione uma conta', label }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,11 +25,7 @@ export default function AccountSelector({ value, onChange, contas = [], placehol
         onPress={() => setModalVisible(true)}
       >
         <View style={styles.valueRow}>
-          {selectedConta && banco && (
-            <View style={[styles.badge, { backgroundColor: banco.cor }]}>
-              <Text style={styles.badgeText}>{banco.abbr}</Text>
-            </View>
-          )}
+          {selectedConta && banco && <BankLogo banco={banco} size={28} />}
           <Text style={[styles.text, !value && styles.placeholder]}>
             {selectedConta ? (selectedConta.conta_nome || selectedConta.Conta_Nome) : placeholder}
           </Text>
@@ -70,9 +67,7 @@ export default function AccountSelector({ value, onChange, contas = [], placehol
                     onPress={() => handleSelect(conta)}
                   >
                     <View style={styles.optionRow}>
-                      <View style={[styles.badge, { backgroundColor: b.cor }]}>
-                        <Text style={styles.badgeText}>{b.abbr}</Text>
-                      </View>
+                      <BankLogo banco={b} size={28} />
                       <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                         {conta.conta_nome || conta.Conta_Nome}
                       </Text>

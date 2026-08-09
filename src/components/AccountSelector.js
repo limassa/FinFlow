@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { getBancoById } from '../utils/banks';
+import BankLogo from './BankLogo';
 import '../App.css';
 
 /**
- * Seletor de conta com badge do banco (iniciais) + nome da conta
+ * Seletor de conta com logo do banco + nome da conta
  */
 function AccountSelector({ value, onChange, contas = [], placeholder = 'Selecione uma conta', required = false }) {
   const [open, setOpen] = useState(false);
@@ -32,11 +33,7 @@ function AccountSelector({ value, onChange, contas = [], placeholder = 'Selecion
         aria-expanded={open}
       >
         <span className="bank-selector-value">
-          {selectedConta && banco ? (
-            <span className="bank-badge" style={{ backgroundColor: banco.cor }}>
-              {banco.abbr}
-            </span>
-          ) : null}
+          {selectedConta && banco ? <BankLogo banco={banco} size={28} /> : null}
           {selectedConta ? (selectedConta.conta_nome || selectedConta.Conta_Nome) : placeholder}
         </span>
         <FaChevronDown className="bank-selector-chevron" />
@@ -60,9 +57,7 @@ function AccountSelector({ value, onChange, contas = [], placeholder = 'Selecion
                 className={`bank-selector-option ${String(value) === String(id) ? 'selected' : ''}`}
                 onClick={() => { onChange(id); setOpen(false); }}
               >
-                <span className="bank-badge" style={{ backgroundColor: b.cor }}>
-                  {b.abbr}
-                </span>
+                <BankLogo banco={b} size={28} />
                 {conta.conta_nome || conta.Conta_Nome}
               </li>
             );

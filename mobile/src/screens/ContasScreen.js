@@ -25,6 +25,7 @@ import { useTheme } from '../context/ThemeContext';
 import Select from '../components/Select';
 import BankSelector from '../components/BankSelector';
 import { getBancoById } from '../utils/banks';
+import BankLogo from '../components/BankLogo';
 
 const tiposConta = ['Conta Corrente', 'Conta Poupança', 'Carteira', 'Cartão de Crédito', 'Investimentos', 'Outros'];
 
@@ -235,11 +236,7 @@ export default function ContasScreen() {
                       <View style={styles.contaNomeRow}>
                         {(() => {
                           const b = getBancoById(conta.conta_banco || conta.Conta_Banco);
-                          return b ? (
-                            <View style={[styles.bankBadge, { backgroundColor: b.cor }]}>
-                              <Text style={styles.bankBadgeText}>{b.abbr}</Text>
-                            </View>
-                          ) : null;
+                          return b ? <BankLogo banco={b} size={28} /> : null;
                         })()}
                         <Text style={[styles.contaNome, { color: colors.text }]}>
                           {conta.conta_nome || conta.Conta_Nome || conta.nome}
