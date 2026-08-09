@@ -24,7 +24,10 @@ const ThemeContext = createContext({
 });
 
 export function ThemeProvider({ children }) {
-  const systemScheme = useColorScheme();
+  const hookScheme = useColorScheme();
+  const [appearanceScheme, setAppearanceScheme] = useState(
+    () => (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light')
+  );
   const [preference, setPreferenceState] = useState(/** @type {ThemePreference} */ ('system'));
   const [ready, setReady] = useState(false);
 
@@ -47,8 +50,17 @@ export function ThemeProvider({ children }) {
     };
   }, []);
 
-  const colorScheme =
-    preference === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : preference;
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setAppearanceScheme(colorScheme === 'dark' ? 'dark' : 'light');
+    });
+    return () => sub.remove();
+  }, []);
+
+  const systemScheme =
+    hookScheme === 'dark' || hookScheme === 'light' ? hookScheme : appearanceScheme;
+
+  const colorScheme = preference === 'system' ? systemScheme : preference;
 
   useEffect(() => {
     setActiveColors(getColorsForScheme(colorScheme));

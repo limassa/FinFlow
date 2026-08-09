@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Image,
@@ -8,13 +8,17 @@ import {
   Modal,
   ScrollView,
   Pressable,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useMenu } from '../context/MenuContext';
 import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
+
+const MENU_COLLAPSE_KEY = 'claricash_menu_sections_collapsed';
 
 const MENU_SECTIONS = [
   {
@@ -62,14 +66,50 @@ const MENU_SECTIONS = [
   },
 ];
 
+function getDeepestRouteName(state) {
+  if (!state) return null;
+  const route = state.routes?.[state.index];
+  if (!route) return null;
+  if (route.state) return getDeepestRouteName(route.state);
+  return route.name || null;
+}
+
+function normalizeActiveScreen(name) {
+  if (!name) return null;
+  if (name === 'Configurações') return 'Configuracoes';
+  return name;
+}
+
 export default function AppMenuModal() {
   const { menuVisible, closeMenu, navigationRef } = useMenu();
-  const { user, getUserId } = useAuth();
+  const { user, getUserId, logout } = useAuth();
   const { colors } = useTheme();
   const userId = getUserId();
   const [userFoto, setUserFoto] = useState(null);
+  const [activeScreen, setActiveScreen] = useState(null);
+  const [collapsed, setCollapsed] = useState({});
   const userNome = user?.usuario_nome || user?.nome || '';
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(MENU_COLLAPSE_KEY)
+      .then((raw) => {
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') setCollapsed(parsed);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!menuVisible) return;
+    try {
+      const rootState = navigationRef?.current?.getRootState?.();
+      setActiveScreen(normalizeActiveScreen(getDeepestRouteName(rootState)));
+    } catch {
+      setActiveScreen(null);
+    }
+  }, [menuVisible, navigationRef]);
 
   useEffect(() => {
     if (!userId || !menuVisible) return;
@@ -81,10 +121,17 @@ export default function AppMenuModal() {
       .catch(() => {});
   }, [userId, menuVisible]);
 
+  const toggleSection = useCallback((title) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [title]: !prev[title] };
+      AsyncStorage.setItem(MENU_COLLAPSE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
   const navigateTo = (screen) => {
     closeMenu();
 
-    // No iOS o Modal precisa fechar antes da navegação; caminho raiz: MainTabs > Home > MainMenu
     setTimeout(() => {
       const nav = navigationRef?.current;
       if (!nav) return;
@@ -100,13 +147,16 @@ export default function AppMenuModal() {
         return;
       }
 
-      // Contas / Configurações: mesma tela do rodapé (header JS, ícones soltos)
       if (screen === 'Contas') {
         nav.navigate('MainTabs', { screen: 'Contas' });
         return;
       }
       if (screen === 'Configuracoes') {
         nav.navigate('MainTabs', { screen: 'Configurações' });
+        return;
+      }
+      if (screen === 'Sair') {
+        nav.navigate('MainTabs', { screen: 'Sair' });
         return;
       }
 
@@ -118,6 +168,16 @@ export default function AppMenuModal() {
         },
       });
     }, 150);
+  };
+
+  const handleSair = () => {
+    closeMenu();
+    setTimeout(() => {
+      Alert.alert('Sair', 'Deseja realmente sair?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sair', style: 'destructive', onPress: () => logout() },
+      ]);
+    }, 180);
   };
 
   const abrirConfiguracoes = () => {
@@ -151,25 +211,72 @@ export default function AppMenuModal() {
           </View>
 
           <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
-            {MENU_SECTIONS.map((section) => (
-              <View key={section.title} style={styles.section}>
-                <Text style={styles.sectionTitle}>
-                  {section.emoji} {section.title}
-                </Text>
-                {section.items.map((item) => (
+            {MENU_SECTIONS.map((section) => {
+              const isCollapsed = !!collapsed[section.title];
+              return (
+                <View key={section.title} style={styles.section}>
                   <TouchableOpacity
-                    key={item.screen}
-                    style={styles.item}
-                    onPress={() => navigateTo(item.screen)}
+                    style={styles.sectionHeader}
+                    onPress={() => toggleSection(section.title)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name={item.icon} size={22} color={colors.primary} />
-                    <Text style={styles.itemLabel}>{item.label}</Text>
+                    <Text style={styles.sectionTitle}>
+                      {section.emoji} {section.title}
+                    </Text>
+                    <Ionicons
+                      name={isCollapsed ? 'chevron-forward' : 'chevron-down'}
+                      size={16}
+                      color={colors.textSecondary}
+                    />
                   </TouchableOpacity>
-                ))}
-              </View>
-            ))}
+                  {!isCollapsed &&
+                    section.items.map((item) => {
+                      const active = activeScreen === item.screen;
+                      return (
+                        <TouchableOpacity
+                          key={item.screen}
+                          style={[styles.item, active && styles.itemActive]}
+                          onPress={() => navigateTo(item.screen)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={item.icon}
+                            size={22}
+                            color={active ? '#fff' : colors.primary}
+                          />
+                          <Text style={[styles.itemLabel, active && styles.itemLabelActive]}>
+                            {item.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </View>
+              );
+            })}
           </ScrollView>
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.item, styles.sairItem, activeScreen === 'Sair' && styles.itemActive]}
+              onPress={handleSair}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={activeScreen === 'Sair' ? '#fff' : colors.error}
+              />
+              <Text
+                style={[
+                  styles.itemLabel,
+                  styles.sairLabel,
+                  activeScreen === 'Sair' && styles.itemLabelActive,
+                ]}
+              >
+                Sair
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -230,16 +337,21 @@ function createStyles(colors) {
       flex: 1,
     },
     section: {
-      paddingTop: 12,
+      paddingTop: 8,
       paddingBottom: 4,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 8,
     },
     sectionTitle: {
       fontSize: 12,
       fontWeight: '700',
       letterSpacing: 0.6,
       color: colors.textSecondary,
-      paddingHorizontal: 20,
-      paddingBottom: 6,
       textTransform: 'uppercase',
     },
     item: {
@@ -251,9 +363,30 @@ function createStyles(colors) {
       borderBottomColor: colors.border,
       gap: 14,
     },
+    itemActive: {
+      backgroundColor: colors.primary,
+      borderBottomColor: 'transparent',
+    },
     itemLabel: {
       fontSize: 16,
       color: colors.text,
+    },
+    itemLabelActive: {
+      color: '#fff',
+      fontWeight: '600',
+    },
+    footer: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      paddingBottom: 20,
+    },
+    sairItem: {
+      borderBottomWidth: 0,
+      marginTop: 4,
+    },
+    sairLabel: {
+      color: colors.error,
+      fontWeight: '600',
     },
   });
 }

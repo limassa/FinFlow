@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useOffline } from '../context/OfflineContext';
 import { API_ENDPOINTS } from '../config/api';
-import { colors } from '../theme/theme';
 import { formatarTelefone, removerFormatacaoTelefone } from '../utils/formatters';
 import TimePicker from '../components/TimePicker';
 import { syncDespesasNaoPagasNotifications } from '../services/despesasNotifications';
@@ -31,6 +30,7 @@ export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
   const { user, logout, getUserId } = useAuth();
   const { preference, setPreference, colors: themeColors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const { enabled: offlineEnabled, setEnabled: setOfflineEnabled, lastSyncedAt, clearCache, isOnline } = useOffline();
   const userId = getUserId();
   
@@ -473,8 +473,8 @@ export default function ConfiguracoesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
@@ -491,7 +491,7 @@ export default function ConfiguracoesScreen() {
             <Ionicons 
               name={activeTab === 'perfil' ? 'person' : 'person-outline'} 
               size={20} 
-              color={activeTab === 'perfil' ? '#fff' : colors.textSecondary} 
+              color={activeTab === 'perfil' ? '#fff' : themeColors.textSecondary} 
             />
             <Text style={[styles.tabText, activeTab === 'perfil' && styles.tabTextActive]}>
               Perfil
@@ -505,7 +505,7 @@ export default function ConfiguracoesScreen() {
             <Ionicons 
               name={activeTab === 'lembretes' ? 'notifications' : 'notifications-outline'} 
               size={20} 
-              color={activeTab === 'lembretes' ? '#fff' : colors.textSecondary} 
+              color={activeTab === 'lembretes' ? '#fff' : themeColors.textSecondary} 
             />
             <Text style={[styles.tabText, activeTab === 'lembretes' && styles.tabTextActive]}>
               Notificações
@@ -519,7 +519,7 @@ export default function ConfiguracoesScreen() {
             <Ionicons 
               name={activeTab === 'privacidade' ? 'shield' : 'shield-outline'} 
               size={20} 
-              color={activeTab === 'privacidade' ? '#fff' : colors.textSecondary} 
+              color={activeTab === 'privacidade' ? '#fff' : themeColors.textSecondary} 
             />
             <Text style={[styles.tabText, activeTab === 'privacidade' && styles.tabTextActive]}>
               Privacidade
@@ -581,7 +581,7 @@ export default function ConfiguracoesScreen() {
                     <Image source={{ uri: userFoto.startsWith('data:') ? userFoto : `data:image/jpeg;base64,${userFoto}` }} style={styles.fotoImage} resizeMode="cover" />
                   ) : (
                     <View style={styles.fotoPlaceholder}>
-                      <Ionicons name="person" size={48} color={colors.textSecondary} />
+                      <Ionicons name="person" size={48} color={themeColors.textSecondary} />
                     </View>
                   )}
                   <View style={styles.fotoOverlay}>
@@ -652,7 +652,7 @@ export default function ConfiguracoesScreen() {
                     <Ionicons 
                       name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
                       size={24} 
-                      color={colors.textSecondary} 
+                      color={themeColors.textSecondary} 
                     />
                   </TouchableOpacity>
                 </View>
@@ -832,7 +832,7 @@ export default function ConfiguracoesScreen() {
                 <Text style={styles.helperText}>Ainda não há dados em cache.</Text>
               )}
               <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: colors.textSecondary, marginBottom: 24 }]}
+                style={[styles.saveButton, { backgroundColor: themeColors.textSecondary, marginBottom: 24 }]}
                 onPress={() => {
                   Alert.alert(
                     'Limpar cache',
@@ -861,24 +861,24 @@ export default function ConfiguracoesScreen() {
                 style={styles.privacyPolicyLink}
                 onPress={() => Linking.openURL('https://claricash.com.br/privacy-policy')}
               >
-                <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+                <Ionicons name="shield-checkmark-outline" size={22} color={themeColors.primary} />
                 <View style={styles.privacyPolicyLinkText}>
                   <Text style={styles.privacyPolicyLinkTitle}>Política de Privacidade</Text>
                   <Text style={styles.privacyPolicyLinkSubtitle}>Leia nossa política de privacidade.</Text>
                 </View>
-                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+                <Ionicons name="open-outline" size={20} color={themeColors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.privacyPolicyLink}
                 onPress={() => Linking.openURL('https://claricash.com.br/terms-of-use')}
               >
-                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                <Ionicons name="document-text-outline" size={22} color={themeColors.primary} />
                 <View style={styles.privacyPolicyLinkText}>
                   <Text style={styles.privacyPolicyLinkTitle}>Termos de Uso</Text>
                   <Text style={styles.privacyPolicyLinkSubtitle}>Leia os termos de uso do Claricash.</Text>
                 </View>
-                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+                <Ionicons name="open-outline" size={20} color={themeColors.textSecondary} />
               </TouchableOpacity>
 
               <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Experiência e melhorias</Text>
@@ -922,7 +922,7 @@ export default function ConfiguracoesScreen() {
                 <Text style={styles.saveButtonText}>Salvar preferências</Text>
               </TouchableOpacity>
 
-              <Text style={[styles.sectionTitle, { marginTop: 24, color: colors.error }]}>Seus dados</Text>
+              <Text style={[styles.sectionTitle, { marginTop: 24, color: themeColors.error }]}>Seus dados</Text>
               <Text style={styles.helperText}>
                 Exclui sua conta e os dados associados, observadas as hipóteses legais de conservação.
               </Text>
@@ -930,16 +930,16 @@ export default function ConfiguracoesScreen() {
                 style={[styles.privacyPolicyLink, { marginTop: 8 }]}
                 onPress={() => Linking.openURL('https://claricash.com.br/account-deletion-policy')}
               >
-                <Ionicons name="document-outline" size={22} color={colors.primary} />
+                <Ionicons name="document-outline" size={22} color={themeColors.primary} />
                 <View style={styles.privacyPolicyLinkText}>
                   <Text style={styles.privacyPolicyLinkTitle}>Política de Exclusão de Conta e Dados</Text>
                   <Text style={styles.privacyPolicyLinkSubtitle}>Saiba o que acontece ao excluir</Text>
                 </View>
-                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+                <Ionicons name="open-outline" size={20} color={themeColors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: colors.error, marginTop: 12 }]}
+                style={[styles.saveButton, { backgroundColor: themeColors.error, marginTop: 12 }]}
                 onPress={handleExcluirConta}
               >
                 <Ionicons name="trash-outline" size={20} color="#fff" />
@@ -957,7 +957,7 @@ export default function ConfiguracoesScreen() {
         >
           <View style={styles.excluirModalOverlay}>
             <View style={[styles.excluirModalCard, { backgroundColor: themeColors.card || '#fff' }]}>
-              <Text style={[styles.excluirModalTitle, { color: colors.error }]}>
+              <Text style={[styles.excluirModalTitle, { color: themeColors.error }]}>
                 🔴 Confirmação final
               </Text>
               <Text style={[styles.helperText, { marginBottom: 12 }]}>
@@ -972,7 +972,7 @@ export default function ConfiguracoesScreen() {
               />
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
-                  style={[styles.saveButton, { flex: 1, backgroundColor: colors.textSecondary }]}
+                  style={[styles.saveButton, { flex: 1, backgroundColor: themeColors.textSecondary }]}
                   onPress={() => {
                     setShowExcluirConfirm(false);
                     setExcluirTexto('');
@@ -981,7 +981,7 @@ export default function ConfiguracoesScreen() {
                   <Text style={styles.saveButtonText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.saveButton, { flex: 1, backgroundColor: colors.error }]}
+                  style={[styles.saveButton, { flex: 1, backgroundColor: themeColors.error }]}
                   onPress={handleExcluirContaDefinitivo}
                   disabled={loading}
                 >
@@ -997,7 +997,7 @@ export default function ConfiguracoesScreen() {
         {/* Botão de Logout */}
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color={colors.error} />
+            <Ionicons name="log-out-outline" size={24} color={themeColors.error} />
             <Text style={styles.logoutText}>Sair</Text>
           </TouchableOpacity>
         </View>
@@ -1015,7 +1015,8 @@ export default function ConfiguracoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1030,7 +1031,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card || colors.surface,
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 12,
@@ -1066,7 +1067,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card || colors.surface,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -1250,7 +1251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card || colors.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -1292,3 +1293,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+}

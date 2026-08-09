@@ -370,6 +370,7 @@ export default function HomeScreen() {
   };
 
   const saldoMes = totais.receitasMes - totais.despesasMes;
+  const semMovimentacaoMes = totais.receitasMes === 0 && totais.despesasMes === 0;
   const saldoOrcamento = orcamento
     ? orcamento.totalOrcado - orcamento.totalRealizado
     : null;
@@ -553,39 +554,68 @@ export default function HomeScreen() {
 
         <View style={styles.summaryContainer}>
           <Text style={styles.summaryTitle}>Resumo do Mês</Text>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Receitas do Mês:</Text>
-            <Text style={[styles.summaryValue, styles.summaryPositive]}>
-              {formatarValor(totais.receitasMes)}
-            </Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Despesas do Mês:</Text>
-            <Text style={[styles.summaryValue, styles.summaryNegative]}>
-              {formatarValor(totais.despesasMes)}
-            </Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Saldo do Mês:</Text>
-            <Text
-              style={[
-                styles.summaryValue,
-                saldoMes >= 0 ? styles.summaryPositive : styles.summaryNegative,
-              ]}
-            >
-              {formatarValor(saldoMes)}
-            </Text>
-          </View>
-          <Text
-            style={[
-              styles.summaryMessage,
-              saldoMes >= 0 ? styles.summaryPositive : styles.summaryNegative,
-            ]}
-          >
-            {saldoMes >= 0
-              ? `Você economizou ${formatarValor(saldoMes)} este mês. Continue assim!`
-              : `Você gastou ${formatarValor(Math.abs(saldoMes))} acima do orçamento.`}
-          </Text>
+          {semMovimentacaoMes ? (
+            <View>
+              <Text style={styles.summaryEmptyText}>
+                Você ainda não registrou movimentações neste mês. Que tal começar adicionando sua
+                primeira receita ou despesa?
+              </Text>
+              <View style={styles.summaryEmptyActions}>
+                <TouchableOpacity
+                  style={[styles.summaryCtaBtn, styles.summaryCtaReceita]}
+                  onPress={() => navigation.navigate('Receita')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="cash-outline" size={18} color="#059669" />
+                  <Text style={[styles.summaryCtaText, styles.summaryCtaTextReceita]}>+ Receita</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.summaryCtaBtn, styles.summaryCtaDespesa]}
+                  onPress={() => navigation.navigate('Despesa')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="card-outline" size={18} color="#DC2626" />
+                  <Text style={[styles.summaryCtaText, styles.summaryCtaTextDespesa]}>+ Despesa</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Receitas do Mês:</Text>
+                <Text style={[styles.summaryValue, styles.summaryPositive]}>
+                  {formatarValor(totais.receitasMes)}
+                </Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Despesas do Mês:</Text>
+                <Text style={[styles.summaryValue, styles.summaryNegative]}>
+                  {formatarValor(totais.despesasMes)}
+                </Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Saldo do Mês:</Text>
+                <Text
+                  style={[
+                    styles.summaryValue,
+                    saldoMes >= 0 ? styles.summaryPositive : styles.summaryNegative,
+                  ]}
+                >
+                  {formatarValor(saldoMes)}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.summaryMessage,
+                  saldoMes >= 0 ? styles.summaryPositive : styles.summaryNegative,
+                ]}
+              >
+                {saldoMes >= 0
+                  ? `Você economizou ${formatarValor(saldoMes)} este mês. Continue assim!`
+                  : `Você gastou ${formatarValor(Math.abs(saldoMes))} acima do orçamento.`}
+              </Text>
+            </>
+          )}
         </View>
 
         <TouchableOpacity
@@ -891,6 +921,45 @@ function createStyles(colors, isDark) {
       fontSize: 14,
       fontWeight: '600',
       lineHeight: 20,
+    },
+    summaryEmptyText: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.textSecondary,
+      marginBottom: 14,
+    },
+    summaryEmptyActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    summaryCtaBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+    },
+    summaryCtaReceita: {
+      borderColor: 'rgba(5, 150, 105, 0.25)',
+      backgroundColor: isDark ? 'rgba(5, 150, 105, 0.12)' : '#fff',
+    },
+    summaryCtaDespesa: {
+      borderColor: 'rgba(220, 38, 38, 0.25)',
+      backgroundColor: isDark ? 'rgba(220, 38, 38, 0.12)' : '#fff',
+    },
+    summaryCtaText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    summaryCtaTextReceita: {
+      color: '#059669',
+    },
+    summaryCtaTextDespesa: {
+      color: '#DC2626',
     },
     dashboardCard: {
       flexDirection: 'row',
