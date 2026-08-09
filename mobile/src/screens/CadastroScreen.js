@@ -260,6 +260,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    color: colors.text,
   },
   button: {
     backgroundColor: colors.primary,

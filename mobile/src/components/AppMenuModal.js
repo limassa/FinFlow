@@ -220,9 +220,12 @@ export default function AppMenuModal() {
                     onPress={() => toggleSection(section.title)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.sectionTitle}>
-                      {section.emoji} {section.title}
-                    </Text>
+                    <View style={styles.sectionTitleRow}>
+                      <Text style={styles.sectionEmoji}>{section.emoji}</Text>
+                      <Text style={styles.sectionTitle} numberOfLines={1}>
+                        {section.title}
+                      </Text>
+                    </View>
                     <Ionicons
                       name={isCollapsed ? 'chevron-forward' : 'chevron-down'}
                       size={16}
@@ -346,8 +349,21 @@ function createStyles(colors) {
       justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingVertical: 8,
+      gap: 8,
+    },
+    sectionTitleRow: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      minWidth: 0,
+    },
+    sectionEmoji: {
+      fontSize: 13,
+      lineHeight: 16,
     },
     sectionTitle: {
+      flexShrink: 1,
       fontSize: 12,
       fontWeight: '700',
       letterSpacing: 0.6,

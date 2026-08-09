@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme/theme';
-import StoreBadges from '../components/StoreBadges';
+import { useTheme } from '../context/ThemeContext';
 
 const FEATURES = [
   { icon: 'cash-outline', label: 'Controle de Receitas' },
@@ -30,6 +29,8 @@ export default function LoginScreen({ navigation }) {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleLogin = async () => {
     if (!email || !senha) {
@@ -52,7 +53,6 @@ export default function LoginScreen({ navigation }) {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Logo do App */}
         <View style={styles.logoContainer}>
           <Image
             source={require('../../assets/logo_nova.png')}
@@ -73,6 +73,7 @@ export default function LoginScreen({ navigation }) {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            selectionColor={colors.primary}
           />
 
           <View style={styles.passwordWrapper}>
@@ -84,6 +85,7 @@ export default function LoginScreen({ navigation }) {
               onChangeText={setSenha}
               secureTextEntry={!mostrarSenha}
               autoCapitalize="none"
+              selectionColor={colors.primary}
             />
             <TouchableOpacity
               style={styles.eyeButton}
@@ -137,9 +139,6 @@ export default function LoginScreen({ navigation }) {
             ))}
           </View>
 
-          <Text style={styles.storeLabel}>Baixe o app Claricash</Text>
-          <StoreBadges />
-
           <TouchableOpacity
             style={styles.developedBy}
             onPress={() => Linking.openURL('https://lizsoftware.com.br')}
@@ -154,147 +153,144 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-    paddingBottom: 0,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 20,
-  },
-  logoImage: {
-    width: 120,
-    height: 120,
-  },
-  logoTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.primary,
-    marginTop: 16,
-  },
-  logoSubtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  formContainer: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  passwordWrapper: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  passwordInput: {
-    marginBottom: 0,
-    paddingRight: 48,
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 12,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: colors.primary,
-    fontSize: 14,
-  },
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
-    marginTop: -8,
-  },
-  forgotPasswordText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  blueFooter: {
-    marginTop: 24,
-    marginHorizontal: -20,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 36,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-  },
-  features: {
-    width: '100%',
-    marginBottom: 20,
-    gap: 10,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  featureText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  storeLabel: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  developedBy: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  developedByLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: 6,
-  },
-  developedByLink: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '700',
-  },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: 20,
+      paddingBottom: 0,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 40,
+      marginTop: 20,
+    },
+    logoImage: {
+      width: 120,
+      height: 120,
+    },
+    logoTitle: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: colors.primary,
+      marginTop: 16,
+    },
+    logoSubtitle: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    formContainer: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 24,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    input: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      fontSize: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      color: colors.text,
+    },
+    passwordWrapper: {
+      position: 'relative',
+      marginBottom: 16,
+    },
+    passwordInput: {
+      marginBottom: 0,
+      paddingRight: 48,
+    },
+    eyeButton: {
+      position: 'absolute',
+      right: 12,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
+    },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    buttonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    linkButton: {
+      marginTop: 16,
+      alignItems: 'center',
+    },
+    linkText: {
+      color: colors.primary,
+      fontSize: 14,
+    },
+    forgotPasswordButton: {
+      alignSelf: 'flex-end',
+      marginBottom: 16,
+      marginTop: -8,
+    },
+    forgotPasswordText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    blueFooter: {
+      marginTop: 24,
+      marginHorizontal: -20,
+      paddingHorizontal: 24,
+      paddingTop: 28,
+      paddingBottom: 36,
+      backgroundColor: '#2563EB',
+      alignItems: 'center',
+    },
+    features: {
+      width: '100%',
+      marginBottom: 8,
+      gap: 10,
+    },
+    featureItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    featureText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    developedBy: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    developedByLabel: {
+      fontSize: 12,
+      color: 'rgba(255,255,255,0.9)',
+      marginBottom: 6,
+    },
+    developedByLink: {
+      fontSize: 14,
+      color: '#fff',
+      fontWeight: '700',
+    },
+  });
+}
