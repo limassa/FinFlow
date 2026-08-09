@@ -1274,6 +1274,7 @@ const userRepository = {
       acessosUltimos90Dias: 0,
       usuariosQueAcessaram90Dias: 0,
       ultimosAcessos: [],
+      listRevision: 3,
     };
 
     try {
