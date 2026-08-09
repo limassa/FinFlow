@@ -1322,10 +1322,32 @@ const userRepository = {
       }
     }
 
-    // Lista a partir do log (fonte da verdade do card 90 dias).
-    // Não depende de Usuario_UltimoAcesso — se a coluna faltar, a query antiga falhava
-    // e o fallback ficava vazio mesmo com acessos no log.
+    // Produção real: log em "Usuario_Acesso_Log" (PascalCase) e usuários em usuario (minúsculo).
+    // JOIN com "Usuario" falha (relação não existe) e deixava o grid vazio.
     const listQueries = [
+      `
+        SELECT
+          t.id,
+          t.nome,
+          t.email,
+          t.ultimo_acesso,
+          t.ativo,
+          t.origem
+        FROM (
+          SELECT DISTINCT ON (l."Usuario_Id")
+            l."Usuario_Id" as id,
+            u.usuario_nome as nome,
+            u.usuario_email as email,
+            l."Acesso_Data" as ultimo_acesso,
+            COALESCE(u.usuario_ativo, TRUE) as ativo,
+            l."Acesso_Origem" as origem
+          FROM "Usuario_Acesso_Log" l
+          LEFT JOIN usuario u ON u.usuario_id = l."Usuario_Id"
+          ORDER BY l."Usuario_Id", l."Acesso_Data" DESC
+        ) t
+        ORDER BY t.ultimo_acesso DESC NULLS LAST
+        LIMIT 50
+      `,
       `
         SELECT
           t.id,
@@ -1374,35 +1396,15 @@ const userRepository = {
       `,
       `
         SELECT
-          u."Usuario_Id" as id,
-          u."Usuario_Nome" as nome,
-          u."Usuario_Email" as email,
-          COALESCE(MAX(l."Acesso_Data"), u."Usuario_UltimoAcesso") as ultimo_acesso,
-          u."Usuario_Ativo" as ativo,
-          (
-            SELECT l2."Acesso_Origem"
-            FROM "Usuario_Acesso_Log" l2
-            WHERE l2."Usuario_Id" = u."Usuario_Id"
-            ORDER BY l2."Acesso_Data" DESC
-            LIMIT 1
-          ) as origem
-        FROM "Usuario" u
-        INNER JOIN "Usuario_Acesso_Log" l ON l."Usuario_Id" = u."Usuario_Id"
-        GROUP BY u."Usuario_Id", u."Usuario_Nome", u."Usuario_Email", u."Usuario_Ativo", u."Usuario_UltimoAcesso"
+          l."Usuario_Id" as id,
+          NULL as nome,
+          NULL as email,
+          MAX(l."Acesso_Data") as ultimo_acesso,
+          TRUE as ativo,
+          (ARRAY_AGG(l."Acesso_Origem" ORDER BY l."Acesso_Data" DESC))[1] as origem
+        FROM "Usuario_Acesso_Log" l
+        GROUP BY l."Usuario_Id"
         ORDER BY ultimo_acesso DESC NULLS LAST
-        LIMIT 50
-      `,
-      `
-        SELECT
-          u."Usuario_Id" as id,
-          u."Usuario_Nome" as nome,
-          u."Usuario_Email" as email,
-          u."Usuario_UltimoAcesso" as ultimo_acesso,
-          u."Usuario_Ativo" as ativo,
-          NULL as origem
-        FROM "Usuario" u
-        WHERE u."Usuario_UltimoAcesso" IS NOT NULL
-        ORDER BY u."Usuario_UltimoAcesso" DESC NULLS LAST
         LIMIT 50
       `,
     ];
