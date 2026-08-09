@@ -2,7 +2,7 @@
   "expo": {
     "name": "Claricash",
     "slug": "finflow-mobile",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -33,9 +33,9 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0",
             "ndkVersion": "27.1.12297006",
             "useLegacyPackaging": false
           },
