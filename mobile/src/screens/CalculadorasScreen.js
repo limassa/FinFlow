@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../theme/theme';
 
 const calculadoras = [
   {
@@ -43,6 +43,8 @@ const calculadoras = [
 
 export default function CalculadorasScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -83,7 +85,8 @@ export default function CalculadorasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -133,3 +136,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 });
+}

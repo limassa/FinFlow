@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor, formatarData } from '../utils/formatters';
-import { colors } from '../theme/theme';
 
 // Configurar locale para português
 LocaleConfig.locales['pt'] = {
@@ -42,25 +42,27 @@ LocaleConfig.defaultLocale = 'pt';
 export default function CalendarioScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const userId = getUserId();
   const [loading, setLoading] = useState(true);
-  
+  const [receitas, setReceitas] = useState([]);
+  const [despesas, setDespesas] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [markedDates, setMarkedDates] = useState({});
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       title: 'Calendário',
     });
   }, [navigation]);
-  const [receitas, setReceitas] = useState([]);
-  const [despesas, setDespesas] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [markedDates, setMarkedDates] = useState({});
 
   useEffect(() => {
     if (userId) {
       fetchData();
     }
-  }, [userId]);
+  }, [userId, colors.primary, colors.success, colors.error]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -164,36 +166,37 @@ export default function CalendarioScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.calendarContainer}>
           <Calendar
+            key={colors.background}
             current={selectedDate}
             onDayPress={onDayPress}
             markedDates={markedDates}
             markingType="multi-dot"
             theme={{
-              backgroundColor: '#fff',
-              calendarBackground: '#fff',
-              textSectionTitleColor: colors.text,
+              backgroundColor: colors.card,
+              calendarBackground: colors.card,
+              textSectionTitleColor: colors.textSecondary,
               selectedDayBackgroundColor: colors.primary,
               selectedDayTextColor: '#fff',
               todayTextColor: colors.primary,
               dayTextColor: colors.text,
-              textDisabledColor: colors.textSecondary,
+              textDisabledColor: colors.placeholder,
               dotColor: colors.primary,
               selectedDotColor: '#fff',
               arrowColor: colors.primary,
               monthTextColor: colors.text,
-              textDayFontWeight: '400',
+              textDayFontWeight: '600',
               textMonthFontWeight: '700',
               textDayHeaderFontWeight: '600',
               textDayFontSize: 16,
               textMonthFontSize: 18,
-              textDayHeaderFontSize: 14
+              textDayHeaderFontSize: 13,
             }}
             locale="pt"
           />
           
           <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#4caf50' }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
               <Text style={styles.legendText}>Receitas</Text>
             </View>
             <View style={styles.legendItem}>
@@ -256,7 +259,8 @@ export default function CalendarioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   calendarContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     margin: 16,
     borderRadius: 12,
     padding: 8,
@@ -329,7 +333,7 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -370,4 +374,4 @@ const styles = StyleSheet.create({
     color: colors.error,
   },
 });
-
+}

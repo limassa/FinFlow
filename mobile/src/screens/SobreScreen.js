@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,9 @@ import {
   Alert,
   Image
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../theme/theme';
 import StoreBadges from '../components/StoreBadges';
 
 const FEATURES = [
@@ -27,6 +27,8 @@ const FEATURES = [
 
 export default function SobreScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -174,10 +176,11 @@ export default function SobreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
@@ -248,7 +251,7 @@ const styles = StyleSheet.create({
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -279,3 +282,4 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
+}

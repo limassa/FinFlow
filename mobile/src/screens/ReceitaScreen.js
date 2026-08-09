@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,6 @@ import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPri
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
-import { colors } from '../theme/theme';
 import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
 import SelectWithIcons from '../components/SelectWithIcons';
@@ -41,6 +40,7 @@ export default function ReceitaScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { isOnline, saveCache, loadCache } = useOffline();
   const userId = getUserId();
   const [receitas, setReceitas] = useState([]);
@@ -1166,7 +1166,8 @@ export default function ReceitaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1203,7 +1204,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: 90,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -1369,17 +1370,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#e8f5e9',
+    backgroundColor: colors.success + '22',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#a5d6a7',
+    borderColor: colors.success + '66',
   },
   bulkCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2e7d32',
+    color: colors.success,
   },
   bulkDeleteButton: {
     flexDirection: 'row',
@@ -1396,10 +1397,10 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   groupHeaderNivel1: {
-    backgroundColor: '#e8f4fd',
+    backgroundColor: colors.primary + '22',
   },
   groupHeaderSubnivel: {
-    backgroundColor: '#f5f9fc',
+    backgroundColor: colors.surface,
     paddingLeft: 20,
   },
   groupHeaderTitleRow: {
@@ -1415,7 +1416,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#e8ecf4',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginTop: 12,
@@ -1447,9 +1450,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#f5f9fc',
+    backgroundColor: colors.surface,
     borderRadius: 6,
     marginBottom: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   subGroupText: {
     fontSize: 14,
@@ -1489,7 +1494,7 @@ const styles = StyleSheet.create({
   receitaCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -1683,7 +1688,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: colors.header,
     paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
@@ -1705,4 +1710,4 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
-
+}

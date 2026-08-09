@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
-import { colors } from '../theme/theme';
 import {
   ICONES_DISPONIVEIS,
   CORES_DISPONIVEIS,
@@ -25,6 +25,8 @@ import {
 export default function CategoriasScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const userId = getUserId();
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -334,7 +336,8 @@ export default function CategoriasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   toggleRow: { flexDirection: 'row', padding: 16, gap: 12 },
   toggleBtn: {
@@ -366,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
@@ -393,7 +396,7 @@ const styles = StyleSheet.create({
   modalScroll: { flex: 1 },
   modalScrollContent: { padding: 24, paddingBottom: 40 },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
   },
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
   },
   iconeBtnSelected: {
     borderColor: colors.primary,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: colors.primary + '22',
   },
   coresGrid: {
     flexDirection: 'row',
@@ -454,7 +457,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   corBtnSelected: {
-    borderColor: '#000',
+    borderColor: colors.text,
     borderWidth: 3,
   },
   previewRow: { marginBottom: 20 },
@@ -487,3 +490,4 @@ const styles = StyleSheet.create({
   },
   modalBtnSaveText: { color: '#fff', fontWeight: '600' },
 });
+}

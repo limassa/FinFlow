@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { BANCOS, getBancoById } from '../utils/banks';
 import BankLogo from './BankLogo';
 
 export default function BankSelector({ value, onChange, placeholder = 'Selecione o banco', label }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [modalVisible, setModalVisible] = useState(false);
 
   const selectedBanco = value ? getBancoById(value) : null;
@@ -82,7 +84,8 @@ export default function BankSelector({ value, onChange, placeholder = 'Selecione
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
@@ -167,3 +170,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+}

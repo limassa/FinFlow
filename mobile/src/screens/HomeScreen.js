@@ -634,18 +634,20 @@ export default function HomeScreen() {
 
         <View style={styles.actionsContainer}>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.summaryCtaBtn, styles.summaryCtaReceita, styles.actionButton]}
             onPress={() => navigation.navigate('Receita')}
+            activeOpacity={0.85}
           >
-            <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-            <Text style={styles.actionButtonText}>Nova Receita</Text>
+            <Ionicons name="cash-outline" size={18} color="#059669" />
+            <Text style={[styles.summaryCtaText, styles.summaryCtaTextReceita]}>+ Receita</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.summaryCtaBtn, styles.summaryCtaDespesa, styles.actionButton]}
             onPress={() => navigation.navigate('Despesa')}
+            activeOpacity={0.85}
           >
-            <Ionicons name="remove-circle-outline" size={24} color={colors.error} />
-            <Text style={styles.actionButtonText}>Nova Despesa</Text>
+            <Ionicons name="card-outline" size={18} color="#DC2626" />
+            <Text style={[styles.summaryCtaText, styles.summaryCtaTextDespesa]}>+ Despesa</Text>
           </TouchableOpacity>
         </View>
 
@@ -999,20 +1001,7 @@ function createStyles(colors, isDark) {
     },
     actionButton: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.card,
-      padding: 16,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    actionButtonText: {
-      marginLeft: 8,
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
     },
     versionContainer: {
       alignItems: 'center',

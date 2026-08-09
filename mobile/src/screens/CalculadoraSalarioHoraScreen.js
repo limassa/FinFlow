@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatarValor } from '../utils/formatters';
-import { colors } from '../theme/theme';
 
 const parseCurrency = (value) => {
   if (!value) return 0;
@@ -35,6 +35,8 @@ export default function CalculadoraSalarioHoraScreen() {
   const [salarioMensal, setSalarioMensal] = useState('');
   const [horasPorMes, setHorasPorMes] = useState('220');
   const [resultado, setResultado] = useState(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   React.useEffect(() => {
     if (resultado && scrollRef.current) {
@@ -139,7 +141,8 @@ export default function CalculadoraSalarioHoraScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     marginTop: 24,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
@@ -233,3 +236,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+}

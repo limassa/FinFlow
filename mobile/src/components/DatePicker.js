@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform, Modal } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { formatarData } from '../utils/formatters';
 
 export default function DatePicker({ value, onChange, placeholder = 'Selecione a data', mode = 'date' }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [show, setShow] = useState(false);
   const [tempDate, setTempDate] = useState(null);
 
@@ -99,7 +101,8 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   input: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -151,3 +154,4 @@ const styles = StyleSheet.create({
     height: 200,
   },
 });
+}

@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,27 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatarValor } from '../utils/formatters';
-import { colors } from '../theme/theme';
 import { Picker } from '@react-native-picker/picker';
 
 export default function CalculadoraRetiradasScreen() {
   const navigation = useNavigation();
   const scrollRef = React.useRef(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const [formData, setFormData] = useState({
+    valorInicial: '',
+    retiradaMensal: '',
+    taxaJuros: '',
+    tipoTaxa: 'anual',
+    tempoRetirada: '',
+    tipoTempo: 'anos'
+  });
+  const [resultado, setResultado] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
     if (resultado && scrollRef.current) {
@@ -31,16 +43,6 @@ export default function CalculadoraRetiradasScreen() {
       title: 'Calculadora de Retiradas',
     });
   }, [navigation]);
-  const [formData, setFormData] = useState({
-    valorInicial: '',
-    retiradaMensal: '',
-    taxaJuros: '',
-    tipoTaxa: 'anual',
-    tempoRetirada: '',
-    tipoTempo: 'anos'
-  });
-  const [resultado, setResultado] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const parseCurrency = (value) => {
     if (!value) return 0;
@@ -307,10 +309,11 @@ export default function CalculadoraRetiradasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   form: {
     padding: 20,
@@ -321,21 +324,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: colors.text,
   },
   pickerContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     marginTop: 8,
   },
@@ -366,11 +370,11 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 16,
   },
   resultCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
@@ -379,31 +383,31 @@ const styles = StyleSheet.create({
   },
   resultLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   resultValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   resultPositive: {
     color: colors.success,
   },
   infoCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 8,
     marginTop: 8,
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   infoLabel: {
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
 });
-
+}

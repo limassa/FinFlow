@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
-import { colors } from '../theme/theme';
 import * as Notifications from 'expo-notifications';
 import { ensureNotificationHandler, cancelEventoNotifications, EVENTO_NOTIFICATION_TYPE } from '../services/despesasNotifications';
 
@@ -95,6 +95,8 @@ async function agendarNotificacoesEventos(eventos) {
 export default function AgendaScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const userId = getUserId();
 
   const [semanaRef, setSemanaRef] = useState(() => {
@@ -349,7 +351,7 @@ export default function AgendaScreen() {
                 value={formEvento.titulo}
                 onChangeText={t => setFormEvento({ ...formEvento, titulo: t })}
                 placeholder="Ex: Reunião, Consulta..."
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.placeholder}
               />
               <Text style={styles.label}>Descrição</Text>
               <TextInput
@@ -357,7 +359,7 @@ export default function AgendaScreen() {
                 value={formEvento.descricao}
                 onChangeText={t => setFormEvento({ ...formEvento, descricao: t })}
                 placeholder="Detalhes do evento..."
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.placeholder}
                 multiline
               />
               <Text style={styles.label}>Data</Text>
@@ -366,7 +368,7 @@ export default function AgendaScreen() {
                 value={formEvento.data}
                 onChangeText={t => setFormEvento({ ...formEvento, data: t })}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.placeholder}
               />
               <View style={styles.row}>
                 <View style={styles.half}>
@@ -376,7 +378,7 @@ export default function AgendaScreen() {
                     value={formEvento.hora_inicio}
                     onChangeText={t => setFormEvento({ ...formEvento, hora_inicio: t })}
                     placeholder="HH:MM"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.placeholder}
                   />
                 </View>
                 <View style={styles.half}>
@@ -386,7 +388,7 @@ export default function AgendaScreen() {
                     value={formEvento.hora_fim}
                     onChangeText={t => setFormEvento({ ...formEvento, hora_fim: t })}
                     placeholder="HH:MM"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.placeholder}
                   />
                 </View>
               </View>
@@ -475,7 +477,8 @@ export default function AgendaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
@@ -518,7 +521,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   diaNumeroWrapToday: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   diaNumero: { fontSize: 12, color: '#fff', fontWeight: '700' },
   diaNumeroToday: { color: colors.primary },
@@ -533,27 +536,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     minHeight: 44,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   horaCell: {
     width: 50,
     justifyContent: 'center',
     paddingLeft: 6,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: colors.surface,
   },
-  horaText: { fontSize: 11, color: '#666' },
+  horaText: { fontSize: 11, color: colors.textSecondary },
   slotCell: {
     flex: 1,
     padding: 4,
     justifyContent: 'center',
     borderLeftWidth: 1,
-    borderLeftColor: '#eee',
+    borderLeftColor: colors.border,
+    backgroundColor: colors.card,
   },
   slotCellToday: {
-    backgroundColor: 'rgba(37, 99, 235, 0.06)',
+    backgroundColor: colors.primary + '18',
   },
   slotCellWithEvents: { justifyContent: 'flex-start' },
-  slotAdd: { fontSize: 16, color: '#ccc', textAlign: 'center' },
+  slotAdd: { fontSize: 16, color: colors.placeholder, textAlign: 'center' },
   eventPill: {
     padding: 4,
     borderRadius: 4,
@@ -568,7 +572,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     maxHeight: '85%',
     width: '100%',
@@ -583,14 +587,16 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
   modalBody: { padding: 20, maxHeight: 400 },
-  label: { fontSize: 12, fontWeight: '600', color: '#333', marginBottom: 6 },
+  label: { fontSize: 12, fontWeight: '600', color: colors.text, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
     marginBottom: 16,
+    backgroundColor: colors.surface,
+    color: colors.text,
   },
   textArea: { minHeight: 60 },
   row: { flexDirection: 'row', gap: 12 },
@@ -601,38 +607,41 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  tipoBtnSelected: { borderWidth: 2, borderColor: '#333' },
+  tipoBtnSelected: { borderWidth: 2, borderColor: colors.text },
   tipoBtnText: { color: '#fff', fontSize: 12 },
   coresRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   corBtn: { width: 32, height: 32, borderRadius: 16 },
-  corBtnSelected: { borderWidth: 2, borderColor: '#333' },
+  corBtnSelected: { borderWidth: 2, borderColor: colors.text },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   checkbox: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  checkboxLabel: { fontSize: 14 },
+  checkboxLabel: { fontSize: 14, color: colors.text },
   lembreteMin: { flex: 1 },
   selectBtn: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 10,
     marginTop: 6,
+    backgroundColor: colors.surface,
   },
-  selectBtnText: { fontSize: 14, color: '#333' },
+  selectBtnText: { fontSize: 14, color: colors.text },
   modalActions: {
     flexDirection: 'row',
     gap: 12,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.border,
   },
   btnCancel: {
     flex: 1,
     padding: 12,
-    backgroundColor: '#e9ecef',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  btnCancelText: { color: '#495057', fontWeight: '600' },
+  btnCancelText: { color: colors.textSecondary, fontWeight: '600' },
   btnSave: {
     flex: 1,
     padding: 12,
@@ -641,3 +650,4 @@ const styles = StyleSheet.create({
   },
   btnSaveText: { color: '#fff', fontWeight: '600' },
 });
+}

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
 
 /**
@@ -21,6 +21,8 @@ export default function SelectWithIcons({
   placeholder = 'Selecione',
   customColors = {},
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [modalVisible, setModalVisible] = useState(false);
 
   const selectedOption = options.find(opt => (typeof opt === 'object' ? opt.value : opt) === value);
@@ -113,7 +115,8 @@ export default function SelectWithIcons({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   input: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -196,3 +199,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+}

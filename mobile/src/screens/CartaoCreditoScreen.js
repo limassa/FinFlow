@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,14 +14,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
-import { colors } from '../theme/theme';
 
 export default function CartaoCreditoScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const userId = getUserId();
   const [cartoes, setCartoes] = useState([]);
   const [compras, setCompras] = useState([]);
@@ -269,7 +271,8 @@ export default function CartaoCreditoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   addBtn: {
     flexDirection: 'row',
@@ -286,7 +289,7 @@ const styles = StyleSheet.create({
   list: { flex: 1, paddingHorizontal: 16 },
   empty: { color: colors.textSecondary, textAlign: 'center', padding: 24 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
@@ -316,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalScroll: { padding: 24, flexGrow: 1, justifyContent: 'center' },
-  modalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24 },
+  modalContent: { backgroundColor: colors.card, borderRadius: 16, padding: 24 },
   modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.text },
   modalLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: colors.text },
   input: {
@@ -326,6 +329,7 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
     color: colors.text,
+    backgroundColor: colors.surface,
     marginBottom: 16,
   },
   modalButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
@@ -346,3 +350,4 @@ const styles = StyleSheet.create({
   },
   modalBtnSaveText: { color: '#fff', fontWeight: '600' },
 });
+}
