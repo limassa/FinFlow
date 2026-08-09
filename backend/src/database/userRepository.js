@@ -1322,8 +1322,56 @@ const userRepository = {
       }
     }
 
-    // Preferir log de acessos; fallback para coluna UltimoAcesso
+    // Lista a partir do log (fonte da verdade do card 90 dias).
+    // Não depende de Usuario_UltimoAcesso — se a coluna faltar, a query antiga falhava
+    // e o fallback ficava vazio mesmo com acessos no log.
     const listQueries = [
+      `
+        SELECT
+          t.id,
+          t.nome,
+          t.email,
+          t.ultimo_acesso,
+          t.ativo,
+          t.origem
+        FROM (
+          SELECT DISTINCT ON (l."Usuario_Id")
+            l."Usuario_Id" as id,
+            u."Usuario_Nome" as nome,
+            u."Usuario_Email" as email,
+            l."Acesso_Data" as ultimo_acesso,
+            COALESCE(u."Usuario_Ativo", TRUE) as ativo,
+            l."Acesso_Origem" as origem
+          FROM "Usuario_Acesso_Log" l
+          LEFT JOIN "Usuario" u ON u."Usuario_Id" = l."Usuario_Id"
+          ORDER BY l."Usuario_Id", l."Acesso_Data" DESC
+        ) t
+        ORDER BY t.ultimo_acesso DESC NULLS LAST
+        LIMIT 50
+      `,
+      `
+        SELECT
+          t.id,
+          t.nome,
+          t.email,
+          t.ultimo_acesso,
+          t.ativo,
+          t.origem
+        FROM (
+          SELECT DISTINCT ON (l.usuario_id)
+            l.usuario_id as id,
+            u.usuario_nome as nome,
+            u.usuario_email as email,
+            l.acesso_data as ultimo_acesso,
+            COALESCE(u.usuario_ativo, TRUE) as ativo,
+            l.acesso_origem as origem
+          FROM usuario_acesso_log l
+          LEFT JOIN usuario u ON u.usuario_id = l.usuario_id
+          ORDER BY l.usuario_id, l.acesso_data DESC
+        ) t
+        ORDER BY t.ultimo_acesso DESC NULLS LAST
+        LIMIT 50
+      `,
       `
         SELECT
           u."Usuario_Id" as id,
@@ -1339,32 +1387,8 @@ const userRepository = {
             LIMIT 1
           ) as origem
         FROM "Usuario" u
-        LEFT JOIN "Usuario_Acesso_Log" l ON l."Usuario_Id" = u."Usuario_Id"
-        WHERE u."Usuario_UltimoAcesso" IS NOT NULL
-           OR EXISTS (SELECT 1 FROM "Usuario_Acesso_Log" lx WHERE lx."Usuario_Id" = u."Usuario_Id")
+        INNER JOIN "Usuario_Acesso_Log" l ON l."Usuario_Id" = u."Usuario_Id"
         GROUP BY u."Usuario_Id", u."Usuario_Nome", u."Usuario_Email", u."Usuario_Ativo", u."Usuario_UltimoAcesso"
-        ORDER BY ultimo_acesso DESC NULLS LAST
-        LIMIT 50
-      `,
-      `
-        SELECT
-          u.usuario_id as id,
-          u.usuario_nome as nome,
-          u.usuario_email as email,
-          COALESCE(MAX(l.acesso_data), u.usuario_ultimoacesso) as ultimo_acesso,
-          u.usuario_ativo as ativo,
-          (
-            SELECT l2.acesso_origem
-            FROM usuario_acesso_log l2
-            WHERE l2.usuario_id = u.usuario_id
-            ORDER BY l2.acesso_data DESC
-            LIMIT 1
-          ) as origem
-        FROM usuario u
-        LEFT JOIN usuario_acesso_log l ON l.usuario_id = u.usuario_id
-        WHERE u.usuario_ultimoacesso IS NOT NULL
-           OR EXISTS (SELECT 1 FROM usuario_acesso_log lx WHERE lx.usuario_id = u.usuario_id)
-        GROUP BY u.usuario_id, u.usuario_nome, u.usuario_email, u.usuario_ativo, u.usuario_ultimoacesso
         ORDER BY ultimo_acesso DESC NULLS LAST
         LIMIT 50
       `,
@@ -1386,17 +1410,16 @@ const userRepository = {
     for (const sql of listQueries) {
       try {
         const ultimosRes = await pool.query(sql);
-        if (ultimosRes.rows.length > 0 || sql === listQueries[listQueries.length - 1]) {
-          stats.ultimosAcessos = ultimosRes.rows.map((r) => ({
-            id: r.id,
-            nome: r.nome,
-            email: r.email,
-            ultimo_acesso: r.ultimo_acesso,
-            ativo: r.ativo,
-            origem: r.origem || null,
-          }));
-          break;
-        }
+        const mapped = ultimosRes.rows.map((r) => ({
+          id: r.id,
+          nome: r.nome,
+          email: r.email,
+          ultimo_acesso: r.ultimo_acesso,
+          ativo: r.ativo,
+          origem: r.origem || null,
+        }));
+        stats.ultimosAcessos = mapped;
+        if (mapped.length > 0) break;
       } catch (err) {
         console.warn('⚠️ getAdminDashboardStats list:', err.message);
       }
