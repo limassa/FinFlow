@@ -5412,19 +5412,7 @@ select.form-input:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-}
-.principal-resumo__empty-actions button {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  background: #EFF6FF;
-  color: #2563EB;
-}
-.principal-resumo__empty-actions button:hover {
-  background: #DBEAFE;
+  align-items: center;
 }
 .principal-resumo__msg {
   margin: 16px 0 0;

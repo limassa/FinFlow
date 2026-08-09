@@ -436,11 +436,19 @@ function Principal() {
               primeira receita ou despesa?
             </p>
             <div className="principal-resumo__empty-actions">
-              <button type="button" onClick={() => navigate('/layout/receita')}>
-                Nova receita
+              <button
+                type="button"
+                onClick={() => navigate('/layout/receita')}
+                className="principal-btn-secondary"
+              >
+                <FaMoneyBillWave /> + Receita
               </button>
-              <button type="button" onClick={() => navigate('/layout/despesa')}>
-                Nova despesa
+              <button
+                type="button"
+                onClick={() => navigate('/layout/despesa')}
+                className="principal-btn-secondary principal-btn-secondary--despesa"
+              >
+                <FaMoneyCheckAlt /> + Despesa
               </button>
             </div>
           </div>
