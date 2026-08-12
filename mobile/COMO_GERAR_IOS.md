@@ -1,5 +1,9 @@
 # Como gerar e publicar na App Store (iOS)
 
+> **Manual completo de produção (recomendado):**  
+> [`COMO_PUBLICAR_IOS_PRODUCAO.md`](./COMO_PUBLICAR_IOS_PRODUCAO.md)  
+> Passo a passo: build → TestFlight → revisão → liberar na App Store.
+
 ## Pré-requisitos
 
 - Conta Apple Developer ativa ($99/ano)
@@ -17,67 +21,44 @@
 
 ## 2. Gerar build de produção (EAS)
 
-> **Obrigatório desde abril/2026:** builds iOS devem usar **Xcode 26** (iOS 26 SDK).
 > O projeto usa **Expo SDK 54** com imagem `sdk-54` no `eas.json`.
 
 ```powershell
 cd mobile
-eas build --platform ios --profile production
+npx eas-cli build --platform ios --profile production --auto-submit --non-interactive
 ```
 
-Na **primeira vez**, escolha:
+Na **primeira vez** (modo interativo), escolha:
 - **Let EAS handle credentials** (recomendado)
-- Informe Apple ID da conta Developer
+- Informe Apple ID da conta Developer (`moreira.joaoneto@icloud.com`)
 - Confirme autenticação em 2 fatores se solicitado
 
-O build leva ~15–30 minutos. Acompanhe em:
+O build leva ~15–40 minutos. Acompanhe em:
 https://expo.dev/accounts/limassa/projects/finflow-mobile/builds
 
 ## 3. Enviar para App Store Connect
 
-Após o build concluir:
+Com `--auto-submit` o envio já é feito. Sem isso, após o build:
 
 ```powershell
-eas submit --platform ios --profile production
+npx eas-cli submit --platform ios --profile production --latest --non-interactive
 ```
 
-Ou build + submit de uma vez:
+## 4. TestFlight → Produção
 
-```powershell
-eas build --platform ios --profile production --auto-submit
-```
-
-## 4. Preencher no App Store Connect
-
-| Campo | Valor |
-|-------|-------|
-| Política de privacidade | `https://claricash.com.br/privacy-policy` |
-| Categoria | Finanças |
-| Preço | Grátis |
-| Export compliance | Usa criptografia padrão (HTTPS) — **No** para criptografia customizada |
-
-## 5. TestFlight (recomendado)
-
-1. App Store Connect → **TestFlight**
-2. Aguarde processamento do build (30 min – 2 h)
-3. Adicione testadores internos
-4. Teste no iPhone antes de enviar para revisão
-
-## 6. Enviar para revisão
-
-1. **App Store** → versão → selecione o build
-2. Preencha screenshots (iPhone 6.7": 1290×2796)
-3. **Enviar para revisão**
+Siga o manual: [`COMO_PUBLICAR_IOS_PRODUCAO.md`](./COMO_PUBLICAR_IOS_PRODUCAO.md)  
+(resumo: processar build → testar → selecionar na versão → enviar para revisão → liberar)
 
 ## Comandos úteis
 
 ```powershell
-eas build:list --platform ios
-eas submit:list --platform ios
+npx eas-cli build:list --platform ios
+npx eas-cli submit:list --platform ios
 ```
 
 ## Observações
 
 - **Não precisa de Mac** — o EAS compila na nuvem
 - Bundle ID: `com.lizsoftwares.finflow`
-- Versão atual: `1.0.0` (build number incrementado automaticamente pelo EAS)
+- ASC App ID: `6787544258`
+- Build number incrementado automaticamente pelo EAS (`autoIncrement`)

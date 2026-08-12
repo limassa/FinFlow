@@ -497,6 +497,7 @@ export default function DespesaScreen() {
 
   const executarExclusoes = async (ids) => {
     if (ids.length === 0) return;
+    const qtd = ids.length;
     setDeletingInProgress(true);
     try {
       for (const id of ids) {
@@ -504,7 +505,7 @@ export default function DespesaScreen() {
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
       await refreshAfterMutation();
-      Alert.alert('Sucesso', ids.length === 1 ? 'Despesa excluída' : `${ids.length} despesa(s) excluída(s)`);
+      Alert.alert('Concluído', `${qtd} registro${qtd === 1 ? '' : 's'} apagado${qtd === 1 ? '' : 's'}`);
     } catch (err) {
       Alert.alert('Erro', 'Erro ao excluir despesas');
     } finally {
@@ -512,27 +513,26 @@ export default function DespesaScreen() {
     }
   };
 
+  const pedirConfirmacaoExclusao = (ids) => {
+    const lista = (ids || []).filter(Boolean);
+    if (lista.length === 0) return;
+    const qtd = lista.length;
+    Alert.alert(
+      'Confirmar exclusão',
+      `Deseja excluir ${qtd} registro${qtd === 1 ? '' : 's'}?`,
+      [
+        { text: 'Não', style: 'cancel' },
+        {
+          text: 'Sim',
+          style: 'destructive',
+          onPress: () => executarExclusoes(lista),
+        },
+      ]
+    );
+  };
+
   const handleDelete = (id) => {
-    const despesa = poolDespesas.find(d => d.despesa_id === id);
-    if (!despesa) return;
-    if (despesaEhRecorrente(despesa)) {
-      const itensGrupo = getItensDoGrupo(despesa);
-      const nomeBase = extrairNomeBaseRecorrente(despesa.despesa_descricao);
-      Alert.alert(
-        'Excluir despesa recorrente',
-        `"${nomeBase}" - O que deseja excluir?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'SIM (Somente em aberto)', onPress: () => executarExclusoes(itensGrupo.filter(d => !d.despesa_pago).map(d => d.despesa_id)) },
-          { text: 'Todas (do grupo)', style: 'destructive', onPress: () => executarExclusoes(itensGrupo.map(d => d.despesa_id)) }
-        ]
-      );
-    } else {
-      Alert.alert('Confirmar', 'Deseja realmente excluir esta despesa?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: () => executarExclusoes([id]) }
-      ]);
-    }
+    pedirConfirmacaoExclusao([id]);
   };
 
   const toggleSelect = (id) => {
@@ -553,48 +553,13 @@ export default function DespesaScreen() {
   };
 
   const handleDeleteSelected = () => {
-    const qtd = selectedIds.size;
-    if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => poolDespesas.find(d => d.despesa_id === id)).filter(Boolean);
-    const temRecorrente = itensSelecionados.some(d => despesaEhRecorrente(d));
-    if (temRecorrente) {
-      Alert.alert(
-        'Excluir despesas',
-        `${qtd} selecionada(s) - O que deseja excluir?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'SIM (Somente em aberto)', onPress: async () => { await executarExclusoes(itensSelecionados.filter(d => !d.despesa_pago).map(d => d.despesa_id)); setSelectedIds(new Set()); } },
-          { text: 'Todas (do grupo)', style: 'destructive', onPress: async () => { await executarExclusoes([...selectedIds]); setSelectedIds(new Set()); } }
-        ]
-      );
-    } else {
-      Alert.alert('Confirmar', `Excluir ${qtd} despesa(s)?`, [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: async () => { await executarExclusoes([...selectedIds]); setSelectedIds(new Set()); } }
-      ]);
-    }
+    if (selectedIds.size === 0) return;
+    pedirConfirmacaoExclusao([...selectedIds]);
   };
 
-  const handleDeleteGroup = (labelGrupo, itens) => {
-    const qtd = itens.length;
-    if (qtd === 0) return;
-    Alert.alert(
-      'Excluir despesas',
-      `"${labelGrupo}" - O que deseja excluir?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'SIM (Somente em aberto)', onPress: async () => {
-          const emAberto = itens.filter(d => !d.despesa_pago);
-          if (emAberto.length === 0) { Alert.alert('Info', 'Nenhuma em aberto neste grupo'); return; }
-          await executarExclusoes(emAberto.map(d => d.despesa_id));
-          setSelectedIds(prev => { const n = new Set(prev); emAberto.forEach(d => n.delete(d.despesa_id)); return n; });
-        }},
-        { text: 'Todas (do grupo)', style: 'destructive', onPress: async () => {
-          await executarExclusoes(itens.map(d => d.despesa_id));
-          setSelectedIds(prev => { const n = new Set(prev); itens.forEach(d => n.delete(d.despesa_id)); return n; });
-        }}
-      ]
-    );
+  const handleDeleteGroup = (_labelGrupo, itens) => {
+    const ids = (itens || []).map(d => d.despesa_id).filter(Boolean);
+    pedirConfirmacaoExclusao(ids);
   };
 
   const handleTogglePago = async (despesa) => {
@@ -1330,9 +1295,14 @@ export default function DespesaScreen() {
       </Modal>
 
       {deletingInProgress && (
-        <View style={styles.processingDeleteBar}>
-          <Text style={styles.processingDeleteText}>Processando exclusão... Aguarde.</Text>
-        </View>
+        <Modal transparent animationType="fade" visible>
+          <View style={styles.processingDeleteOverlay}>
+            <View style={styles.processingDeleteBox}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.processingDeleteText}>Processando exclusão... Aguarde.</Text>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -1936,21 +1906,27 @@ function createStyles(colors) {
   formButtonDisabled: {
     opacity: 0.7,
   },
-  processingDeleteBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.header,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: 'center',
+  processingDeleteOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  processingDeleteBox: {
+    backgroundColor: colors.header,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 12,
+    minWidth: 220,
   },
   processingDeleteText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   formButtonTextCancel: {
     fontSize: 16,

@@ -478,6 +478,7 @@ function Receita() {
 
   const executarExclusoes = async (ids) => {
     if (ids.length === 0) return;
+    const qtd = ids.length;
     setDeletingInProgress(true);
     try {
       for (const id of ids) {
@@ -485,7 +486,7 @@ function Receita() {
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
       await refreshAfterMutation();
-      alert(ids.length === 1 ? 'Receita excluída com sucesso!' : `${ids.length} receita(s) excluída(s) com sucesso!`);
+      alert(`${qtd} registro${qtd === 1 ? '' : 's'} apagado${qtd === 1 ? '' : 's'}`);
     } catch (err) {
       alert(err.response?.data?.error || err.message || 'Erro ao excluir receitas.');
     } finally {
@@ -493,29 +494,22 @@ function Receita() {
     }
   };
 
+  const pedirConfirmacaoExclusao = (ids) => {
+    const lista = (ids || []).filter(Boolean);
+    if (lista.length === 0) return;
+    const qtd = lista.length;
+    setModalExclusao({
+      mensagem: `Deseja excluir ${qtd} registro${qtd === 1 ? '' : 's'}?`,
+      onSim: async () => {
+        setModalExclusao(null);
+        await executarExclusoes(lista);
+      },
+      onCancelar: () => setModalExclusao(null),
+    });
+  };
+
   const handleDelete = (id) => {
-    const receita = poolReceitas.find(r => r.receita_id === id);
-    if (!receita) return;
-    if (receitaEhRecorrente(receita)) {
-      const itensGrupo = getItensDoGrupo(receita);
-      setModalExclusao({
-        mensagem: `Excluir receita recorrente "${extrairNomeBaseRecorrente(receita.receita_descricao)}"?`,
-        onSim: async () => {
-          setModalExclusao(null);
-          const itensNaoRecebidos = itensGrupo.filter(r => !r.receita_recebido);
-          await executarExclusoes(itensNaoRecebidos.map(r => r.receita_id));
-        },
-        onTodas: async () => {
-          setModalExclusao(null);
-          await executarExclusoes(itensGrupo.map(r => r.receita_id));
-        },
-        onCancelar: () => setModalExclusao(null)
-      });
-    } else {
-      if (window.confirm('Deseja realmente excluir esta receita? Esta ação pode ser desfeita.')) {
-        executarExclusoes([id]);
-      }
-    }
+    pedirConfirmacaoExclusao([id]);
   };
 
   const toggleSelect = (id) => {
@@ -536,65 +530,13 @@ function Receita() {
   };
 
   const handleDeleteSelected = () => {
-    const qtd = selectedIds.size;
-    if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => poolReceitas.find(r => r.receita_id === id)).filter(Boolean);
-    const temRecorrente = itensSelecionados.some(r => receitaEhRecorrente(r));
-    if (temRecorrente) {
-      setModalExclusao({
-        mensagem: `Excluir ${qtd} receita(s) selecionada(s)?`,
-        onSim: async () => {
-          setModalExclusao(null);
-          const idsNaoRecebidos = itensSelecionados.filter(r => !r.receita_recebido).map(r => r.receita_id);
-          await executarExclusoes(idsNaoRecebidos);
-          setSelectedIds(new Set());
-        },
-        onTodas: async () => {
-          setModalExclusao(null);
-          await executarExclusoes([...selectedIds]);
-          setSelectedIds(new Set());
-        },
-        onCancelar: () => setModalExclusao(null)
-      });
-    } else {
-      if (window.confirm(`Excluir ${qtd} receita(s) selecionada(s)?`)) {
-        executarExclusoes([...selectedIds]);
-        setSelectedIds(new Set());
-      }
-    }
+    if (selectedIds.size === 0) return;
+    pedirConfirmacaoExclusao([...selectedIds]);
   };
 
-  const handleDeleteGroup = (tipoGrupo, itens) => {
-    const qtd = itens.length;
-    if (qtd === 0) return;
-    const nomeGrupo = itens[0] ? extrairNomeBaseRecorrente(itens[0].receita_descricao || '') : tipoGrupo;
-    setModalExclusao({
-      mensagem: `Excluir receitas do grupo "${nomeGrupo}" (${tipoGrupo})?`,
-      onSim: async () => {
-        setModalExclusao(null);
-        const itensNaoRecebidos = itens.filter(r => !r.receita_recebido);
-        if (itensNaoRecebidos.length === 0) {
-          alert('Nenhuma receita não recebida neste grupo.');
-          return;
-        }
-        await executarExclusoes(itensNaoRecebidos.map(r => r.receita_id));
-        setSelectedIds(prev => {
-          const next = new Set(prev);
-          itensNaoRecebidos.forEach(r => next.delete(r.receita_id));
-          return next;
-        });
-      },
-      onTodas: async () => {
-        setModalExclusao(null);
-        await executarExclusoes(itens.map(r => r.receita_id));
-        setSelectedIds(prev => {
-          const next = new Set(prev);
-          itens.forEach(r => next.delete(r.receita_id));
-          return next;
-        });
-      },
-      onCancelar: () => setModalExclusao(null)
-    });
+  const handleDeleteGroup = (_tipoGrupo, itens) => {
+    const ids = (itens || []).map(r => r.receita_id).filter(Boolean);
+    pedirConfirmacaoExclusao(ids);
   };
 
 
@@ -683,7 +625,6 @@ function Receita() {
         <ConfirmacaoExclusao
           mensagem={modalExclusao.mensagem}
           onSim={modalExclusao.onSim}
-          onTodas={modalExclusao.onTodas}
           onCancelar={modalExclusao.onCancelar}
         />
       )}

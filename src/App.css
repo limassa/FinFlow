@@ -491,20 +491,41 @@
   white-space: nowrap;
 }
 
-/* Barra de "processando exclusão" (fixa embaixo) */
+/* Overlay bloqueante durante exclusão em lote */
 .processing-delete-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px 16px;
-  background: #1e3a5f;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
   color: #fff;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   text-align: center;
-  z-index: 1000;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
+  z-index: 2000;
+  cursor: wait;
+  user-select: none;
+}
+
+.processing-delete-bar span {
+  background: #1e3a5f;
+  padding: 16px 24px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.modal-confirm-botoes--simples {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-confirm-botoes--simples .btn-confirm-sim,
+.modal-confirm-botoes--simples .btn-confirm-cancelar {
+  min-width: 100px;
 }
 
 /* Formulário de receitas/despesas */

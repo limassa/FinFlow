@@ -2,25 +2,19 @@ import React from 'react';
 import '../App.css';
 
 /**
- * Modal de confirmação com 3 opções para exclusão de itens recorrentes
- * SIM = Somente em aberto (não pagos/não recebidos)
- * Todas = Todas do grupo
- * Cancelar = Retorna sem excluir
+ * Confirmação simples de exclusão: Sim / Não.
  */
-export default function ConfirmacaoExclusao({ mensagem, onSim, onTodas, onCancelar }) {
+export default function ConfirmacaoExclusao({ mensagem, onSim, onCancelar }) {
   return (
     <div className="modal-overlay-confirm" onClick={onCancelar}>
-      <div className="modal-confirm-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-confirm-content" onClick={(e) => e.stopPropagation()}>
         <p className="modal-confirm-mensagem">{mensagem}</p>
-        <div className="modal-confirm-botoes">
+        <div className="modal-confirm-botoes modal-confirm-botoes--simples">
           <button type="button" className="btn-confirm-sim" onClick={onSim}>
-            SIM (Somente em aberto)
-          </button>
-          <button type="button" className="btn-confirm-todas" onClick={onTodas}>
-            Todas (do grupo)
+            Sim
           </button>
           <button type="button" className="btn-confirm-cancelar" onClick={onCancelar}>
-            Cancelar
+            Não
           </button>
         </div>
       </div>

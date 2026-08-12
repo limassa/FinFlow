@@ -424,32 +424,12 @@ function Despesa() {
   };
 
   const handleDelete = (id) => {
-    const despesa = poolDespesas.find(d => d.despesa_id === id);
-    if (!despesa) return;
-    if (despesaEhRecorrente(despesa)) {
-      const itensGrupo = getItensDoGrupo(despesa);
-      setModalExclusao({
-        mensagem: `Excluir despesa recorrente "${extrairNomeBaseRecorrente(despesa.despesa_descricao)}"?`,
-        onSim: async () => {
-          setModalExclusao(null);
-          const itensEmAberto = itensGrupo.filter(d => !d.despesa_pago);
-          await executarExclusoes(itensEmAberto.map(d => d.despesa_id));
-        },
-        onTodas: async () => {
-          setModalExclusao(null);
-          await executarExclusoes(itensGrupo.map(d => d.despesa_id));
-        },
-        onCancelar: () => setModalExclusao(null)
-      });
-    } else {
-      if (window.confirm('Deseja realmente excluir esta despesa? Esta ação pode ser desfeita.')) {
-        executarExclusoes([id]);
-      }
-    }
+    pedirConfirmacaoExclusao([id]);
   };
 
   const executarExclusoes = async (ids) => {
     if (ids.length === 0) return;
+    const qtd = ids.length;
     setDeletingInProgress(true);
     try {
       for (const id of ids) {
@@ -457,13 +437,27 @@ function Despesa() {
       }
       setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
       await refreshAfterMutation();
-      alert(ids.length === 1 ? 'Despesa excluída com sucesso!' : `${ids.length} despesa(s) excluída(s) com sucesso!`);
+      alert(`${qtd} registro${qtd === 1 ? '' : 's'} apagado${qtd === 1 ? '' : 's'}`);
     } catch (err) {
       console.error('Erro ao excluir despesas:', err);
       alert(err.response?.data?.error || err.message || 'Erro ao excluir despesas.');
     } finally {
       setDeletingInProgress(false);
     }
+  };
+
+  const pedirConfirmacaoExclusao = (ids) => {
+    const lista = (ids || []).filter(Boolean);
+    if (lista.length === 0) return;
+    const qtd = lista.length;
+    setModalExclusao({
+      mensagem: `Deseja excluir ${qtd} registro${qtd === 1 ? '' : 's'}?`,
+      onSim: async () => {
+        setModalExclusao(null);
+        await executarExclusoes(lista);
+      },
+      onCancelar: () => setModalExclusao(null),
+    });
   };
 
   const toggleSelect = (id) => {
@@ -484,65 +478,13 @@ function Despesa() {
   };
 
   const handleDeleteSelected = () => {
-    const qtd = selectedIds.size;
-    if (qtd === 0) return;
-    const itensSelecionados = [...selectedIds].map(id => poolDespesas.find(d => d.despesa_id === id)).filter(Boolean);
-    const temRecorrente = itensSelecionados.some(d => despesaEhRecorrente(d));
-    if (temRecorrente) {
-      setModalExclusao({
-        mensagem: `Excluir ${qtd} despesa(s) selecionada(s)?`,
-        onSim: async () => {
-          setModalExclusao(null);
-          const idsEmAberto = itensSelecionados.filter(d => !d.despesa_pago).map(d => d.despesa_id);
-          await executarExclusoes(idsEmAberto);
-          setSelectedIds(new Set());
-        },
-        onTodas: async () => {
-          setModalExclusao(null);
-          await executarExclusoes([...selectedIds]);
-          setSelectedIds(new Set());
-        },
-        onCancelar: () => setModalExclusao(null)
-      });
-    } else {
-      if (window.confirm(`Excluir ${qtd} despesa(s) selecionada(s)?`)) {
-        executarExclusoes([...selectedIds]);
-        setSelectedIds(new Set());
-      }
-    }
+    if (selectedIds.size === 0) return;
+    pedirConfirmacaoExclusao([...selectedIds]);
   };
 
-  const handleDeleteGroup = (tipoGrupo, itens) => {
-    const qtd = itens.length;
-    if (qtd === 0) return;
-    const nomeGrupo = itens[0] ? extrairNomeBaseRecorrente(itens[0].despesa_descricao || '') : tipoGrupo;
-    setModalExclusao({
-      mensagem: `Excluir despesas do grupo "${nomeGrupo}" (${tipoGrupo})?`,
-      onSim: async () => {
-        setModalExclusao(null);
-        const itensEmAberto = itens.filter(d => !d.despesa_pago);
-        if (itensEmAberto.length === 0) {
-          alert('Nenhuma despesa em aberto neste grupo.');
-          return;
-        }
-        await executarExclusoes(itensEmAberto.map(d => d.despesa_id));
-        setSelectedIds(prev => {
-          const next = new Set(prev);
-          itensEmAberto.forEach(d => next.delete(d.despesa_id));
-          return next;
-        });
-      },
-      onTodas: async () => {
-        setModalExclusao(null);
-        await executarExclusoes(itens.map(d => d.despesa_id));
-        setSelectedIds(prev => {
-          const next = new Set(prev);
-          itens.forEach(d => next.delete(d.despesa_id));
-          return next;
-        });
-      },
-      onCancelar: () => setModalExclusao(null)
-    });
+  const handleDeleteGroup = (_tipoGrupo, itens) => {
+    const ids = (itens || []).map(d => d.despesa_id).filter(Boolean);
+    pedirConfirmacaoExclusao(ids);
   };
 
   const handleTogglePago = async (despesa) => {
@@ -820,7 +762,6 @@ function Despesa() {
         <ConfirmacaoExclusao
           mensagem={modalExclusao.mensagem}
           onSim={modalExclusao.onSim}
-          onTodas={modalExclusao.onTodas}
           onCancelar={modalExclusao.onCancelar}
         />
       )}

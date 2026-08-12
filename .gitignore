@@ -46,6 +46,12 @@ jspm_packages/
 backend/config.production.env
 backend/config.env
 
+# Database backups (pg_dump) — nunca versionar
+backups/
+*.dump
+claricash-prod-*.sql
+scripts/_run-backup-scheduled.ps1
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
