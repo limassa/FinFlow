@@ -224,30 +224,43 @@ export default function GraficoEvolucaoMensal() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.barsRow}>
-        {chartSeries.labels.map((label, i) => {
-          const recH = (chartSeries.receitasData[i] / chartSeries.maxVal) * BAR_MAX_H;
-          const desH = (chartSeries.despesasData[i] / chartSeries.maxVal) * BAR_MAX_H;
-          return (
-            <View key={`${label}-${i}`} style={styles.barGroup}>
-              <View style={styles.barPair}>
-                <View
-                  style={[
-                    styles.bar,
-                    { height: Math.max(recH, 0), backgroundColor: '#16A34A' },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.bar,
-                    { height: Math.max(desH, 0), backgroundColor: '#DC2626' },
-                  ]}
-                />
+      <View style={styles.chartArea}>
+        <View style={styles.yAxis}>
+          {[chartSeries.maxVal, chartSeries.maxVal / 2, 0].map((tick, idx) => (
+            <Text key={idx} style={styles.yTick} numberOfLines={1}>
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                maximumFractionDigits: 0,
+              }).format(tick)}
+            </Text>
+          ))}
+        </View>
+        <View style={styles.barsRow}>
+          {chartSeries.labels.map((label, i) => {
+            const recH = (chartSeries.receitasData[i] / chartSeries.maxVal) * BAR_MAX_H;
+            const desH = (chartSeries.despesasData[i] / chartSeries.maxVal) * BAR_MAX_H;
+            return (
+              <View key={`${label}-${i}`} style={styles.barGroup}>
+                <View style={styles.barPair}>
+                  <View
+                    style={[
+                      styles.bar,
+                      { height: Math.max(recH, 0), backgroundColor: '#16A34A' },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.bar,
+                      { height: Math.max(desH, 0), backgroundColor: '#DC2626' },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.barLabel}>{label}</Text>
               </View>
-              <Text style={styles.barLabel}>{label}</Text>
-            </View>
-          );
-        })}
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -319,10 +332,29 @@ function createStyles(colors, isDark) {
       fontWeight: '700',
       color: colors.text,
     },
-    barsRow: {
+    chartArea: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       width: '100%',
+    },
+    yAxis: {
+      width: 58,
+      height: 150,
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      paddingRight: 6,
+      marginBottom: 22,
+    },
+    yTick: {
+      fontSize: 9,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'right',
+    },
+    barsRow: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
       height: 178,
       paddingTop: 4,
     },

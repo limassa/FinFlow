@@ -23,8 +23,10 @@ ChartJS.register(
   Legend
 );
 
-const DIAS_JANELA = 7;
-const OFFSET_CENTRO = Math.floor(DIAS_JANELA / 2);
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 function startOfLocalDay(date) {
   const d = new Date(date);
@@ -32,14 +34,12 @@ function startOfLocalDay(date) {
   return d;
 }
 
-function addDays(date, n) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n);
-  return d;
+function formatLabel(date) {
+  return String(date.getDate());
 }
 
-function formatLabel(date) {
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+function formatPeriodo(date) {
+  return `${MESES[date.getMonth()]} de ${date.getFullYear()}`;
 }
 
 function sameLocalDay(a, b) {
@@ -66,7 +66,7 @@ function GraficoEvolucaoMensal() {
   const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [offsetDias, setOffsetDias] = useState(0);
+  const [offsetMeses, setOffsetMeses] = useState(0);
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
@@ -96,14 +96,16 @@ function GraficoEvolucaoMensal() {
 
   const janela = useMemo(() => {
     const hoje = startOfLocalDay(new Date());
-    const centro = addDays(hoje, offsetDias);
-    const inicio = addDays(centro, -OFFSET_CENTRO);
+    const ref = new Date(hoje.getFullYear(), hoje.getMonth() + offsetMeses, 1);
+    const ano = ref.getFullYear();
+    const mes = ref.getMonth();
+    const totalDias = new Date(ano, mes + 1, 0).getDate();
     const dias = [];
-    for (let i = 0; i < DIAS_JANELA; i++) {
-      dias.push(addDays(inicio, i));
+    for (let i = 1; i <= totalDias; i++) {
+      dias.push(new Date(ano, mes, i));
     }
-    return { centro, dias, hoje };
-  }, [offsetDias]);
+    return { ref, dias, hoje };
+  }, [offsetMeses]);
 
   const dadosGrafico = useMemo(() => {
     const labels = [];
@@ -140,8 +142,8 @@ function GraficoEvolucaoMensal() {
           backgroundColor: 'rgba(22, 163, 74, 0.85)',
           borderColor: '#16A34A',
           borderWidth: 0,
-          borderRadius: 4,
-          maxBarThickness: 28,
+          borderRadius: 3,
+          maxBarThickness: 16,
         },
         {
           label: 'Despesas',
@@ -149,21 +151,21 @@ function GraficoEvolucaoMensal() {
           backgroundColor: 'rgba(220, 38, 38, 0.85)',
           borderColor: '#DC2626',
           borderWidth: 0,
-          borderRadius: 4,
-          maxBarThickness: 28,
+          borderRadius: 3,
+          maxBarThickness: 16,
         },
       ],
     };
   }, [janela, receitas, despesas]);
 
   const tituloPeriodo = useMemo(() => {
-    const ini = janela.dias[0];
-    const fim = janela.dias[janela.dias.length - 1];
-    if (!ini || !fim) return '';
-    return `${formatLabel(ini)} a ${formatLabel(fim)}`;
+    if (!janela.ref) return '';
+    return formatPeriodo(janela.ref);
   }, [janela]);
 
-  const centroEhHoje = sameLocalDay(janela.centro, janela.hoje);
+  const centroEhHoje =
+    janela.ref.getFullYear() === janela.hoje.getFullYear() &&
+    janela.ref.getMonth() === janela.hoje.getMonth();
 
   const options = {
     responsive: true,
@@ -171,8 +173,8 @@ function GraficoEvolucaoMensal() {
     interaction: { mode: 'index', intersect: false },
     datasets: {
       bar: {
-        categoryPercentage: 0.7,
-        barPercentage: 0.85,
+        categoryPercentage: 0.82,
+        barPercentage: 0.9,
       },
     },
     plugins: {
@@ -196,6 +198,12 @@ function GraficoEvolucaoMensal() {
         padding: 12,
         cornerRadius: 10,
         callbacks: {
+          title(items) {
+            const idx = items[0]?.dataIndex;
+            const dia = janela.dias[idx];
+            if (!dia) return '';
+            return `${String(dia.getDate()).padStart(2, '0')}/${String(dia.getMonth() + 1).padStart(2, '0')}/${dia.getFullYear()}`;
+          },
           label(context) {
             const valor = context.parsed.y;
             return `${context.dataset.label}: ${new Intl.NumberFormat('pt-BR', {
@@ -230,10 +238,11 @@ function GraficoEvolucaoMensal() {
         border: { display: false },
         grid: { display: false },
         ticks: {
+          autoSkip: false,
           maxRotation: 0,
           minRotation: 0,
           color: '#64748b',
-          font: { size: 11, weight: '600' },
+          font: { size: 9, weight: '600' },
         },
       },
     },
@@ -267,30 +276,30 @@ function GraficoEvolucaoMensal() {
         <button
           type="button"
           className="grafico-evolucao-nav__btn"
-          onClick={() => setOffsetDias((o) => o - DIAS_JANELA + 1)}
-          aria-label="Período anterior"
+          onClick={() => setOffsetMeses((o) => o - 1)}
+          aria-label="Mês anterior"
         >
           <FaChevronLeft size={14} color="#fff" />
         </button>
         <button
           type="button"
           className="grafico-evolucao-nav__period"
-          onClick={() => setOffsetDias(0)}
+          onClick={() => setOffsetMeses(0)}
           disabled={centroEhHoje}
-          title={centroEhHoje ? undefined : 'Voltar para hoje'}
+          title={centroEhHoje ? undefined : 'Voltar para este mês'}
         >
           {tituloPeriodo}
         </button>
         <button
           type="button"
           className="grafico-evolucao-nav__btn"
-          onClick={() => setOffsetDias((o) => o + DIAS_JANELA - 1)}
-          aria-label="Próximo período"
+          onClick={() => setOffsetMeses((o) => o + 1)}
+          aria-label="Próximo mês"
         >
           <FaChevronRight size={14} color="#fff" />
         </button>
       </div>
-      <div className="chart-container" style={{ height: '240px', width: '100%', position: 'relative' }}>
+      <div className="chart-container" style={{ height: '280px', width: '100%', position: 'relative' }}>
         <Bar data={dadosGrafico} options={options} />
       </div>
     </div>

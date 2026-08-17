@@ -303,7 +303,8 @@ export default function AgendaScreen() {
   const abrirNovoEventoNoDia = (ymd) => {
     const data = ymd || diaCalendario || toYmd(new Date());
     if (!diaCalendario) setDiaCalendario(data);
-    abrirModalSlot({ data }, '09:00');
+    setShowCalendario(false);
+    setTimeout(() => abrirModalSlot({ data }, '09:00'), 50);
   };
 
   const salvarEvento = async () => {
@@ -533,8 +534,9 @@ export default function AgendaScreen() {
         animationType="fade"
         onRequestClose={() => setShowCalendario(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowCalendario(false)}>
-          <Pressable style={styles.calModal} onPress={e => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowCalendario(false)} />
+          <View style={styles.calModal}>
             <View style={styles.calHeader}>
               <Text style={styles.calTitle}>Calendário</Text>
               <TouchableOpacity onPress={() => setShowCalendario(false)}>
@@ -577,6 +579,7 @@ export default function AgendaScreen() {
               <TouchableOpacity
                 style={styles.calNewBtn}
                 onPress={() => abrirNovoEventoNoDia(diaCalendario)}
+                activeOpacity={0.8}
               >
                 <Ionicons name="add" size={16} color="#fff" />
                 <Text style={styles.calNewBtnText}>Novo evento</Text>
@@ -604,8 +607,8 @@ export default function AgendaScreen() {
                 <Text style={styles.calEmpty}>Selecione um dia para ver os eventos.</Text>
               )}
             </ScrollView>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <Modal
@@ -863,12 +866,16 @@ function createStyles(colors) {
     alignItems: 'center',
     padding: 20,
   },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
   calModal: {
     backgroundColor: colors.card,
     borderRadius: 12,
     width: '100%',
     maxWidth: 420,
     maxHeight: '90%',
+    zIndex: 2,
     paddingBottom: 12,
     overflow: 'hidden',
   },
