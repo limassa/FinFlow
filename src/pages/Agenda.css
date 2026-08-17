@@ -35,11 +35,20 @@
   border: none;
   background: #2563EB;
   color: #fff;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1rem;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.btn-agenda-cal svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: #fff;
+  color: #fff;
 }
 
 .btn-agenda-cal:hover {
@@ -167,10 +176,47 @@
   min-height: 80px;
 }
 
-.agenda-cal-events h4 {
-  margin: 0 0 10px;
+.agenda-cal-events-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.agenda-cal-events-head h4 {
+  margin: 0;
   font-size: 14px;
   color: #0f172a;
+}
+
+.btn-agenda-novo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: #2563EB;
+  color: #fff;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-agenda-novo:hover {
+  background: #1d4ed8;
+}
+
+.agenda-slot-row-turno {
+  cursor: pointer;
+}
+
+.agenda-turno-chevron {
+  display: inline-block;
+  width: 12px;
+  margin-right: 4px;
 }
 
 .agenda-cal-empty {
@@ -201,7 +247,7 @@
 }
 
 .agenda-header-nav .btn-navegar {
-  background: #4CAF50;
+  background: #2563EB;
   color: white;
   border: none;
   border-radius: 50%;
@@ -215,7 +261,7 @@
 }
 
 .agenda-header-nav .btn-navegar:hover {
-  background: #45a049;
+  background: #1d4ed8;
   transform: scale(1.05);
 }
 
@@ -236,7 +282,7 @@
 .agenda-dias-header {
   display: grid;
   grid-template-columns: 70px repeat(7, 1fr);
-  background: #4CAF50;
+  background: #2563EB;
   color: white;
   flex-shrink: 0;
 }
@@ -244,7 +290,7 @@
 .agenda-corner {
   height: 80px;
   min-height: 80px;
-  background: #3d8b40;
+  background: #1d4ed8;
   border-right: 1px solid rgba(255,255,255,0.2);
 }
 
@@ -357,7 +403,7 @@
 }
 
 .agenda-slot-cell:hover {
-  background: #e8f5e9;
+  background: #EFF6FF;
 }
 
 .agenda-slot-cell:last-child {

@@ -187,6 +187,17 @@ export default function GraficoEvolucaoMensal() {
     <View style={styles.container}>
       <Text style={styles.title}>Evolução financeira</Text>
 
+      <View style={styles.legendRow}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, { backgroundColor: '#16A34A' }]} />
+          <Text style={styles.legendText}>Receitas</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, { backgroundColor: '#DC2626' }]} />
+          <Text style={styles.legendText}>Despesas</Text>
+        </View>
+      </View>
+
       <View style={styles.navRow}>
         <TouchableOpacity
           style={styles.navBtn}
@@ -211,17 +222,6 @@ export default function GraficoEvolucaoMensal() {
         >
           <Ionicons name="chevron-forward" size={22} color={colors.primary} />
         </TouchableOpacity>
-      </View>
-
-      <View style={styles.legendRow}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, { backgroundColor: '#16A34A' }]} />
-          <Text style={styles.legendText}>Receitas</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, { backgroundColor: '#DC2626' }]} />
-          <Text style={styles.legendText}>Despesas</Text>
-        </View>
       </View>
 
       <View style={styles.barsRow}>
@@ -299,24 +299,25 @@ function createStyles(colors, isDark) {
     legendRow: {
       flexDirection: 'row',
       justifyContent: 'center',
-      gap: 16,
-      marginBottom: 10,
+      alignItems: 'center',
+      marginBottom: 12,
       width: '100%',
     },
     legendItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      marginHorizontal: 10,
     },
     legendSwatch: {
-      width: 10,
-      height: 10,
-      borderRadius: 2,
+      width: 14,
+      height: 14,
+      borderRadius: 3,
+      marginRight: 6,
     },
     legendText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.text,
     },
     barsRow: {
       flexDirection: 'row',

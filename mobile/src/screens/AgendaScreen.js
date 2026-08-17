@@ -58,6 +58,13 @@ const gerarHorarios = () => {
 };
 const HORARIOS = gerarHorarios();
 
+function horariosDoTurno(turno) {
+  return HORARIOS.filter((h) => {
+    const hour = parseInt(h.slice(0, 2), 10);
+    return hour >= turno.startHour && hour < turno.endHour;
+  });
+}
+
 function toYmd(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -152,6 +159,7 @@ export default function AgendaScreen() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [agruparPorTurno, setAgruparPorTurno] = useState(false);
+  const [turnoExpandido, setTurnoExpandido] = useState(null);
   const [showCalendario, setShowCalendario] = useState(false);
   const [mesCalendario, setMesCalendario] = useState(() => toYmd(new Date()));
   const [eventosMes, setEventosMes] = useState([]);
@@ -288,10 +296,14 @@ export default function AgendaScreen() {
     setShowModal(true);
   };
 
-  const abrirModalTurno = (dia, turno) => {
-    const horaInicio = `${String(turno.startHour).padStart(2, '0')}:00`;
-    const horaFim = turno.endHour === 24 ? '23:59' : `${String(turno.endHour).padStart(2, '0')}:00`;
-    abrirModalSlot(dia, horaInicio, horaFim);
+  const expandirTurno = (turnoId) => {
+    setTurnoExpandido((atual) => (atual === turnoId ? null : turnoId));
+  };
+
+  const abrirNovoEventoNoDia = (ymd) => {
+    const data = ymd || diaCalendario || toYmd(new Date());
+    if (!diaCalendario) setDiaCalendario(data);
+    abrirModalSlot({ data }, '09:00');
   };
 
   const salvarEvento = async () => {
@@ -363,7 +375,44 @@ export default function AgendaScreen() {
     ? eventosMes.filter((e) => dataEvento(e) === diaCalendario)
     : [];
 
-  const linhasAgenda = agruparPorTurno ? TURNOS : HORARIOS;
+  const renderSlotRow = (horario) => (
+    <View key={horario} style={styles.slotRow}>
+      <View style={[styles.horaCell, agruparPorTurno && styles.horaCellTurno]}>
+        <Text style={styles.horaText}>{horario}</Text>
+      </View>
+      {dias.map(dia => {
+        const evs = getEventosNoSlot(dia.data, horario);
+        return (
+          <TouchableOpacity
+            key={`${dia.data}-${horario}`}
+            style={[
+              styles.slotCell,
+              dia.isToday && styles.slotCellToday,
+              evs.length > 0 && styles.slotCellWithEvents,
+            ]}
+            onPress={() => abrirModalSlot(dia, horario)}
+            activeOpacity={0.7}
+          >
+            {evs.length > 0 ? (
+              evs.map(ev => (
+                <View
+                  key={ev.evento_id || ev.evento_Id}
+                  style={[styles.eventPill, { backgroundColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
+                >
+                  <Text style={styles.eventPillText} numberOfLines={1}>
+                    {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}
+                    {ev.evento_titulo || ev.evento_Titulo}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.slotAdd}>+</Text>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
 
   if (loading) {
     return (
@@ -397,7 +446,10 @@ export default function AgendaScreen() {
 
       <TouchableOpacity
         style={styles.groupRow}
-        onPress={() => setAgruparPorTurno((v) => !v)}
+        onPress={() => {
+          setAgruparPorTurno((v) => !v);
+          setTurnoExpandido(null);
+        }}
         activeOpacity={0.8}
       >
         <Ionicons
@@ -424,51 +476,55 @@ export default function AgendaScreen() {
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={true}>
-        {linhasAgenda.map(linha => {
-          const isTurno = typeof linha === 'object';
-          const keyLinha = isTurno ? linha.id : linha;
-          const labelLinha = isTurno ? linha.label : linha;
-          return (
-            <View key={keyLinha} style={[styles.slotRow, isTurno && styles.slotRowTurno]}>
-              <View style={[styles.horaCell, isTurno && styles.horaCellTurno]}>
-                <Text style={[styles.horaText, isTurno && styles.horaTextTurno]}>{labelLinha}</Text>
-              </View>
-              {dias.map(dia => {
-                const evs = isTurno
-                  ? getEventosNoTurno(dia.data, linha)
-                  : getEventosNoSlot(dia.data, linha);
-                return (
-                  <TouchableOpacity
-                    key={`${dia.data}-${keyLinha}`}
-                    style={[
-                      styles.slotCell,
-                      dia.isToday && styles.slotCellToday,
-                      evs.length > 0 && styles.slotCellWithEvents,
-                    ]}
-                    onPress={() => (isTurno ? abrirModalTurno(dia, linha) : abrirModalSlot(dia, linha))}
-                    activeOpacity={0.7}
-                  >
-                    {evs.length > 0 ? (
-                      evs.map(ev => (
-                        <View
-                          key={ev.evento_id || ev.evento_Id}
-                          style={[styles.eventPill, { backgroundColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
-                        >
-                          <Text style={styles.eventPillText} numberOfLines={1}>
-                            {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}
-                            {ev.evento_titulo || ev.evento_Titulo}
-                          </Text>
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={styles.slotAdd}>+</Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+        {agruparPorTurno
+          ? TURNOS.map(turno => (
+            <View key={turno.id}>
+              <TouchableOpacity
+                style={[styles.slotRow, styles.slotRowTurno]}
+                onPress={() => expandirTurno(turno.id)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.horaCell, styles.horaCellTurno]}>
+                  <Text style={[styles.horaText, styles.horaTextTurno]}>
+                    {turnoExpandido === turno.id ? '▾ ' : '▸ '}{turno.label}
+                  </Text>
+                </View>
+                {dias.map(dia => {
+                  const evs = getEventosNoTurno(dia.data, turno);
+                  return (
+                    <View
+                      key={`${dia.data}-${turno.id}`}
+                      style={[
+                        styles.slotCell,
+                        dia.isToday && styles.slotCellToday,
+                        evs.length > 0 && styles.slotCellWithEvents,
+                      ]}
+                    >
+                      {evs.length > 0 ? (
+                        evs.map(ev => (
+                          <View
+                            key={ev.evento_id || ev.evento_Id}
+                            style={[styles.eventPill, { backgroundColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
+                          >
+                            <Text style={styles.eventPillText} numberOfLines={1}>
+                              {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}
+                              {ev.evento_titulo || ev.evento_Titulo}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={styles.slotAdd}>{turnoExpandido === turno.id ? '' : '+'}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </TouchableOpacity>
+              {turnoExpandido === turno.id
+                ? horariosDoTurno(turno).map(horario => renderSlotRow(horario))
+                : null}
             </View>
-          );
-        })}
+          ))
+          : HORARIOS.map(horario => renderSlotRow(horario))}
       </ScrollView>
 
       <Modal
@@ -514,27 +570,36 @@ export default function AgendaScreen() {
                 textMonthFontWeight: '700',
               }}
             />
+            <View style={styles.calEventsHead}>
+              <Text style={styles.calEventsTitle}>
+                {diaCalendario ? `Eventos de ${formatarYmd(diaCalendario)}` : 'Eventos'}
+              </Text>
+              <TouchableOpacity
+                style={styles.calNewBtn}
+                onPress={() => abrirNovoEventoNoDia(diaCalendario)}
+              >
+                <Ionicons name="add" size={16} color="#fff" />
+                <Text style={styles.calNewBtnText}>Novo evento</Text>
+              </TouchableOpacity>
+            </View>
             <ScrollView style={styles.calEvents} nestedScrollEnabled>
               {diaCalendario ? (
-                <>
-                  <Text style={styles.calEventsTitle}>Eventos de {formatarYmd(diaCalendario)}</Text>
-                  {eventosDoDiaCalendario.length === 0 ? (
-                    <Text style={styles.calEmpty}>Nenhum evento neste dia.</Text>
-                  ) : (
-                    eventosDoDiaCalendario.map((ev) => (
-                      <View
-                        key={ev.evento_id || ev.evento_Id}
-                        style={[styles.calEventItem, { borderLeftColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
-                      >
-                        <Text style={styles.calEventTitle}>{ev.evento_titulo || ev.evento_Titulo}</Text>
-                        <Text style={styles.calEventHour}>
-                          {horaEvento(ev) || 'Sem horário'}
-                          {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
-                        </Text>
-                      </View>
-                    ))
-                  )}
-                </>
+                eventosDoDiaCalendario.length === 0 ? (
+                  <Text style={styles.calEmpty}>Nenhum evento neste dia.</Text>
+                ) : (
+                  eventosDoDiaCalendario.map((ev) => (
+                    <View
+                      key={ev.evento_id || ev.evento_Id}
+                      style={[styles.calEventItem, { borderLeftColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
+                    >
+                      <Text style={styles.calEventTitle}>{ev.evento_titulo || ev.evento_Titulo}</Text>
+                      <Text style={styles.calEventHour}>
+                        {horaEvento(ev) || 'Sem horário'}
+                        {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
+                      </Text>
+                    </View>
+                  ))
+                )
               ) : (
                 <Text style={styles.calEmpty}>Selecione um dia para ver os eventos.</Text>
               )}
@@ -816,12 +881,30 @@ function createStyles(colors) {
     paddingBottom: 8,
   },
   calTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  calEventsHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  calNewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  calNewBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   calEvents: {
     paddingHorizontal: 16,
     paddingTop: 8,
     maxHeight: 220,
   },
-  calEventsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8 },
+  calEventsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, flexShrink: 1 },
   calEmpty: { fontSize: 13, color: colors.textSecondary },
   calEventItem: {
     borderLeftWidth: 4,

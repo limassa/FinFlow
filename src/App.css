@@ -7642,6 +7642,18 @@ select.form-input:focus {
 .dashboard-page__stat-icon--receita { background: linear-gradient(135deg, #22C55E, #16A34A); }
 .dashboard-page__stat-icon--despesa { background: linear-gradient(135deg, #EF4444, #DC2626); }
 .dashboard-page__stat-icon--saldo { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.dashboard-page__stat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.dashboard-page__stat-text span,
+.dashboard-page__stat-text strong {
+  display: block;
+  line-height: 1.25;
+}
 .dashboard-page__chart-card {
   background: #ffffff !important;
   border: 1px solid #E2E8F0 !important;

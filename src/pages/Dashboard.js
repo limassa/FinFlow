@@ -107,7 +107,7 @@ function Dashboard() {
           <div className="dashboard-page__stat-icon dashboard-page__stat-icon--receita">
             <FaArrowDown />
           </div>
-          <div>
+          <div className="dashboard-page__stat-text">
             <span>Receitas do mês</span>
             <strong>{formatarMoeda(stats.receitasMes)}</strong>
           </div>
@@ -116,7 +116,7 @@ function Dashboard() {
           <div className="dashboard-page__stat-icon dashboard-page__stat-icon--despesa">
             <FaArrowUp />
           </div>
-          <div>
+          <div className="dashboard-page__stat-text">
             <span>Despesas do mês</span>
             <strong>{formatarMoeda(stats.despesasMes)}</strong>
           </div>
@@ -125,7 +125,7 @@ function Dashboard() {
           <div className="dashboard-page__stat-icon dashboard-page__stat-icon--saldo">
             <FaWallet />
           </div>
-          <div>
+          <div className="dashboard-page__stat-text">
             <span>Saldo do mês</span>
             <strong>{formatarMoeda(stats.saldoMes)}</strong>
           </div>

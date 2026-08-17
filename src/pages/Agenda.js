@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaCalendarAlt } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaPlus } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -40,6 +40,13 @@ const gerarHorarios = () => {
 
 const HORARIOS = gerarHorarios();
 
+function horariosDoTurno(turno) {
+  return HORARIOS.filter((h) => {
+    const hour = parseInt(h.slice(0, 2), 10);
+    return hour >= turno.startHour && hour < turno.endHour;
+  });
+}
+
 function toYmd(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -79,6 +86,7 @@ function Agenda() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [agruparPorTurno, setAgruparPorTurno] = useState(false);
+  const [turnoExpandido, setTurnoExpandido] = useState(null);
   const [showCalendario, setShowCalendario] = useState(false);
   const [mesCalendario, setMesCalendario] = useState(() => new Date());
   const [eventosMes, setEventosMes] = useState([]);
@@ -200,10 +208,14 @@ function Agenda() {
     setShowModal(true);
   };
 
-  const abrirModalTurno = (dia, turno) => {
-    const horaInicio = `${String(turno.startHour).padStart(2, '0')}:00`;
-    const horaFim = turno.endHour === 24 ? '23:59' : `${String(turno.endHour).padStart(2, '0')}:00`;
-    abrirModalSlot(dia, horaInicio, horaFim);
+  const expandirTurno = (turnoId) => {
+    setTurnoExpandido((atual) => (atual === turnoId ? null : turnoId));
+  };
+
+  const abrirNovoEventoNoDia = (ymd) => {
+    const data = ymd || diaCalendario || toYmd(new Date());
+    if (!diaCalendario) setDiaCalendario(data);
+    abrirModalSlot({ data }, '09:00');
   };
 
   const salvarEvento = async (e) => {
@@ -301,7 +313,36 @@ function Agenda() {
     return null;
   }
 
-  const linhasAgenda = agruparPorTurno ? TURNOS : HORARIOS;
+  const renderSlotRow = (horario) => (
+    <div key={horario} className="agenda-slot-row">
+      <div className="agenda-hora-cell">{horario}</div>
+      {dias.map(dia => {
+        const evs = getEventosNoSlot(dia.data, horario);
+        return (
+          <div
+            key={`${dia.data}-${horario}`}
+            className={`agenda-slot-cell ${dia.isToday ? 'is-today' : ''} ${evs.length > 0 ? 'has-eventos' : ''}`}
+            onClick={() => abrirModalSlot(dia, horario)}
+          >
+            {evs.length > 0 ? (
+              evs.map(ev => (
+                <div
+                  key={ev.evento_id}
+                  className="agenda-event-pill"
+                  style={{ backgroundColor: ev.evento_cor || '#4F46E5' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}{ev.evento_titulo}
+                </div>
+              ))
+            ) : (
+              <span className="agenda-slot-add">+</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="agenda-container">
@@ -315,8 +356,9 @@ function Agenda() {
             className="btn-agenda-cal"
             onClick={abrirCalendario}
             title="Ver calendário"
+            aria-label="Ver calendário"
           >
-            <FaCalendarAlt />
+            <FaCalendarAlt size={18} color="#fff" />
           </button>
         </div>
         <div className="agenda-header-actions">
@@ -324,7 +366,10 @@ function Agenda() {
             <input
               type="checkbox"
               checked={agruparPorTurno}
-              onChange={e => setAgruparPorTurno(e.target.checked)}
+              onChange={e => {
+                setAgruparPorTurno(e.target.checked);
+                setTurnoExpandido(null);
+              }}
             />
             Agrupar por turno
           </label>
@@ -347,43 +392,47 @@ function Agenda() {
         </div>
         <div className="agenda-scroll-wrapper">
           <div className="agenda-slots">
-            {linhasAgenda.map(linha => {
-              const isTurno = typeof linha === 'object';
-              const keyLinha = isTurno ? linha.id : linha;
-              const labelLinha = isTurno ? linha.label : linha;
-              return (
-                <div key={keyLinha} className={`agenda-slot-row ${isTurno ? 'agenda-slot-row-turno' : ''}`}>
-                  <div className={`agenda-hora-cell ${isTurno ? 'agenda-hora-cell-turno' : ''}`}>{labelLinha}</div>
-                  {dias.map(dia => {
-                    const evs = isTurno
-                      ? getEventosNoTurno(dia.data, linha)
-                      : getEventosNoSlot(dia.data, linha);
-                    return (
-                      <div
-                        key={`${dia.data}-${keyLinha}`}
-                        className={`agenda-slot-cell ${dia.isToday ? 'is-today' : ''} ${evs.length > 0 ? 'has-eventos' : ''}`}
-                        onClick={() => (isTurno ? abrirModalTurno(dia, linha) : abrirModalSlot(dia, linha))}
-                      >
-                        {evs.length > 0 ? (
-                          evs.map(ev => (
-                            <div
-                              key={ev.evento_id}
-                              className="agenda-event-pill"
-                              style={{ backgroundColor: ev.evento_cor || '#4F46E5' }}
-                              onClick={e => e.stopPropagation()}
-                            >
-                              {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}{ev.evento_titulo}
-                            </div>
-                          ))
-                        ) : (
-                          <span className="agenda-slot-add">+</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
+            {agruparPorTurno
+              ? TURNOS.map(turno => (
+                <React.Fragment key={turno.id}>
+                  <div
+                    className={`agenda-slot-row agenda-slot-row-turno ${turnoExpandido === turno.id ? 'expandido' : ''}`}
+                    onClick={() => expandirTurno(turno.id)}
+                  >
+                    <div className="agenda-hora-cell agenda-hora-cell-turno">
+                      <span className="agenda-turno-chevron">{turnoExpandido === turno.id ? '▾' : '▸'}</span>
+                      {turno.label}
+                    </div>
+                    {dias.map(dia => {
+                      const evs = getEventosNoTurno(dia.data, turno);
+                      return (
+                        <div
+                          key={`${dia.data}-${turno.id}`}
+                          className={`agenda-slot-cell ${dia.isToday ? 'is-today' : ''} ${evs.length > 0 ? 'has-eventos' : ''}`}
+                        >
+                          {evs.length > 0 ? (
+                            evs.map(ev => (
+                              <div
+                                key={ev.evento_id}
+                                className="agenda-event-pill"
+                                style={{ backgroundColor: ev.evento_cor || '#4F46E5' }}
+                              >
+                                {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}{ev.evento_titulo}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="agenda-slot-add">{turnoExpandido === turno.id ? '' : '+'}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {turnoExpandido === turno.id
+                    ? horariosDoTurno(turno).map(horario => renderSlotRow(horario))
+                    : null}
+                </React.Fragment>
+              ))
+              : HORARIOS.map(horario => renderSlotRow(horario))}
           </div>
         </div>
       </div>
@@ -423,27 +472,38 @@ function Agenda() {
               ))}
             </div>
             <div className="agenda-cal-events">
+              <div className="agenda-cal-events-head">
+                <h4>
+                  {diaCalendario
+                    ? `Eventos de ${formatarYmd(diaCalendario)}`
+                    : 'Eventos'}
+                </h4>
+                <button
+                  type="button"
+                  className="btn-agenda-novo"
+                  onClick={() => abrirNovoEventoNoDia(diaCalendario)}
+                >
+                  <FaPlus /> Novo evento
+                </button>
+              </div>
               {diaCalendario ? (
-                <>
-                  <h4>Eventos de {formatarYmd(diaCalendario)}</h4>
-                  {eventosDoDiaCalendario.length === 0 ? (
-                    <p className="agenda-cal-empty">Nenhum evento neste dia.</p>
-                  ) : (
-                    eventosDoDiaCalendario.map(ev => (
-                      <div
-                        key={ev.evento_id}
-                        className="agenda-cal-event-item"
-                        style={{ borderLeftColor: ev.evento_cor || '#4F46E5' }}
-                      >
-                        <strong>{ev.evento_titulo}</strong>
-                        <span>
-                          {horaEvento(ev) || 'Sem horário'}
-                          {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </>
+                eventosDoDiaCalendario.length === 0 ? (
+                  <p className="agenda-cal-empty">Nenhum evento neste dia.</p>
+                ) : (
+                  eventosDoDiaCalendario.map(ev => (
+                    <div
+                      key={ev.evento_id}
+                      className="agenda-cal-event-item"
+                      style={{ borderLeftColor: ev.evento_cor || '#4F46E5' }}
+                    >
+                      <strong>{ev.evento_titulo}</strong>
+                      <span>
+                        {horaEvento(ev) || 'Sem horário'}
+                        {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
+                      </span>
+                    </div>
+                  ))
+                )
               ) : (
                 <p className="agenda-cal-empty">Selecione um dia para ver os eventos.</p>
               )}
