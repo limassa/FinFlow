@@ -3,14 +3,12 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
-  Filler,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
@@ -19,12 +17,10 @@ import { getUsuarioLogado } from '../functions/auth';
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
+  Legend
 );
 
 const DIAS_JANELA = 7;
@@ -141,30 +137,20 @@ function GraficoEvolucaoMensal() {
         {
           label: 'Receitas',
           data: dadosReceitas,
+          backgroundColor: 'rgba(22, 163, 74, 0.85)',
           borderColor: '#16A34A',
-          backgroundColor: 'rgba(34, 197, 94, 0.18)',
-          tension: 0.4,
-          fill: true,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#fff',
-          pointBorderColor: '#16A34A',
-          pointBorderWidth: 2,
-          borderWidth: 3,
+          borderWidth: 0,
+          borderRadius: 4,
+          maxBarThickness: 28,
         },
         {
           label: 'Despesas',
           data: dadosDespesas,
+          backgroundColor: 'rgba(220, 38, 38, 0.85)',
           borderColor: '#DC2626',
-          backgroundColor: 'rgba(239, 68, 68, 0.14)',
-          tension: 0.4,
-          fill: true,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#fff',
-          pointBorderColor: '#DC2626',
-          pointBorderWidth: 2,
-          borderWidth: 3,
+          borderWidth: 0,
+          borderRadius: 4,
+          maxBarThickness: 28,
         },
       ],
     };
@@ -183,6 +169,12 @@ function GraficoEvolucaoMensal() {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
+    datasets: {
+      bar: {
+        categoryPercentage: 0.7,
+        barPercentage: 0.85,
+      },
+    },
     plugins: {
       legend: {
         display: true,
@@ -190,7 +182,7 @@ function GraficoEvolucaoMensal() {
         align: 'end',
         labels: {
           usePointStyle: true,
-          pointStyle: 'circle',
+          pointStyle: 'rectRounded',
           padding: 18,
           font: { size: 12, weight: '600' },
           color: '#334155',
@@ -299,7 +291,7 @@ function GraficoEvolucaoMensal() {
         </button>
       </div>
       <div className="chart-container" style={{ height: '240px', width: '100%', position: 'relative' }}>
-        <Line data={dadosGrafico} options={options} />
+        <Bar data={dadosGrafico} options={options} />
       </div>
     </div>
   );

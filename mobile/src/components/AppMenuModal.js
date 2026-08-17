@@ -43,8 +43,8 @@ const MENU_SECTIONS = [
     title: 'ORGANIZAÇÃO',
     emoji: '📅',
     items: [
-      { screen: 'Calendario', label: 'Calendário', icon: 'calendar' },
-      { screen: 'Agenda', label: 'Agenda', icon: 'grid-outline' },
+      { screen: 'Calendario', label: 'Calendário Financeiro', icon: 'calendar' },
+      { screen: 'Agenda', label: 'Agenda Pessoal', icon: 'grid-outline' },
       { screen: 'Orcamento', label: 'Orçamento', icon: 'pie-chart' },
       { screen: 'Categorias', label: 'Categorias', icon: 'pricetags' },
     ],

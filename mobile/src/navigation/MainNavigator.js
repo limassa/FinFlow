@@ -28,6 +28,7 @@ import PanoramaFinanceiroScreen from '../screens/PanoramaFinanceiroScreen';
 import AppMenuModal from '../components/AppMenuModal';
 import OfflineBanner from '../components/OfflineBanner';
 import { HeaderIconButton } from '../components/HeaderIconButton';
+import { NotificationBell } from '../components/NotificationBell';
 import { MenuProvider, useMenu } from '../context/MenuContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMenuScreenOptions } from './menuHeaderOptions';
@@ -65,12 +66,12 @@ function MainMenuStack() {
       <Stack.Screen
         name="Calendario"
         component={CalendarioScreen}
-        options={getMenuScreenOptions(openMenu, () => ({ title: 'Calendário' }))}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Calendário Financeiro' }))}
       />
       <Stack.Screen
         name="Agenda"
         component={AgendaScreen}
-        options={getMenuScreenOptions(openMenu, () => ({ title: 'Agenda' }))}
+        options={getMenuScreenOptions(openMenu, () => ({ title: 'Agenda Pessoal' }))}
       />
       <Stack.Screen
         name="Contas"
@@ -203,6 +204,7 @@ function MainTabs() {
           headerLeft: () => (
             <HeaderIconButton name="menu" side="left" onPress={openMenu} />
           ),
+          headerRight: () => <NotificationBell />,
         }}
       />
       <Tab.Screen
@@ -214,6 +216,7 @@ function MainTabs() {
           headerLeft: () => (
             <HeaderIconButton name="menu" side="left" onPress={openMenu} />
           ),
+          headerRight: () => <NotificationBell />,
         }}
       />
       <Tab.Screen

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeaderIconButton } from '../components/HeaderIconButton';
+import { NotificationBell } from '../components/NotificationBell';
 import { useTheme } from '../context/ThemeContext';
 
 /**
@@ -66,6 +67,7 @@ export function getMenuScreenOptions(openMenu, overrides = {}) {
         );
       },
       ...extra,
+      headerRight: extra.headerRight || (() => <NotificationBell />),
     };
   };
 }

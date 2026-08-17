@@ -54,7 +54,7 @@ export default function CalendarioScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      title: 'Calendário',
+      title: 'Calendário Financeiro',
     });
   }, [navigation]);
 

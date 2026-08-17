@@ -11,11 +11,11 @@ const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
 
 const DIAS_SEMANA = [
   'Domingo',
-  'Segunda-feira',
-  'Terça-feira',
-  'Quarta-feira',
-  'Quinta-feira',
-  'Sexta-feira',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
   'Sábado',
 ];
 
@@ -85,13 +85,16 @@ function Principal() {
   const [receitas, setReceitas] = useState([]);
   const [despesas, setDespesas] = useState([]);
   const [vencimentos, setVencimentos] = useState({ hoje: 0, semana: 0 });
+  const [compromissosHoje, setCompromissosHoje] = useState(0);
   const [orcamento, setOrcamento] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModalRelatorio, setShowModalRelatorio] = useState(false);
 
   const usuario = getUsuarioLogado();
   const userId = usuario ? usuario.id : null;
-  const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
+  const agora = new Date();
+  const diaSemanaLabel = DIAS_SEMANA[agora.getDay()];
+  const dataHojeLabel = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}`;
   const [dicaIdx, setDicaIdx] = useState(() => new Date().getDate() % DICAS_ECONOMIA.length);
   const dica = DICAS_ECONOMIA[dicaIdx % DICAS_ECONOMIA.length];
 
@@ -106,11 +109,14 @@ function Principal() {
     setLoading(true);
     try {
       const mesAtualStr = new Date().toISOString().slice(0, 7);
-      const [receitasRes, despesasRes, saldoContasRes, orcamentosRes] = await Promise.all([
+      const hojeLocal = new Date();
+      const hojeYmd = `${hojeLocal.getFullYear()}-${String(hojeLocal.getMonth() + 1).padStart(2, '0')}-${String(hojeLocal.getDate()).padStart(2, '0')}`;
+      const [receitasRes, despesasRes, saldoContasRes, orcamentosRes, eventosRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.ORCAMENTOS}?userId=${userId}&mes=${mesAtualStr}`).catch(() => ({ data: [] })),
+        axios.get(`${API_ENDPOINTS.EVENTOS}?userId=${userId}&dataInicio=${hojeYmd}&dataFim=${hojeYmd}`).catch(() => ({ data: [] })),
       ]);
 
       const receitasData = receitasRes.data || [];
@@ -169,6 +175,7 @@ function Principal() {
           if (venc >= inicio && venc <= fim) vencendoSemana += 1;
         });
       setVencimentos({ hoje: vencendoHoje, semana: vencendoSemana });
+      setCompromissosHoje((eventosRes.data || []).length);
 
       const listaOrc = orcamentosRes.data || [];
       if (listaOrc.length > 0) {
@@ -234,6 +241,13 @@ function Principal() {
         ? 'Você tem 1 conta vencendo hoje.'
         : `Você tem ${vencimentos.hoje} contas vencendo hoje.`;
 
+  const textoCompromissosHoje =
+    compromissosHoje === 0
+      ? null
+      : compromissosHoje === 1
+        ? 'Você tem 1 compromisso hoje.'
+        : `Você tem ${compromissosHoje} compromissos hoje.`;
+
   const textoVencimentoSemana =
     vencimentos.semana === 1
       ? 'Você possui 1 conta vencendo esta semana.'
@@ -289,8 +303,11 @@ function Principal() {
 
       <section className="principal-human-grid">
         <article className="principal-welcome-card">
-          <p className="principal-welcome-card__day">Hoje é {diaSemanaLabel}</p>
+          <p className="principal-welcome-card__day">Hoje é {diaSemanaLabel}, dia {dataHojeLabel}</p>
           <p className="principal-welcome-card__line">{textoVencimentoHoje}</p>
+          {textoCompromissosHoje ? (
+            <p className="principal-welcome-card__line">{textoCompromissosHoje}</p>
+          ) : null}
           {textoVencimentoSemana ? (
             <p className="principal-welcome-card__muted">{textoVencimentoSemana}</p>
           ) : null}

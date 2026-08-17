@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaPlus, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
@@ -17,8 +17,18 @@ const tiposEvento = [
 const coresEvento = ['#4F46E5', '#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6B7280'];
 
 const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
 
-// Horários de 00:00 a 23:30, intervalo de 30 min
+const TURNOS = [
+  { id: 'madrugada', label: 'Madrugada', startHour: 0, endHour: 6 },
+  { id: 'manha', label: 'Manhã', startHour: 6, endHour: 12 },
+  { id: 'tarde', label: 'Tarde', startHour: 12, endHour: 18 },
+  { id: 'noite', label: 'Noite', startHour: 18, endHour: 24 },
+];
+
 const gerarHorarios = () => {
   const horarios = [];
   for (let h = 0; h < 24; h++) {
@@ -30,17 +40,33 @@ const gerarHorarios = () => {
 
 const HORARIOS = gerarHorarios();
 
-function getSemanaAtual(data) {
-  const d = new Date(data);
-  const day = d.getDay();
-  const diff = d.getDate() - day;
-  const inicio = new Date(d);
-  inicio.setDate(diff);
-  inicio.setHours(0, 0, 0, 0);
-  const fim = new Date(inicio);
-  fim.setDate(inicio.getDate() + 6);
-  fim.setHours(23, 59, 59, 999);
-  return { inicio, fim, dias: [] };
+function toYmd(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function ymdToDate(ymd) {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatarYmd(ymd) {
+  if (!ymd) return '';
+  const [y, m, d] = String(ymd).slice(0, 10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function horaEvento(ev) {
+  return String(ev.evento_hora_inicio || ev.evento_Hora_Inicio || '').slice(0, 5);
+}
+
+function dataEvento(ev) {
+  return String(ev.evento_data || ev.evento_Data || '').slice(0, 10);
+}
+
+function semanaInicioDe(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
 }
 
 function Agenda() {
@@ -48,16 +74,15 @@ function Agenda() {
   const usuario = getUsuarioLogado();
   const userId = usuario?.id;
 
-  const [semanaRef, setSemanaRef] = useState(() => {
-    const hoje = new Date();
-    const day = hoje.getDay();
-    const diff = hoje.getDate() - day;
-    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), diff);
-    return inicio;
-  });
+  const [semanaRef, setSemanaRef] = useState(() => semanaInicioDe(new Date()));
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [agruparPorTurno, setAgruparPorTurno] = useState(false);
+  const [showCalendario, setShowCalendario] = useState(false);
+  const [mesCalendario, setMesCalendario] = useState(() => new Date());
+  const [eventosMes, setEventosMes] = useState([]);
+  const [diaCalendario, setDiaCalendario] = useState(null);
   const [slotSelecionado, setSlotSelecionado] = useState(null);
   const [formEvento, setFormEvento] = useState({
     titulo: '',
@@ -74,12 +99,11 @@ function Agenda() {
   const getDiasDaSemana = () => {
     const dias = [];
     const inicio = new Date(semanaRef);
-    const hoje = new Date();
-    const hojeYmd = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+    const hojeYmd = toYmd(new Date());
     for (let i = 0; i < 7; i++) {
       const d = new Date(inicio);
       d.setDate(inicio.getDate() + i);
-      const data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const data = toYmd(d);
       dias.push({
         data,
         label: diasSemana[i],
@@ -101,6 +125,12 @@ function Agenda() {
     }
   }, [userId, dataInicio, dataFim]);
 
+  useEffect(() => {
+    if (userId && showCalendario) {
+      carregarEventosMes();
+    }
+  }, [userId, showCalendario, mesCalendario]);
+
   const carregarEventos = async () => {
     setLoading(true);
     try {
@@ -115,12 +145,26 @@ function Agenda() {
     }
   };
 
+  const carregarEventosMes = async () => {
+    try {
+      const mesFormatado = `${mesCalendario.getFullYear()}-${String(mesCalendario.getMonth() + 1).padStart(2, '0')}`;
+      const res = await axios.get(`${API_ENDPOINTS.EVENTOS}?userId=${userId}&mes=${mesFormatado}`);
+      setEventosMes(res.data || []);
+    } catch (err) {
+      console.error('Erro ao carregar eventos do mês:', err);
+    }
+  };
+
   const navegarSemana = (delta) => {
     setSemanaRef(prev => {
       const nova = new Date(prev);
       nova.setDate(nova.getDate() + (delta * 7));
       return nova;
     });
+  };
+
+  const irParaData = (ymd) => {
+    setSemanaRef(semanaInicioDe(ymdToDate(ymd)));
   };
 
   const formatarSemana = () => {
@@ -130,15 +174,17 @@ function Agenda() {
     return `${i.dia}/${i.mes + 1} - ${f.dia}/${f.mes + 1} ${semanaRef.getFullYear()}`;
   };
 
-  const abrirModalSlot = (dia, horario) => {
-    const [h, m] = horario.split(':').map(Number);
-    let fimH = m === 30 ? h + 1 : h;
-    let fimM = m === 30 ? 0 : 30;
-    if (h === 23 && m === 30) {
-      fimH = 23;
-      fimM = 59;
-    }
-    const horaFim = `${String(fimH).padStart(2, '0')}:${String(fimM).padStart(2, '0')}`;
+  const abrirModalSlot = (dia, horario, horaFimPadrao) => {
+    const horaFim = horaFimPadrao || (() => {
+      const [h, m] = horario.split(':').map(Number);
+      let fimH = m === 30 ? h + 1 : h;
+      let fimM = m === 30 ? 0 : 30;
+      if (h === 23 && m === 30) {
+        fimH = 23;
+        fimM = 59;
+      }
+      return `${String(fimH).padStart(2, '0')}:${String(fimM).padStart(2, '0')}`;
+    })();
     setSlotSelecionado({ dia, horario });
     setFormEvento({
       titulo: '',
@@ -152,6 +198,12 @@ function Agenda() {
       lembrete_minutos: 30
     });
     setShowModal(true);
+  };
+
+  const abrirModalTurno = (dia, turno) => {
+    const horaInicio = `${String(turno.startHour).padStart(2, '0')}:00`;
+    const horaFim = turno.endHour === 24 ? '23:59' : `${String(turno.endHour).padStart(2, '0')}:00`;
+    abrirModalSlot(dia, horaInicio, horaFim);
   };
 
   const salvarEvento = async (e) => {
@@ -172,6 +224,7 @@ function Agenda() {
       setShowModal(false);
       setSlotSelecionado(null);
       carregarEventos();
+      if (showCalendario) carregarEventosMes();
     } catch (err) {
       console.error('Erro ao criar evento:', err);
       alert('Erro ao criar evento.');
@@ -180,12 +233,67 @@ function Agenda() {
 
   const getEventosNoSlot = (data, hora) => {
     return eventos.filter(e => {
-      const ed = String(e.evento_data || '').slice(0, 10);
+      const ed = dataEvento(e);
       if (ed !== data) return false;
-      const hinicio = String(e.evento_hora_inicio || '').slice(0, 5);
+      const hinicio = horaEvento(e);
       if (!hinicio) return false;
       return hinicio === hora;
     });
+  };
+
+  const getEventosNoTurno = (data, turno) => {
+    return eventos.filter(e => {
+      const ed = dataEvento(e);
+      if (ed !== data) return false;
+      const hinicio = horaEvento(e);
+      if (!hinicio) return turno.id === 'manha';
+      const h = parseInt(hinicio.slice(0, 2), 10);
+      return h >= turno.startHour && h < turno.endHour;
+    });
+  };
+
+  const gerarDiasCalendario = () => {
+    const ano = mesCalendario.getFullYear();
+    const mes = mesCalendario.getMonth();
+    const primeiro = new Date(ano, mes, 1);
+    const totalDias = new Date(ano, mes + 1, 0).getDate();
+    const offset = primeiro.getDay();
+    const hojeYmd = toYmd(new Date());
+    const diasCal = [];
+    for (let i = 0; i < offset; i++) diasCal.push(null);
+    for (let dia = 1; dia <= totalDias; dia++) {
+      const data = toYmd(new Date(ano, mes, dia));
+      const evs = eventosMes.filter(e => dataEvento(e) === data);
+      diasCal.push({
+        dia,
+        data,
+        eventos: evs,
+        temEventos: evs.length > 0,
+        isToday: data === hojeYmd,
+      });
+    }
+    return diasCal;
+  };
+
+  const eventosDoDiaCalendario = diaCalendario
+    ? eventosMes.filter(e => dataEvento(e) === diaCalendario)
+    : [];
+
+  const navegarMesCal = (delta) => {
+    setMesCalendario(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+    setDiaCalendario(null);
+  };
+
+  const abrirCalendario = () => {
+    setMesCalendario(new Date(semanaRef.getFullYear(), semanaRef.getMonth(), 1));
+    setDiaCalendario(null);
+    setShowCalendario(true);
+  };
+
+  const selecionarDiaCal = (dia) => {
+    if (!dia) return;
+    setDiaCalendario(dia.data);
+    irParaData(dia.data);
   };
 
   if (!userId) {
@@ -193,22 +301,40 @@ function Agenda() {
     return null;
   }
 
+  const linhasAgenda = agruparPorTurno ? TURNOS : HORARIOS;
+
   return (
     <div className="agenda-container">
       <div className="agenda-header">
         <div className="agenda-header-nav">
           <button onClick={() => navegarSemana(-1)} className="btn-navegar">‹</button>
-          <h2>Agenda - Semana {formatarSemana()}</h2>
+          <h2>Agenda Pessoal - Semana {formatarSemana()}</h2>
           <button onClick={() => navegarSemana(1)} className="btn-navegar">›</button>
+          <button
+            type="button"
+            className="btn-agenda-cal"
+            onClick={abrirCalendario}
+            title="Ver calendário"
+          >
+            <FaCalendarAlt />
+          </button>
         </div>
         <div className="agenda-header-actions">
+          <label className="agenda-group-check">
+            <input
+              type="checkbox"
+              checked={agruparPorTurno}
+              onChange={e => setAgruparPorTurno(e.target.checked)}
+            />
+            Agrupar por turno
+          </label>
           <button onClick={() => navigate('/layout/principal')} className="btn-home">
             <FaHome /> Home
           </button>
         </div>
       </div>
 
-      <div className="agenda-grid">
+      <div className={`agenda-grid ${agruparPorTurno ? 'agrupado' : ''}`}>
         <div className="agenda-dias-header">
           <div className="agenda-corner" />
           {dias.map(d => (
@@ -221,41 +347,110 @@ function Agenda() {
         </div>
         <div className="agenda-scroll-wrapper">
           <div className="agenda-slots">
-            {HORARIOS.map(horario => (
-              <div key={horario} className="agenda-slot-row">
-                <div className="agenda-hora-cell">{horario}</div>
-                {dias.map(dia => {
-                  const evs = getEventosNoSlot(dia.data, horario);
-                  return (
-                    <div
-                      key={`${dia.data}-${horario}`}
-                      className={`agenda-slot-cell ${dia.isToday ? 'is-today' : ''} ${evs.length > 0 ? 'has-eventos' : ''}`}
-                      onClick={() => abrirModalSlot(dia, horario)}
-                    >
-                      {evs.length > 0 ? (
-                        evs.map(ev => (
-                          <div
-                            key={ev.evento_id}
-                            className="agenda-event-pill"
-                            style={{ backgroundColor: ev.evento_cor || '#4F46E5' }}
-                            onClick={e => e.stopPropagation()}
-                          >
-                            {ev.evento_titulo}
-                          </div>
-                        ))
-                      ) : (
-                        <span className="agenda-slot-add">+</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+            {linhasAgenda.map(linha => {
+              const isTurno = typeof linha === 'object';
+              const keyLinha = isTurno ? linha.id : linha;
+              const labelLinha = isTurno ? linha.label : linha;
+              return (
+                <div key={keyLinha} className={`agenda-slot-row ${isTurno ? 'agenda-slot-row-turno' : ''}`}>
+                  <div className={`agenda-hora-cell ${isTurno ? 'agenda-hora-cell-turno' : ''}`}>{labelLinha}</div>
+                  {dias.map(dia => {
+                    const evs = isTurno
+                      ? getEventosNoTurno(dia.data, linha)
+                      : getEventosNoSlot(dia.data, linha);
+                    return (
+                      <div
+                        key={`${dia.data}-${keyLinha}`}
+                        className={`agenda-slot-cell ${dia.isToday ? 'is-today' : ''} ${evs.length > 0 ? 'has-eventos' : ''}`}
+                        onClick={() => (isTurno ? abrirModalTurno(dia, linha) : abrirModalSlot(dia, linha))}
+                      >
+                        {evs.length > 0 ? (
+                          evs.map(ev => (
+                            <div
+                              key={ev.evento_id}
+                              className="agenda-event-pill"
+                              style={{ backgroundColor: ev.evento_cor || '#4F46E5' }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}{ev.evento_titulo}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="agenda-slot-add">+</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {loading && <div className="agenda-loading">Carregando...</div>}
+
+      {showCalendario && (
+        <div className="modal-overlay" onClick={() => setShowCalendario(false)}>
+          <div className="agenda-cal-modal" onClick={e => e.stopPropagation()}>
+            <div className="agenda-cal-header">
+              <button type="button" className="btn-navegar" onClick={() => navegarMesCal(-1)}>‹</button>
+              <h3>{MESES[mesCalendario.getMonth()]} {mesCalendario.getFullYear()}</h3>
+              <button type="button" className="btn-navegar" onClick={() => navegarMesCal(1)}>›</button>
+              <button type="button" className="btn-fechar agenda-cal-close" onClick={() => setShowCalendario(false)}>×</button>
+            </div>
+            <div className="agenda-cal-weekdays">
+              {diasSemana.map(d => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+            <div className="agenda-cal-grid">
+              {gerarDiasCalendario().map((dia, idx) => (
+                <button
+                  key={dia ? dia.data : `empty-${idx}`}
+                  type="button"
+                  className={`agenda-cal-day ${!dia ? 'vazio' : ''} ${dia?.isToday ? 'hoje' : ''} ${dia?.data === diaCalendario ? 'selecionado' : ''}`}
+                  disabled={!dia}
+                  onClick={() => selecionarDiaCal(dia)}
+                >
+                  {dia && (
+                    <>
+                      <span>{dia.dia}</span>
+                      {dia.temEventos ? <span className="agenda-cal-dot" /> : null}
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="agenda-cal-events">
+              {diaCalendario ? (
+                <>
+                  <h4>Eventos de {formatarYmd(diaCalendario)}</h4>
+                  {eventosDoDiaCalendario.length === 0 ? (
+                    <p className="agenda-cal-empty">Nenhum evento neste dia.</p>
+                  ) : (
+                    eventosDoDiaCalendario.map(ev => (
+                      <div
+                        key={ev.evento_id}
+                        className="agenda-cal-event-item"
+                        style={{ borderLeftColor: ev.evento_cor || '#4F46E5' }}
+                      >
+                        <strong>{ev.evento_titulo}</strong>
+                        <span>
+                          {horaEvento(ev) || 'Sem horário'}
+                          {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </>
+              ) : (
+                <p className="agenda-cal-empty">Selecione um dia para ver os eventos.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>

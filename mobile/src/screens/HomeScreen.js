@@ -22,11 +22,11 @@ import { HeaderGreetingTitle } from '../navigation/menuHeaderOptions';
 
 const DIAS_SEMANA = [
   'Domingo',
-  'Segunda-feira',
-  'Terça-feira',
-  'Quarta-feira',
-  'Quinta-feira',
-  'Sexta-feira',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
   'Sábado',
 ];
 
@@ -128,6 +128,7 @@ export default function HomeScreen() {
     despesasMes: 0,
   });
   const [vencimentos, setVencimentos] = useState({ hoje: 0, semana: 0 });
+  const [compromissosHoje, setCompromissosHoje] = useState(0);
   const [orcamento, setOrcamento] = useState(null);
   const [userFoto, setUserFoto] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -136,6 +137,8 @@ export default function HomeScreen() {
   const [dicaIdx, setDicaIdx] = useState(dicaInicial);
 
   const diaSemanaLabel = DIAS_SEMANA[new Date().getDay()];
+  const agora = new Date();
+  const dataHojeLabel = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}`;
   const dica = DICAS_ECONOMIA[dicaIdx % DICAS_ECONOMIA.length];
 
   useLayoutEffect(() => {
@@ -174,11 +177,14 @@ export default function HomeScreen() {
   const fetchTotais = async () => {
     try {
       const mesAtualStr = new Date().toISOString().slice(0, 7);
-      const [receitasRes, despesasRes, saldoContasRes, orcamentosRes] = await Promise.all([
+      const hojeLocal = new Date();
+      const hojeYmd = `${hojeLocal.getFullYear()}-${String(hojeLocal.getMonth() + 1).padStart(2, '0')}-${String(hojeLocal.getDate()).padStart(2, '0')}`;
+      const [receitasRes, despesasRes, saldoContasRes, orcamentosRes, eventosRes] = await Promise.all([
         axios.get(`${API_ENDPOINTS.RECEITAS}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.DESPESAS}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.CONTAS_SALDO_TOTAL}?userId=${userId}`),
         axios.get(`${API_ENDPOINTS.ORCAMENTOS}?userId=${userId}&mes=${mesAtualStr}`).catch(() => ({ data: [] })),
+        axios.get(`${API_ENDPOINTS.EVENTOS}?userId=${userId}&dataInicio=${hojeYmd}&dataFim=${hojeYmd}`).catch(() => ({ data: [] })),
       ]);
 
       const receitasData = (receitasRes.data || []).map((receita) => ({
@@ -253,6 +259,7 @@ export default function HomeScreen() {
         if (venc >= inicio && venc <= fim) vencendoSemana += 1;
       });
       setVencimentos({ hoje: vencendoHoje, semana: vencendoSemana });
+      setCompromissosHoje((eventosRes.data || []).length);
 
       const listaOrc = orcamentosRes.data || [];
       if (listaOrc.length > 0) {
@@ -290,6 +297,7 @@ export default function HomeScreen() {
           despesasMes,
         },
         vencimentos: { hoje: vencendoHoje, semana: vencendoSemana },
+        compromissosHoje: (eventosRes.data || []).length,
         orcamento:
           listaOrc.length > 0
             ? {
@@ -310,6 +318,7 @@ export default function HomeScreen() {
       if (cached?.totais) {
         setTotais(cached.totais);
         if (cached.vencimentos) setVencimentos(cached.vencimentos);
+        if (cached.compromissosHoje !== undefined) setCompromissosHoje(cached.compromissosHoje);
         if (cached.orcamento !== undefined) setOrcamento(cached.orcamento);
         return;
       }
@@ -390,6 +399,13 @@ export default function HomeScreen() {
         ? 'Você tem 1 conta vencendo hoje.'
         : `Você tem ${vencimentos.hoje} contas vencendo hoje.`;
 
+  const textoCompromissosHoje =
+    compromissosHoje === 0
+      ? null
+      : compromissosHoje === 1
+        ? 'Você tem 1 compromisso hoje.'
+        : `Você tem ${compromissosHoje} compromissos hoje.`;
+
   const textoVencimentoSemana =
     vencimentos.semana === 1
       ? 'Você possui 1 conta vencendo esta semana.'
@@ -412,8 +428,11 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeDay}>Hoje é {diaSemanaLabel}</Text>
+          <Text style={styles.welcomeDay}>Hoje é {diaSemanaLabel}, dia {dataHojeLabel}</Text>
           <Text style={styles.welcomeLine}>{textoVencimentoHoje}</Text>
+          {textoCompromissosHoje ? (
+            <Text style={styles.welcomeLine}>{textoCompromissosHoje}</Text>
+          ) : null}
           {textoVencimentoSemana ? (
             <Text style={styles.welcomeLineMuted}>{textoVencimentoSemana}</Text>
           ) : null}

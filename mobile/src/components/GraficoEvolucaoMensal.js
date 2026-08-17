@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
 
-const screenWidth = Dimensions.get('window').width;
-/** Janela visível: 3 dias antes + dia central + 3 dias depois = 7 dias */
 const DIAS_JANELA = 7;
 const OFFSET_CENTRO = Math.floor(DIAS_JANELA / 2); // 3
 
@@ -150,26 +147,11 @@ export default function GraficoEvolucaoMensal() {
       despesasData.push(totalDespesas);
     });
 
-    // LineChart exige pelo menos 1 valor; evita crash com arrays vazios
-    if (labels.length === 0) {
-      return null;
-    }
-
     return {
       labels,
-      datasets: [
-        {
-          data: receitasData,
-          color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
-          strokeWidth: 2,
-        },
-        {
-          data: despesasData,
-          color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
-          strokeWidth: 2,
-        },
-      ],
-      legend: ['Receitas', 'Despesas'],
+      receitasData,
+      despesasData,
+      maxVal: Math.max(1, ...receitasData, ...despesasData),
     };
   }, [janela, receitas, despesas]);
 
@@ -191,7 +173,7 @@ export default function GraficoEvolucaoMensal() {
     );
   }
 
-  if (!chartSeries) {
+  if (!chartSeries || chartSeries.labels.length === 0) {
     return (
       <View style={styles.container}>
         <Text style={styles.emptyText}>Nenhum dado disponível</Text>
@@ -199,25 +181,7 @@ export default function GraficoEvolucaoMensal() {
     );
   }
 
-  const chartConfig = {
-    backgroundColor: colors.card,
-    backgroundGradientFrom: colors.card,
-    backgroundGradientTo: colors.card,
-    decimalPlaces: 0,
-    color: (opacity = 1) =>
-      isDark ? `rgba(241, 245, 249, ${opacity})` : `rgba(34, 34, 34, ${opacity})`,
-    labelColor: (opacity = 1) =>
-      isDark ? `rgba(168, 179, 199, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
-    style: { borderRadius: 16 },
-    propsForDots: {
-      r: '3',
-      strokeWidth: '2',
-      stroke: colors.primary,
-    },
-    propsForLabels: {
-      fontSize: 10,
-    },
-  };
+  const BAR_MAX_H = 150;
 
   return (
     <View style={styles.container}>
@@ -249,22 +213,42 @@ export default function GraficoEvolucaoMensal() {
         </TouchableOpacity>
       </View>
 
-      <LineChart
-        data={chartSeries}
-        width={screenWidth - 40}
-        height={220}
-        chartConfig={chartConfig}
-        bezier
-        style={styles.chart}
-        withInnerLines
-        withOuterLines
-        withVerticalLabels
-        withHorizontalLabels
-        withDots
-        withShadow={false}
-        fromZero
-        segments={4}
-      />
+      <View style={styles.legendRow}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, { backgroundColor: '#16A34A' }]} />
+          <Text style={styles.legendText}>Receitas</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, { backgroundColor: '#DC2626' }]} />
+          <Text style={styles.legendText}>Despesas</Text>
+        </View>
+      </View>
+
+      <View style={styles.barsRow}>
+        {chartSeries.labels.map((label, i) => {
+          const recH = (chartSeries.receitasData[i] / chartSeries.maxVal) * BAR_MAX_H;
+          const desH = (chartSeries.despesasData[i] / chartSeries.maxVal) * BAR_MAX_H;
+          return (
+            <View key={`${label}-${i}`} style={styles.barGroup}>
+              <View style={styles.barPair}>
+                <View
+                  style={[
+                    styles.bar,
+                    { height: Math.max(recH, 0), backgroundColor: '#16A34A' },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.bar,
+                    { height: Math.max(desH, 0), backgroundColor: '#DC2626' },
+                  ]}
+                />
+              </View>
+              <Text style={styles.barLabel}>{label}</Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -312,8 +296,56 @@ function createStyles(colors, isDark) {
       fontWeight: '700',
       color: colors.text,
     },
-    chart: {
-      borderRadius: 16,
+    legendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 16,
+      marginBottom: 10,
+      width: '100%',
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    legendSwatch: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+    },
+    legendText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    barsRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      width: '100%',
+      height: 178,
+      paddingTop: 4,
+    },
+    barGroup: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    barPair: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      height: 150,
+      gap: 3,
+    },
+    bar: {
+      width: 10,
+      borderTopLeftRadius: 3,
+      borderTopRightRadius: 3,
+      minHeight: 0,
+    },
+    barLabel: {
+      marginTop: 6,
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.textSecondary,
     },
     loadingText: {
       marginTop: 8,

@@ -11,6 +11,7 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -20,6 +21,18 @@ import { API_ENDPOINTS } from '../config/api';
 import * as Notifications from 'expo-notifications';
 import { ensureNotificationHandler, cancelEventoNotifications, EVENTO_NOTIFICATION_TYPE } from '../services/despesasNotifications';
 
+LocaleConfig.locales.pt = LocaleConfig.locales.pt || {
+  monthNames: [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ],
+  monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+  dayNames: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
+  dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+  today: 'Hoje',
+};
+LocaleConfig.defaultLocale = 'pt';
+
 const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const tiposEvento = [
   { value: 'geral', label: 'Geral', cor: '#4F46E5' },
@@ -28,6 +41,12 @@ const tiposEvento = [
   { value: 'vencimento', label: 'Vencimento', cor: '#EF4444' },
 ];
 const coresEvento = ['#4F46E5', '#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6B7280'];
+const TURNOS = [
+  { id: 'madrugada', label: 'Madrugada', startHour: 0, endHour: 6 },
+  { id: 'manha', label: 'Manhã', startHour: 6, endHour: 12 },
+  { id: 'tarde', label: 'Tarde', startHour: 12, endHour: 18 },
+  { id: 'noite', label: 'Noite', startHour: 18, endHour: 24 },
+];
 
 const gerarHorarios = () => {
   const horarios = [];
@@ -38,6 +57,35 @@ const gerarHorarios = () => {
   return horarios;
 };
 const HORARIOS = gerarHorarios();
+
+function toYmd(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function ymdToDate(ymd) {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function semanaInicioDe(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function dataEvento(e) {
+  return String(e.evento_data || e.evento_Data || '').slice(0, 10);
+}
+
+function horaEvento(e) {
+  return String(e.evento_hora_inicio || e.evento_Hora_Inicio || '').slice(0, 5);
+}
+
+function formatarYmd(ymd) {
+  if (!ymd) return '';
+  const [y, m, d] = String(ymd).slice(0, 10).split('-');
+  return `${d}/${m}/${y}`;
+}
 
 async function agendarNotificacaoEvento(evento) {
   try {
@@ -99,14 +147,15 @@ export default function AgendaScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const userId = getUserId();
 
-  const [semanaRef, setSemanaRef] = useState(() => {
-    const hoje = new Date();
-    const diff = hoje.getDate() - hoje.getDay();
-    return new Date(hoje.getFullYear(), hoje.getMonth(), diff);
-  });
+  const [semanaRef, setSemanaRef] = useState(() => semanaInicioDe(new Date()));
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [agruparPorTurno, setAgruparPorTurno] = useState(false);
+  const [showCalendario, setShowCalendario] = useState(false);
+  const [mesCalendario, setMesCalendario] = useState(() => toYmd(new Date()));
+  const [eventosMes, setEventosMes] = useState([]);
+  const [diaCalendario, setDiaCalendario] = useState(null);
   const [slotSelecionado, setSlotSelecionado] = useState(null);
   const [formEvento, setFormEvento] = useState({
     titulo: '',
@@ -123,21 +172,18 @@ export default function AgendaScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      title: 'Agenda',
+      title: 'Agenda Pessoal',
     });
   }, [navigation]);
 
   const getDiasDaSemana = () => {
     const dias = [];
     const inicio = new Date(semanaRef);
-    const hojeYmd = (() => {
-      const h = new Date();
-      return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
-    })();
+    const hojeYmd = toYmd(new Date());
     for (let i = 0; i < 7; i++) {
       const d = new Date(inicio);
       d.setDate(inicio.getDate() + i);
-      const data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const data = toYmd(d);
       dias.push({
         data,
         label: diasSemana[i],
@@ -163,6 +209,12 @@ export default function AgendaScreen() {
     }
   }, [userId, dataInicio, dataFim]);
 
+  useEffect(() => {
+    if (userId && showCalendario) {
+      carregarEventosMes(mesCalendario);
+    }
+  }, [userId, showCalendario, mesCalendario]);
+
   const carregarEventos = async () => {
     if (!userId) return;
     setLoading(true);
@@ -180,12 +232,27 @@ export default function AgendaScreen() {
     }
   };
 
+  const carregarEventosMes = async (ymd) => {
+    if (!userId) return;
+    try {
+      const mesFormatado = String(ymd).slice(0, 7);
+      const res = await axios.get(`${API_ENDPOINTS.EVENTOS}?userId=${userId}&mes=${mesFormatado}`);
+      setEventosMes(res.data || []);
+    } catch (err) {
+      console.error('Erro ao carregar eventos do mês:', err);
+    }
+  };
+
   const navegarSemana = (delta) => {
     setSemanaRef(prev => {
       const nova = new Date(prev);
       nova.setDate(nova.getDate() + delta * 7);
       return nova;
     });
+  };
+
+  const irParaData = (ymd) => {
+    setSemanaRef(semanaInicioDe(ymdToDate(ymd)));
   };
 
   const formatarSemana = () => {
@@ -195,15 +262,17 @@ export default function AgendaScreen() {
     return `${i.dia}/${i.mes + 1} - ${f.dia}/${f.mes + 1} ${semanaRef.getFullYear()}`;
   };
 
-  const abrirModalSlot = (dia, horario) => {
-    const [h, m] = horario.split(':').map(Number);
-    let fimH = m === 30 ? h + 1 : h;
-    let fimM = m === 30 ? 0 : 30;
-    if (h === 23 && m === 30) {
-      fimH = 23;
-      fimM = 59;
-    }
-    const horaFim = `${String(fimH).padStart(2, '0')}:${String(fimM).padStart(2, '0')}`;
+  const abrirModalSlot = (dia, horario, horaFimPadrao) => {
+    const horaFim = horaFimPadrao || (() => {
+      const [h, m] = horario.split(':').map(Number);
+      let fimH = m === 30 ? h + 1 : h;
+      let fimM = m === 30 ? 0 : 30;
+      if (h === 23 && m === 30) {
+        fimH = 23;
+        fimM = 59;
+      }
+      return `${String(fimH).padStart(2, '0')}:${String(fimM).padStart(2, '0')}`;
+    })();
     setSlotSelecionado({ dia, horario });
     setFormEvento({
       titulo: '',
@@ -217,6 +286,12 @@ export default function AgendaScreen() {
       lembrete_minutos: 30,
     });
     setShowModal(true);
+  };
+
+  const abrirModalTurno = (dia, turno) => {
+    const horaInicio = `${String(turno.startHour).padStart(2, '0')}:00`;
+    const horaFim = turno.endHour === 24 ? '23:59' : `${String(turno.endHour).padStart(2, '0')}:00`;
+    abrirModalSlot(dia, horaInicio, horaFim);
   };
 
   const salvarEvento = async () => {
@@ -240,6 +315,7 @@ export default function AgendaScreen() {
       setShowModal(false);
       setSlotSelecionado(null);
       carregarEventos();
+      if (showCalendario) carregarEventosMes(mesCalendario);
     } catch (err) {
       console.error('Erro ao criar evento:', err);
       Alert.alert('Erro', 'Não foi possível criar o evento.');
@@ -248,12 +324,46 @@ export default function AgendaScreen() {
 
   const getEventosNoSlot = (data, hora) => {
     return eventos.filter(e => {
-      const ed = String(e.evento_data || '').slice(0, 10);
+      const ed = dataEvento(e);
       if (ed !== data) return false;
-      const hinicio = String(e.evento_hora_inicio || '').slice(0, 5);
+      const hinicio = horaEvento(e);
       return hinicio && hinicio === hora;
     });
   };
+
+  const getEventosNoTurno = (data, turno) => {
+    return eventos.filter(e => {
+      const ed = dataEvento(e);
+      if (ed !== data) return false;
+      const hinicio = horaEvento(e);
+      if (!hinicio) return turno.id === 'manha';
+      const h = parseInt(hinicio.slice(0, 2), 10);
+      return h >= turno.startHour && h < turno.endHour;
+    });
+  };
+
+  const markedCalDates = useMemo(() => {
+    const marked = {};
+    eventosMes.forEach((e) => {
+      const d = dataEvento(e);
+      if (!d) return;
+      marked[d] = { marked: true, dotColor: colors.primary };
+    });
+    if (diaCalendario) {
+      marked[diaCalendario] = {
+        ...(marked[diaCalendario] || {}),
+        selected: true,
+        selectedColor: colors.primary,
+      };
+    }
+    return marked;
+  }, [eventosMes, diaCalendario, colors.primary]);
+
+  const eventosDoDiaCalendario = diaCalendario
+    ? eventosMes.filter((e) => dataEvento(e) === diaCalendario)
+    : [];
+
+  const linhasAgenda = agruparPorTurno ? TURNOS : HORARIOS;
 
   if (loading) {
     return (
@@ -270,13 +380,36 @@ export default function AgendaScreen() {
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Semana {formatarSemana()}</Text>
+        <TouchableOpacity
+          onPress={() => {
+            setMesCalendario(toYmd(semanaRef));
+            setDiaCalendario(null);
+            setShowCalendario(true);
+          }}
+          style={styles.btnNav}
+        >
+          <Ionicons name="calendar-outline" size={22} color="#fff" />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navegarSemana(1)} style={styles.btnNav}>
           <Ionicons name="chevron-forward" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity
+        style={styles.groupRow}
+        onPress={() => setAgruparPorTurno((v) => !v)}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name={agruparPorTurno ? 'checkbox' : 'square-outline'}
+          size={22}
+          color={colors.primary}
+        />
+        <Text style={styles.groupLabel}>Agrupar por turno</Text>
+      </TouchableOpacity>
+
       <View style={styles.diasHeader}>
-        <View style={[styles.diaCol, styles.cornerCol]} />
+        <View style={[styles.diaCol, styles.cornerCol, agruparPorTurno && styles.horaCellTurno]} />
         {dias.map(d => (
           <View key={d.data} style={[styles.diaCol, d.isToday && styles.diaColToday]}>
             <Text style={[styles.diaNome, d.isToday && styles.diaNomeToday]}>{d.label}</Text>
@@ -291,44 +424,124 @@ export default function AgendaScreen() {
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={true}>
-        {HORARIOS.map(horario => (
-          <View key={horario} style={styles.slotRow}>
-            <View style={styles.horaCell}>
-              <Text style={styles.horaText}>{horario}</Text>
+        {linhasAgenda.map(linha => {
+          const isTurno = typeof linha === 'object';
+          const keyLinha = isTurno ? linha.id : linha;
+          const labelLinha = isTurno ? linha.label : linha;
+          return (
+            <View key={keyLinha} style={[styles.slotRow, isTurno && styles.slotRowTurno]}>
+              <View style={[styles.horaCell, isTurno && styles.horaCellTurno]}>
+                <Text style={[styles.horaText, isTurno && styles.horaTextTurno]}>{labelLinha}</Text>
+              </View>
+              {dias.map(dia => {
+                const evs = isTurno
+                  ? getEventosNoTurno(dia.data, linha)
+                  : getEventosNoSlot(dia.data, linha);
+                return (
+                  <TouchableOpacity
+                    key={`${dia.data}-${keyLinha}`}
+                    style={[
+                      styles.slotCell,
+                      dia.isToday && styles.slotCellToday,
+                      evs.length > 0 && styles.slotCellWithEvents,
+                    ]}
+                    onPress={() => (isTurno ? abrirModalTurno(dia, linha) : abrirModalSlot(dia, linha))}
+                    activeOpacity={0.7}
+                  >
+                    {evs.length > 0 ? (
+                      evs.map(ev => (
+                        <View
+                          key={ev.evento_id || ev.evento_Id}
+                          style={[styles.eventPill, { backgroundColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
+                        >
+                          <Text style={styles.eventPillText} numberOfLines={1}>
+                            {horaEvento(ev) ? `${horaEvento(ev)} ` : ''}
+                            {ev.evento_titulo || ev.evento_Titulo}
+                          </Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={styles.slotAdd}>+</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            {dias.map(dia => {
-              const evs = getEventosNoSlot(dia.data, horario);
-              return (
-                <TouchableOpacity
-                  key={`${dia.data}-${horario}`}
-                  style={[
-                    styles.slotCell,
-                    dia.isToday && styles.slotCellToday,
-                    evs.length > 0 && styles.slotCellWithEvents,
-                  ]}
-                  onPress={() => abrirModalSlot(dia, horario)}
-                  activeOpacity={0.7}
-                >
-                  {evs.length > 0 ? (
-                    evs.map(ev => (
+          );
+        })}
+      </ScrollView>
+
+      <Modal
+        visible={showCalendario}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCalendario(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowCalendario(false)}>
+          <Pressable style={styles.calModal} onPress={e => e.stopPropagation()}>
+            <View style={styles.calHeader}>
+              <Text style={styles.calTitle}>Calendário</Text>
+              <TouchableOpacity onPress={() => setShowCalendario(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <Calendar
+              current={mesCalendario}
+              onDayPress={(day) => {
+                setDiaCalendario(day.dateString);
+                irParaData(day.dateString);
+              }}
+              onMonthChange={(month) => {
+                setMesCalendario(month.dateString);
+                setDiaCalendario(null);
+              }}
+              markedDates={markedCalDates}
+              markingType="dot"
+              theme={{
+                backgroundColor: colors.card,
+                calendarBackground: colors.card,
+                textSectionTitleColor: colors.textSecondary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: '#fff',
+                todayTextColor: colors.primary,
+                dayTextColor: colors.text,
+                textDisabledColor: colors.placeholder,
+                dotColor: colors.primary,
+                selectedDotColor: '#fff',
+                arrowColor: colors.primary,
+                monthTextColor: colors.text,
+                textDayFontWeight: '600',
+                textMonthFontWeight: '700',
+              }}
+            />
+            <ScrollView style={styles.calEvents} nestedScrollEnabled>
+              {diaCalendario ? (
+                <>
+                  <Text style={styles.calEventsTitle}>Eventos de {formatarYmd(diaCalendario)}</Text>
+                  {eventosDoDiaCalendario.length === 0 ? (
+                    <Text style={styles.calEmpty}>Nenhum evento neste dia.</Text>
+                  ) : (
+                    eventosDoDiaCalendario.map((ev) => (
                       <View
                         key={ev.evento_id || ev.evento_Id}
-                        style={[styles.eventPill, { backgroundColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
+                        style={[styles.calEventItem, { borderLeftColor: ev.evento_cor || ev.evento_Cor || '#4F46E5' }]}
                       >
-                        <Text style={styles.eventPillText} numberOfLines={1}>
-                          {ev.evento_titulo || ev.evento_Titulo}
+                        <Text style={styles.calEventTitle}>{ev.evento_titulo || ev.evento_Titulo}</Text>
+                        <Text style={styles.calEventHour}>
+                          {horaEvento(ev) || 'Sem horário'}
+                          {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
                         </Text>
                       </View>
                     ))
-                  ) : (
-                    <Text style={styles.slotAdd}>+</Text>
                   )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ))}
-      </ScrollView>
+                </>
+              ) : (
+                <Text style={styles.calEmpty}>Selecione um dia para ver os eventos.</Text>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal
         visible={showModal}
@@ -497,6 +710,17 @@ function createStyles(colors) {
     alignItems: 'center',
   },
   headerTitle: { fontSize: 14, color: '#fff', fontWeight: '600', flex: 1, textAlign: 'center' },
+  groupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  groupLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
   diasHeader: {
     flexDirection: 'row',
     backgroundColor: colors.primary,
@@ -538,13 +762,16 @@ function createStyles(colors) {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  slotRowTurno: { minHeight: 88 },
   horaCell: {
     width: 50,
     justifyContent: 'center',
     paddingLeft: 6,
     backgroundColor: colors.surface,
   },
+  horaCellTurno: { width: 78 },
   horaText: { fontSize: 11, color: colors.textSecondary },
+  horaTextTurno: { fontSize: 11, fontWeight: '700', color: colors.text },
   slotCell: {
     flex: 1,
     padding: 4,
@@ -571,6 +798,41 @@ function createStyles(colors) {
     alignItems: 'center',
     padding: 20,
   },
+  calModal: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '90%',
+    paddingBottom: 12,
+    overflow: 'hidden',
+  },
+  calHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  calTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  calEvents: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    maxHeight: 220,
+  },
+  calEventsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8 },
+  calEmpty: { fontSize: 13, color: colors.textSecondary },
+  calEventItem: {
+    borderLeftWidth: 4,
+    backgroundColor: colors.surface,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  calEventTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
+  calEventHour: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   modalContent: {
     backgroundColor: colors.card,
     borderRadius: 12,
