@@ -537,7 +537,7 @@ function Agenda() {
                     value={formEvento.descricao}
                     onChange={e => setFormEvento({ ...formEvento, descricao: e.target.value })}
                     placeholder="Detalhes do evento..."
-                    rows={2}
+                    rows={1}
                   />
                 </div>
                 <div className="form-row form-row-agenda">
