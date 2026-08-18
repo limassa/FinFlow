@@ -93,7 +93,7 @@ Comece grátis: claricash.com.br
 ```
 Do registro ao resumo, suas finanças sob controle.
 
-Receitas, despesas, cartão e agenda no mesmo app — Web, Android e iOS.
+Receitas, despesas, cartão e agenda no mesmo app — Web e Android.
 
 Comece grátis: claricash.com.br
 

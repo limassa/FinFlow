@@ -6,6 +6,7 @@ const W = 1080;
 const H = 1080;
 const dir = __dirname;
 const officialIcon = "d:/Negocios/Projetos/Web/projeto-web/mobile/assets/icon.png";
+const appScreenshot = path.join(dir, "app-screenshot-home.png");
 
 const C = {
   bg: "#0B1220",
@@ -15,10 +16,21 @@ const C = {
   blueGlow: "rgba(37, 99, 235, 0.35)",
   white: "#FFFFFF",
   muted: "#94A3B8",
-  green: "#22C55E",
-  red: "#EF4444",
   card: "#1E293B",
   cardBorder: "#334155",
+};
+
+const PHONE = {
+  left: 548,
+  top: 118,
+  width: 440,
+  height: 800,
+  screenPadX: 16,
+  screenPadTop: 48,
+  screenPadBottom: 36,
+  screenRadius: 30,
+  frameRadius: 44,
+  rotate: 8,
 };
 
 async function roundedIcon(size) {
@@ -53,58 +65,50 @@ function featureIcon(type, x, y) {
   return icons[type] || "";
 }
 
-function phoneMockSvg() {
-  const px = 560;
-  const py = 130;
-  const pw = 430;
-  const ph = 780;
-  const screenX = px + 18;
-  const screenY = py + 52;
-  const screenW = pw - 36;
-  const screenH = ph - 92;
+async function buildPhoneLayer() {
+  const { width: fw, height: fh, screenPadX, screenPadTop, screenPadBottom, screenRadius, frameRadius } =
+    PHONE;
+  const sw = fw - screenPadX * 2;
+  const sh = fh - screenPadTop - screenPadBottom;
 
-  return `
-  <g transform="rotate(8, ${px + pw / 2}, ${py + ph / 2})">
-    <rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="42" fill="#020617" stroke="#334155" stroke-width="4"/>
-    <rect x="${screenX}" y="${screenY}" width="${screenW}" height="${screenH}" rx="28" fill="#F8FAFC"/>
+  const screenMask = Buffer.from(
+    `<svg width="${sw}" height="${sh}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${sw}" height="${sh}" rx="${screenRadius}" ry="${screenRadius}" fill="white"/>
+    </svg>`
+  );
 
-    <rect x="${screenX + 24}" y="${screenY + 20}" width="120" height="28" rx="8" fill="${C.blue}"/>
-    <text x="${screenX + 84}" y="${screenY + 39}" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#fff">Claricash</text>
+  const screen = await sharp(appScreenshot)
+    .resize(sw, sh, { fit: "cover", position: "top" })
+    .composite([{ input: screenMask, blend: "dest-in" }])
+    .png()
+    .toBuffer();
 
-    <text x="${screenX + 24}" y="${screenY + 72}" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#0F172A">Resumo do mês</text>
+  const frameSvg = Buffer.from(
+    `<svg width="${fw}" height="${fh}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="${fw - 4}" height="${fh - 4}" rx="${frameRadius}" ry="${frameRadius}"
+        fill="#020617" stroke="#334155" stroke-width="4"/>
+    </svg>`
+  );
 
-    <rect x="${screenX + 24}" y="${screenY + 84}" width="${(screenW - 60) / 2}" height="72" rx="12" fill="#fff" stroke="#E2E8F0"/>
-    <text x="${screenX + 36}" y="${screenY + 106}" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748B">Entradas</text>
-    <text x="${screenX + 36}" y="${screenY + 132}" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="${C.green}">R$ 8.420</text>
+  const phone = await sharp({
+    create: { width: fw, height: fh, channels: 4, background: { r: 2, g: 6, b: 23, alpha: 1 } },
+  })
+    .composite([
+      { input: frameSvg, left: 0, top: 0 },
+      { input: screen, left: screenPadX, top: screenPadTop },
+    ])
+    .png()
+    .toBuffer();
 
-    <rect x="${screenX + 36 + (screenW - 60) / 2}" y="${screenY + 84}" width="${(screenW - 60) / 2}" height="72" rx="12" fill="#fff" stroke="#E2E8F0"/>
-    <text x="${screenX + 48 + (screenW - 60) / 2}" y="${screenY + 106}" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748B">Saídas</text>
-    <text x="${screenX + 48 + (screenW - 60) / 2}" y="${screenY + 132}" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="${C.red}">R$ 5.180</text>
+  const rotated = await sharp(phone)
+    .rotate(PHONE.rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
 
-    <rect x="${screenX + 24}" y="${screenY + 168}" width="${screenW - 48}" height="56" rx="12" fill="${C.blue}" opacity="0.12"/>
-    <text x="${screenX + 36}" y="${screenY + 190}" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748B">Saldo do mês</text>
-    <text x="${screenX + 36}" y="${screenY + 214}" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="${C.blue}">R$ 3.240</text>
-
-    <text x="${screenX + 24}" y="${screenY + 252}" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#0F172A">Próximas contas</text>
-
-    ${[
-      { color: C.blue, title: "Aluguel", sub: "Vence dia 05", y: 268 },
-      { color: C.green, title: "Salário", sub: "Recebimento dia 10", y: 322 },
-      { color: "#A855F7", title: "Consulta", sub: "Agenda · 14:00", y: 376 },
-      { color: "#F97316", title: "Cartão", sub: "Fatura dia 20", y: 430 },
-    ]
-      .map(
-        (item) => `
-      <rect x="${screenX + 24}" y="${screenY + item.y}" width="${screenW - 48}" height="46" rx="12" fill="#fff" stroke="#E2E8F0"/>
-      <circle cx="${screenX + 42}" cy="${screenY + item.y + 23}" r="6" fill="${item.color}"/>
-      <text x="${screenX + 58}" y="${screenY + item.y + 20}" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#0F172A">${svgEscape(item.title)}</text>
-      <text x="${screenX + 58}" y="${screenY + item.y + 36}" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748B">${svgEscape(item.sub)}</text>`
-      )
-      .join("")}
-
-    <rect x="${screenX + 24}" y="${screenY + screenH - 72}" width="${screenW - 48}" height="48" rx="24" fill="${C.blue}"/>
-    <text x="${screenX + screenW / 2}" y="${screenY + screenH - 42}" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#fff">+ Nova despesa</text>
-  </g>`;
+  const meta = await sharp(rotated).metadata();
+  const left = Math.round(PHONE.left - (meta.width - fw) / 2);
+  const top = Math.round(PHONE.top - (meta.height - fh) / 2);
+  return { buffer: rotated, left, top };
 }
 
 function buildSvg() {
@@ -146,7 +150,6 @@ function buildSvg() {
   <rect x="0" y="860" width="${W}" height="220" fill="rgba(15, 23, 42, 0.72)"/>
   <line x1="48" y1="860" x2="1032" y2="860" stroke="${C.cardBorder}" stroke-width="1"/>
 
-  <g id="logo-slot" transform="translate(56, 56)"></g>
   <text x="132" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="800" fill="${C.white}">Claricash</text>
 
   <text x="56" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2.5" fill="${C.blueLight}">GESTÃO FINANCEIRA PESSOAL</text>
@@ -157,25 +160,34 @@ function buildSvg() {
 
   <text x="56" y="392" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="${C.muted}">
     <tspan x="56" dy="0">Receitas, despesas, cartão e agenda</tspan>
-    <tspan x="56" dy="28">no mesmo app — Web, Android e iOS.</tspan>
+    <tspan x="56" dy="28">no mesmo app — Web e Android.</tspan>
   </text>
 
   <rect x="56" y="468" width="290" height="58" rx="29" fill="${C.blue}"/>
   <text x="86" y="504" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#fff">Comece grátis!</text>
   <path d="M318 497l18 0M330 497l-8-8M330 497l-8 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 
-  ${phoneMockSvg()}
   ${featureCols}
 </svg>`;
 }
 
 async function run() {
+  if (!fs.existsSync(appScreenshot)) {
+    throw new Error("Screenshot não encontrado: " + appScreenshot);
+  }
+
   const svg = buildSvg();
-  const base = sharp(Buffer.from(svg)).png();
   const icon = await roundedIcon(64);
-  await base
-    .composite([{ input: icon, left: 56, top: 56 }])
+  const phone = await buildPhoneLayer();
+
+  await sharp(Buffer.from(svg))
+    .composite([
+      { input: phone.buffer, left: phone.left, top: phone.top },
+      { input: icon, left: 56, top: 56 },
+    ])
+    .png()
     .toFile(path.join(dir, "feed-06-hero-controle.png"));
+
   console.log("ok feed-06-hero-controle.png");
 }
 
