@@ -66,8 +66,35 @@ function horaEvento(ev) {
   return String(ev.evento_hora_inicio || ev.evento_Hora_Inicio || '').slice(0, 5);
 }
 
+function horaFimEvento(ev) {
+  return String(ev.evento_hora_fim || ev.evento_Hora_Fim || '').slice(0, 5);
+}
+
 function dataEvento(ev) {
   return String(ev.evento_data || ev.evento_Data || '').slice(0, 10);
+}
+
+function tipoEventoLabel(ev) {
+  const tipo = ev.evento_tipo || 'geral';
+  const found = tiposEvento.find(t => t.value === tipo);
+  return found ? found.label : tipo;
+}
+
+function subtituloEvento(ev) {
+  const descricao = String(ev.evento_descricao || '').trim();
+  if (descricao) return descricao;
+  return tipoEventoLabel(ev);
+}
+
+function cabecalhoDiaAgenda(ymd) {
+  if (!ymd) return { titulo: 'Eventos', weekday: '' };
+  const data = ymdToDate(ymd);
+  const hoje = toYmd(new Date());
+  const dia = data.getDate();
+  const mes = MESES[data.getMonth()].toLowerCase();
+  const weekday = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'][data.getDay()];
+  const titulo = ymd === hoje ? `Hoje, ${dia} de ${mes}` : `${dia} de ${mes}`;
+  return { titulo, weekday };
 }
 
 function semanaInicioDe(date) {
@@ -288,8 +315,12 @@ function Agenda() {
   };
 
   const eventosDoDiaCalendario = diaCalendario
-    ? eventosMes.filter(e => dataEvento(e) === diaCalendario)
+    ? eventosMes
+        .filter(e => dataEvento(e) === diaCalendario)
+        .sort((a, b) => (horaEvento(a) || '99:99').localeCompare(horaEvento(b) || '99:99'))
     : [];
+
+  const cabecalhoDia = cabecalhoDiaAgenda(diaCalendario);
 
   const navegarMesCal = (delta) => {
     setMesCalendario(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -473,11 +504,12 @@ function Agenda() {
             </div>
             <div className="agenda-cal-events">
               <div className="agenda-cal-events-head">
-                <h4>
-                  {diaCalendario
-                    ? `Eventos de ${formatarYmd(diaCalendario)}`
-                    : 'Eventos'}
-                </h4>
+                <div className="agenda-cal-events-title">
+                  <h4>{cabecalhoDia.titulo}</h4>
+                  {diaCalendario ? (
+                    <span className="agenda-cal-events-weekday">{cabecalhoDia.weekday}</span>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   className="btn-agenda-novo"
@@ -490,19 +522,27 @@ function Agenda() {
                 eventosDoDiaCalendario.length === 0 ? (
                   <p className="agenda-cal-empty">Nenhum evento neste dia.</p>
                 ) : (
-                  eventosDoDiaCalendario.map(ev => (
-                    <div
-                      key={ev.evento_id}
-                      className="agenda-cal-event-item"
-                      style={{ borderLeftColor: ev.evento_cor || '#4F46E5' }}
-                    >
-                      <strong>{ev.evento_titulo}</strong>
-                      <span>
-                        {horaEvento(ev) || 'Sem horário'}
-                        {ev.evento_hora_fim ? ` - ${String(ev.evento_hora_fim).slice(0, 5)}` : ''}
-                      </span>
-                    </div>
-                  ))
+                  <div className="agenda-cal-event-list">
+                    {eventosDoDiaCalendario.map(ev => (
+                      <div key={ev.evento_id} className="agenda-cal-event-item">
+                        <div className="agenda-cal-event-time">
+                          {horaEvento(ev) || '--:--'}
+                          {horaFimEvento(ev) ? (
+                            <span className="agenda-cal-event-time-end">{horaFimEvento(ev)}</span>
+                          ) : null}
+                        </div>
+                        <span
+                          className="agenda-cal-event-dot"
+                          style={{ backgroundColor: ev.evento_cor || '#4F46E5' }}
+                          aria-hidden="true"
+                        />
+                        <div className="agenda-cal-event-body">
+                          <strong>{ev.evento_titulo}</strong>
+                          <span>{subtituloEvento(ev)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )
               ) : (
                 <p className="agenda-cal-empty">Selecione um dia para ver os eventos.</p>

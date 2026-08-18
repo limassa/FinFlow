@@ -1,8 +1,12 @@
-# Claricash — Legendas Instagram (Web + Android)
+# Claricash — Legendas Instagram
+
+**Campanha atual (Web · Android · iOS):** pasta `campanha-ago-2026/`  
+Use aqueles arquivos e o `LEGENDAS.md` de lá. Os posts abaixo são a versão anterior (Web + Android).
 
 **Links para bio / stories**
 - Site: https://www.claricash.com.br
-- Play Store: (cole o link oficial do app)
+- Play Store: https://play.google.com/store/apps/details?id=com.lizsoftwares.finflow
+- App Store: https://apps.apple.com/br/app/id6787544258
 
 **Hashtags base (use 8–12 por post)**  
 `#Claricash #FinancasPessoais #OrganizacaoFinanceira #ControleDeGastos #EducacaoFinanceira #AppAndroid #Fintech #LizSoftware`
@@ -114,4 +118,4 @@ iOS em breve.
 - [ ] Revisar ortografia na imagem (gerar de novo se houver erro tipográfico)
 - [ ] No carrossel, preferir **screenshots reais** do app (Google Play também exige isso)
 - [ ] Responder comentários nas primeiras 1–2 horas
-- [ ] Não prometer iOS como disponível — só “em breve”
+- [ ] Campanha nova: iOS já pode aparecer como disponível (confira se a App Store está pública)

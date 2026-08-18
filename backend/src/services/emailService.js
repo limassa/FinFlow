@@ -210,6 +210,15 @@ class EmailService {
     return v.replace(/^["']|["']$/g, '').trim();
   }
 
+  _escapeHtml(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Método para enviar email com Resend
   async sendEmailResend(mailOptions) {
     try {
@@ -235,33 +244,40 @@ class EmailService {
         }
       }
 
-      console.log(`   📧 Resend: from=${fromEmail} to=${mailOptions.to}`);
+      const fromWithName = fromEmail.includes('<')
+        ? fromEmail
+        : `Claricash <${fromEmail}>`;
+      const toEmail = Array.isArray(mailOptions.to) ? mailOptions.to[0] : mailOptions.to;
+      const replyTo = mailOptions.replyTo || mailOptions.reply_to || null;
 
-      const { data, error } = await this.transporter.emails.send({
-        from: fromEmail,
-        to: Array.isArray(mailOptions.to) ? mailOptions.to[0] : mailOptions.to,
+      console.log(`   📧 Resend: from=${fromWithName} to=${toEmail}${replyTo ? ` replyTo=${replyTo}` : ''}`);
+
+      const payload = {
+        from: fromWithName,
+        to: toEmail,
         subject: mailOptions.subject,
         html: mailOptions.html
-      });
+      };
+      if (mailOptions.text) payload.text = mailOptions.text;
+      if (replyTo) payload.replyTo = replyTo;
+
+      const { data, error } = await this.transporter.emails.send(payload);
       
       if (error) {
-        const msg = (error && error.message) ? error.message : String(error);
-        console.error('❌ Resend falhou:', msg);
+        const msg = (error && (error.message || error.error)) ? (error.message || error.error) : String(error);
+        console.error('❌ Resend falhou:', msg, error);
         this.lastEmailError = msg;
-        if (error.message && error.message.includes('not verified')) {
-          console.error('   💡 Solução: Verifique o domínio no Resend ou configure RESEND_VERIFIED_DOMAIN');
+        const lower = String(msg).toLowerCase();
+        if (lower.includes('not verified') || lower.includes('verify a domain') || lower.includes('only send')) {
+          console.error('   💡 Solução: verifique o domínio em https://resend.com/domains');
           console.error('   📖 Veja: backend/CONFIGURAR_RESEND.md');
-        }
-        // Se for erro de "only send to your own email", fazer fallback
-        if (error.message && (error.message.includes('only send testing emails') || error.message.includes('verify a domain') || error.message.toLowerCase().includes('only send'))) {
-          console.error('   ⚠️  Resend (conta gratuita) só permite enviar para o EMAIL DA SUA CONTA Resend.');
-          console.error('   💡 Para enviar para qualquer email: verifique um domínio em https://resend.com/domains');
+          console.error('   ⚠️  Com onboarding@resend.dev o Resend só entrega no e-mail da conta Resend.');
           return 'fallback';
         }
         return false;
       }
       
-      console.log(`✅ Email enviado via Resend! ID: ${data?.id}`);
+      console.log(`✅ Email aceito pelo Resend. ID: ${data?.id}`);
       return true;
       
     } catch (error) {
@@ -863,12 +879,18 @@ class EmailService {
     };
 
     const tipoTexto = tipoLabels[tipo] || tipo || 'Não especificado';
+    const nomeSafe = this._escapeHtml(nome);
+    const emailSafe = this._escapeHtml(email);
+    const telefoneSafe = this._escapeHtml(telefone || 'Não informado');
+    const tipoSafe = this._escapeHtml(tipoTexto);
+    const mensagemSafe = this._escapeHtml(mensagem).replace(/\n/g, '<br/>');
 
     const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || 'contatolizsoftware@gmail.com';
     const mailOptions = {
       from: process.env.RESEND_FROM_EMAIL || process.env.EMAIL_USER || process.env.SENDGRID_FROM_EMAIL || 'noreply@claricash.com.br',
       to: supportEmail,
-      subject: `📧 Fale Conosco - Claricash: ${tipoTexto}`,
+      replyTo: email,
+      subject: `Fale Conosco - Claricash: ${tipoTexto}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -883,26 +905,26 @@ class EmailService {
               </h2>
               
               <p style="color: #666; margin: 10px 0;">
-                <strong style="color: #333;">Nome:</strong> ${nome}
+                <strong style="color: #333;">Nome:</strong> ${nomeSafe}
               </p>
               
               <p style="color: #666; margin: 10px 0;">
                 <strong style="color: #333;">Email:</strong> 
-                <a href="mailto:${email}" style="color: #667eea; text-decoration: none;">${email}</a>
+                <a href="mailto:${emailSafe}" style="color: #667eea; text-decoration: none;">${emailSafe}</a>
               </p>
               
               <p style="color: #666; margin: 10px 0;">
-                <strong style="color: #333;">Telefone:</strong> ${telefone || 'Não informado'}
+                <strong style="color: #333;">Telefone:</strong> ${telefoneSafe}
               </p>
               
               <p style="color: #666; margin: 10px 0;">
-                <strong style="color: #333;">Tipo:</strong> ${tipoTexto}
+                <strong style="color: #333;">Tipo:</strong> ${tipoSafe}
               </p>
             </div>
             
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
               <h3 style="color: #333; margin-top: 0;">Mensagem</h3>
-              <p style="color: #666; line-height: 1.8; white-space: pre-wrap;">${mensagem}</p>
+              <p style="color: #666; line-height: 1.8;">${mensagemSafe}</p>
             </div>
             
             <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
@@ -948,9 +970,10 @@ class EmailService {
           return false;
         } else if (resultado) {
           console.log('✅ Email de "Fale Conosco" enviado via Resend!');
-          console.log(`   📧 Para: contatolizsoftware@gmail.com`);
-          console.log(`   📧 De: ${email} (${nome})`);
+          console.log(`   📧 Para suporte: ${supportEmail}`);
+          console.log(`   📧 De (usuário): ${email} (${nome})`);
           console.log(`   🔧 Configuração usada: ${this.configuracaoAtual}`);
+          await this._enviarConfirmacaoContato(email, nomeSafe);
           return true;
         } else {
           console.log('❌ Falha ao enviar via Resend');
@@ -1019,6 +1042,31 @@ class EmailService {
     console.log('❌ Nenhum método de envio funcionou');
     this.fallbackContactFormEmail({ nome, email, telefone, tipo, mensagem });
     return false; // Retornar false para indicar que não foi enviado
+  }
+
+  async _enviarConfirmacaoContato(destinatario, nomeSafe) {
+    if (!destinatario) return;
+    try {
+      const resultado = await this.sendEmailResend({
+        to: destinatario,
+        subject: 'Recebemos sua mensagem — Claricash',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #2563EB;">Olá${nomeSafe ? `, ${nomeSafe}` : ''}!</h2>
+            <p>Recebemos sua mensagem pelo Fale Conosco do Claricash.</p>
+            <p>Nossa equipe vai responder o mais breve possível neste mesmo e-mail.</p>
+            <p style="color: #666; font-size: 14px;">claricash.com.br</p>
+          </div>
+        `
+      });
+      if (resultado === true) {
+        console.log(`✅ Confirmação enviada para o usuário: ${destinatario}`);
+      } else {
+        console.log(`⚠️ Confirmação para o usuário não foi entregue (${destinatario}). Resultado: ${resultado}`);
+      }
+    } catch (err) {
+      console.log(`⚠️ Falha ao enviar confirmação ao usuário: ${err.message}`);
+    }
   }
 
   // Fallback para formulário de contato
