@@ -20,17 +20,20 @@ const C = {
   cardBorder: "#334155",
 };
 
+const FOOTER_Y = 860;
+const MARGIN = 36;
+
 const PHONE = {
-  left: 548,
-  top: 118,
-  width: 440,
-  height: 800,
-  screenPadX: 16,
-  screenPadTop: 48,
-  screenPadBottom: 36,
-  screenRadius: 30,
-  frameRadius: 44,
-  rotate: 8,
+  left: 560,
+  top: 64,
+  width: 370,
+  height: 660,
+  screenPadX: 14,
+  screenPadTop: 44,
+  screenPadBottom: 32,
+  screenRadius: 26,
+  frameRadius: 40,
+  rotate: 5,
 };
 
 async function roundedIcon(size) {
@@ -106,12 +109,19 @@ async function buildPhoneLayer() {
     .toBuffer();
 
   const meta = await sharp(rotated).metadata();
-  const left = Math.round(PHONE.left - (meta.width - fw) / 2);
-  const top = Math.round(PHONE.top - (meta.height - fh) / 2);
-  return { buffer: rotated, left, top };
+
+  let left = Math.round(PHONE.left - (meta.width - fw) / 2);
+  let top = Math.round(PHONE.top - (meta.height - fh) / 2);
+
+  const maxLeft = W - MARGIN - meta.width;
+  const maxTop = FOOTER_Y - MARGIN - meta.height;
+  left = Math.max(MARGIN, Math.min(left, maxLeft));
+  top = Math.max(MARGIN, Math.min(top, maxTop));
+
+  return { buffer: rotated, left, top, meta };
 }
 
-function buildSvg() {
+function buildFeatureCols() {
   const features = [
     { icon: "wallet", title: "Receitas e despesas", sub: "registradas" },
     { icon: "card", title: "Cartão de crédito", sub: "controlado" },
@@ -119,7 +129,7 @@ function buildSvg() {
     { icon: "chart", title: "Panorama do mês", sub: "em segundos" },
   ];
 
-  const featureCols = features
+  return features
     .map((f, i) => {
       const colX = 48 + i * 246;
       return `
@@ -131,6 +141,10 @@ function buildSvg() {
       </g>`;
     })
     .join("");
+}
+
+function buildSvg() {
+  const featureCols = buildFeatureCols();
 
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -146,9 +160,6 @@ function buildSvg() {
 
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
-
-  <rect x="0" y="860" width="${W}" height="220" fill="rgba(15, 23, 42, 0.72)"/>
-  <line x1="48" y1="860" x2="1032" y2="860" stroke="${C.cardBorder}" stroke-width="1"/>
 
   <text x="132" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="800" fill="${C.white}">Claricash</text>
 
@@ -166,7 +177,15 @@ function buildSvg() {
   <rect x="56" y="468" width="290" height="58" rx="29" fill="${C.blue}"/>
   <text x="86" y="504" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#fff">Comece grátis!</text>
   <path d="M318 497l18 0M330 497l-8-8M330 497l-8 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>`;
+}
 
+function buildFooterOverlay() {
+  const featureCols = buildFeatureCols();
+
+  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="${FOOTER_Y}" width="${W}" height="${H - FOOTER_Y}" fill="rgba(15, 23, 42, 0.96)"/>
+  <line x1="48" y1="${FOOTER_Y}" x2="1032" y2="${FOOTER_Y}" stroke="${C.cardBorder}" stroke-width="1"/>
   ${featureCols}
 </svg>`;
 }
@@ -176,13 +195,18 @@ async function run() {
     throw new Error("Screenshot não encontrado: " + appScreenshot);
   }
 
-  const svg = buildSvg();
+  const svgBase = buildSvg();
+  const svgFooter = buildFooterOverlay();
   const icon = await roundedIcon(64);
   const phone = await buildPhoneLayer();
 
-  await sharp(Buffer.from(svg))
+  const baseLayer = await sharp(Buffer.from(svgBase)).png().toBuffer();
+  const footerLayer = await sharp(Buffer.from(svgFooter)).png().toBuffer();
+
+  await sharp(baseLayer)
     .composite([
       { input: phone.buffer, left: phone.left, top: phone.top },
+      { input: footerLayer, left: 0, top: 0 },
       { input: icon, left: 56, top: 56 },
     ])
     .png()
