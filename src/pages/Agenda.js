@@ -479,30 +479,33 @@ function Agenda() {
               <button type="button" className="btn-navegar" onClick={() => navegarMesCal(1)}>›</button>
               <button type="button" className="btn-fechar agenda-cal-close" onClick={() => setShowCalendario(false)}>×</button>
             </div>
-            <div className="agenda-cal-weekdays">
-              {diasSemana.map(d => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-            <div className="agenda-cal-grid">
-              {gerarDiasCalendario().map((dia, idx) => (
-                <button
-                  key={dia ? dia.data : `empty-${idx}`}
-                  type="button"
-                  className={`agenda-cal-day ${!dia ? 'vazio' : ''} ${dia?.isToday ? 'hoje' : ''} ${dia?.data === diaCalendario ? 'selecionado' : ''}`}
-                  disabled={!dia}
-                  onClick={() => selecionarDiaCal(dia)}
-                >
-                  {dia && (
-                    <>
-                      <span>{dia.dia}</span>
-                      {dia.temEventos ? <span className="agenda-cal-dot" /> : null}
-                    </>
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="agenda-cal-events">
+            <div className="agenda-cal-body">
+              <div className="agenda-cal-month">
+                <div className="agenda-cal-weekdays">
+                  {diasSemana.map(d => (
+                    <div key={d}>{d}</div>
+                  ))}
+                </div>
+                <div className="agenda-cal-grid">
+                  {gerarDiasCalendario().map((dia, idx) => (
+                    <button
+                      key={dia ? dia.data : `empty-${idx}`}
+                      type="button"
+                      className={`agenda-cal-day ${!dia ? 'vazio' : ''} ${dia?.isToday ? 'hoje' : ''} ${dia?.data === diaCalendario ? 'selecionado' : ''}`}
+                      disabled={!dia}
+                      onClick={() => selecionarDiaCal(dia)}
+                    >
+                      {dia && (
+                        <>
+                          <span>{dia.dia}</span>
+                          {dia.temEventos ? <span className="agenda-cal-dot" /> : null}
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="agenda-cal-events">
               <div className="agenda-cal-events-head">
                 <div className="agenda-cal-events-title">
                   <h4>{cabecalhoDia.titulo}</h4>
@@ -547,6 +550,7 @@ function Agenda() {
               ) : (
                 <p className="agenda-cal-empty">Selecione um dia para ver os eventos.</p>
               )}
+              </div>
             </div>
           </div>
         </div>
