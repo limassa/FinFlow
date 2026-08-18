@@ -24,15 +24,15 @@ const FOOTER_Y = 860;
 const MARGIN = 36;
 
 const PHONE = {
-  left: 560,
-  top: 64,
-  width: 370,
-  height: 660,
+  left: 548,
+  top: 52,
+  width: 400,
+  height: 710,
   screenPadX: 14,
   screenPadTop: 44,
   screenPadBottom: 32,
-  screenRadius: 26,
-  frameRadius: 40,
+  screenRadius: 28,
+  frameRadius: 42,
   rotate: 5,
 };
 
@@ -73,6 +73,7 @@ async function buildPhoneLayer() {
     PHONE;
   const sw = fw - screenPadX * 2;
   const sh = fh - screenPadTop - screenPadBottom;
+  const pad = 28;
 
   const screenMask = Buffer.from(
     `<svg width="${sw}" height="${sh}" xmlns="http://www.w3.org/2000/svg">
@@ -88,13 +89,13 @@ async function buildPhoneLayer() {
 
   const frameSvg = Buffer.from(
     `<svg width="${fw}" height="${fh}" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="2" width="${fw - 4}" height="${fh - 4}" rx="${frameRadius}" ry="${frameRadius}"
-        fill="#020617" stroke="#334155" stroke-width="4"/>
+      <rect width="${fw}" height="${fh}" rx="${frameRadius}" ry="${frameRadius}"
+        fill="#020617" stroke="#475569" stroke-width="3"/>
     </svg>`
   );
 
-  const phone = await sharp({
-    create: { width: fw, height: fh, channels: 4, background: { r: 2, g: 6, b: 23, alpha: 1 } },
+  const phoneFlat = await sharp({
+    create: { width: fw, height: fh, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
   })
     .composite([
       { input: frameSvg, left: 0, top: 0 },
@@ -103,7 +104,30 @@ async function buildPhoneLayer() {
     .png()
     .toBuffer();
 
-  const rotated = await sharp(phone)
+  const shadowSvg = Buffer.from(
+    `<svg width="${fw}" height="${fh}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${fw}" height="${fh}" rx="${frameRadius}" ry="${frameRadius}" fill="rgba(0,0,0,0.45)"/>
+    </svg>`
+  );
+
+  const shadow = await sharp(shadowSvg).blur(14).png().toBuffer();
+
+  const combined = await sharp({
+    create: {
+      width: fw + pad * 2,
+      height: fh + pad * 2,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([
+      { input: shadow, left: pad + 2, top: pad + 10 },
+      { input: phoneFlat, left: pad, top: pad },
+    ])
+    .png()
+    .toBuffer();
+
+  const rotated = await sharp(combined)
     .rotate(PHONE.rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
@@ -144,8 +168,6 @@ function buildFeatureCols() {
 }
 
 function buildSvg() {
-  const featureCols = buildFeatureCols();
-
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <radialGradient id="glow" cx="72%" cy="28%" r="55%">
