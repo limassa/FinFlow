@@ -86,6 +86,22 @@ Comece grátis: claricash.com.br
 #Claricash #iOS #AppFinanceiro #FinancasPessoais
 ```
 
+### Post 6 — Hero “sob controle” (estilo premium)
+**Arquivo:** `feed-06-hero-controle.png`  
+**Gerar de novo:** `node render-feed-06-hero.js`
+
+```
+Do registro ao resumo, suas finanças sob controle.
+
+Receitas, despesas, cartão e agenda no mesmo app — Web, Android e iOS.
+
+Comece grátis: claricash.com.br
+
+#Claricash #FinancasPessoais #ControleDeGastos #AppFinanceiro #OrganizacaoFinanceira
+```
+
+**Sugestão:** use como post principal de conversão ou anúncio estático 1:1 no Feed.
+
 ---
 
 ## Stories (sequência de 3)
@@ -132,6 +148,7 @@ Dica: no Instagram, adicione um áudio em alta (música do Reels). Os vídeos sa
 | `ad-feed-slideshow.mp4` | 1:1 ~11s | Anúncio no Feed |
 | `feed-01-disponivel.png` | 1:1 | Anúncio estático |
 | `feed-05-ios.png` | 1:1 | Anúncio de lançamento iOS |
+| `feed-06-hero-controle.png` | 1:1 | Hero premium / conversão |
 | `reel-financas-claras.mp4` | 9:16 | Stories / Reels ads |
 
 **Texto do anúncio (principal)**
