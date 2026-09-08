@@ -12,7 +12,7 @@ const MENU_ITEMS = [
   { key: 'receita', path: '/layout/receita', match: ['/layout/receita'], icon: FaMoneyBillWave, label: 'Receitas', title: 'Receitas', color: '#059669' },
   { key: 'despesa', path: '/layout/despesa', match: ['/layout/despesa'], icon: FaMoneyCheckAlt, label: 'Despesas', title: 'Despesas', color: '#DC2626' },
   { key: 'calendario', path: '/layout/calendario', match: ['/layout/calendario'], icon: FaCalendarAlt, label: 'Calendário', title: 'Calendário Financeiro', color: '#2563EB' },
-  { key: 'agenda', path: '/layout/agenda', match: ['/layout/agenda'], icon: FaCalendarWeek, label: 'Agenda', title: 'Agenda Pessoal', color: '#8B5CF6' },
+  { key: 'agenda', path: '/layout/agenda', match: ['/layout/agenda'], icon: FaCalendarWeek, label: 'Agenda', title: 'Agenda Pessoal', color: '#2563EB' },
   { key: 'cartoes', path: '/layout/cartoes', match: ['/layout/cartoes'], icon: FaCreditCard, label: 'Cartões', title: 'Cartões de Crédito', color: '#D97706' },
   { key: 'orcamento', path: '/layout/orcamento', match: ['/layout/orcamento'], icon: FaChartPie, label: 'Orçamento', title: 'Orçamento Mensal', color: '#EC4899' },
   { key: 'categorias', path: '/layout/categorias', match: ['/layout/categorias'], icon: FaTags, label: 'Categorias', title: 'Categorias', color: '#14B8A6' },

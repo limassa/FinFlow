@@ -127,10 +127,10 @@
   width: 240px;
   align-items: stretch;
   padding: 0;
-  background: #F8FAFC;
+  background: #EFF6FF;
   color: #0f172a;
-  border-right: 1px solid #E2E8F0;
-  box-shadow: 2px 0 16px rgba(15, 23, 42, 0.06);
+  border-right: 1px solid #BFDBFE;
+  box-shadow: 2px 0 16px rgba(37, 99, 235, 0.06);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -140,7 +140,7 @@
   align-items: center;
   gap: 10px;
   padding: 20px 18px 16px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid #BFDBFE;
 }
 
 .sidebar-brand__mark {
@@ -177,7 +177,7 @@
   flex-direction: column;
   gap: 0;
   padding: 8px 10px;
-  border-top: 1px solid #E2E8F0;
+  border-top: 1px solid #BFDBFE;
   margin-top: auto;
 }
 
