@@ -25,43 +25,43 @@ const MENU_SECTIONS = [
     title: 'PRINCIPAL',
     emoji: '🏠',
     items: [
-      { screen: 'Home', label: 'Home', icon: 'home' },
-      { screen: 'Dashboard', label: 'Dashboard', icon: 'bar-chart' },
+      { screen: 'Home', label: 'Home', icon: 'home', color: '#2563EB' },
+      { screen: 'Dashboard', label: 'Dashboard', icon: 'bar-chart', color: '#7C3AED' },
     ],
   },
   {
     title: 'FINANÇAS',
     emoji: '💰',
     items: [
-      { screen: 'Contas', label: 'Contas', icon: 'wallet' },
-      { screen: 'Receita', label: 'Receitas', icon: 'trending-up' },
-      { screen: 'Despesa', label: 'Despesas', icon: 'trending-down' },
-      { screen: 'CartaoCredito', label: 'Cartão de Crédito', icon: 'card' },
+      { screen: 'Contas', label: 'Contas', icon: 'wallet', color: '#0EA5E9' },
+      { screen: 'Receita', label: 'Receitas', icon: 'trending-up', color: '#059669' },
+      { screen: 'Despesa', label: 'Despesas', icon: 'trending-down', color: '#DC2626' },
+      { screen: 'CartaoCredito', label: 'Cartão de Crédito', icon: 'card', color: '#D97706' },
     ],
   },
   {
     title: 'ORGANIZAÇÃO',
     emoji: '📅',
     items: [
-      { screen: 'Calendario', label: 'Calendário Financeiro', icon: 'calendar' },
-      { screen: 'Agenda', label: 'Agenda Pessoal', icon: 'grid-outline' },
-      { screen: 'Orcamento', label: 'Orçamento', icon: 'pie-chart' },
-      { screen: 'Categorias', label: 'Categorias', icon: 'pricetags' },
+      { screen: 'Calendario', label: 'Calendário Financeiro', icon: 'calendar', color: '#2563EB' },
+      { screen: 'Agenda', label: 'Agenda Pessoal', icon: 'grid-outline', color: '#8B5CF6' },
+      { screen: 'Orcamento', label: 'Orçamento', icon: 'pie-chart', color: '#EC4899' },
+      { screen: 'Categorias', label: 'Categorias', icon: 'pricetags', color: '#14B8A6' },
     ],
   },
   {
     title: 'FERRAMENTAS',
     emoji: '🧮',
     items: [
-      { screen: 'Calculadoras', label: 'Calculadoras', icon: 'calculator' },
+      { screen: 'Calculadoras', label: 'Calculadoras', icon: 'calculator', color: '#4F46E5' },
     ],
   },
   {
     title: 'SISTEMA',
     emoji: '⚙️',
     items: [
-      { screen: 'Sobre', label: 'Sobre', icon: 'information-circle' },
-      { screen: 'Configuracoes', label: 'Configurações', icon: 'settings' },
+      { screen: 'Sobre', label: 'Sobre', icon: 'information-circle', color: '#64748B' },
+      { screen: 'Configuracoes', label: 'Configurações', icon: 'settings', color: '#475569' },
     ],
   },
 ];
@@ -242,11 +242,18 @@ export default function AppMenuModal() {
                           onPress={() => navigateTo(item.screen)}
                           activeOpacity={0.7}
                         >
-                          <Ionicons
-                            name={item.icon}
-                            size={22}
-                            color={active ? '#fff' : colors.primary}
-                          />
+                          <View
+                            style={[
+                              styles.itemIconWrap,
+                              { backgroundColor: active ? 'rgba(255,255,255,0.22)' : `${item.color}18` },
+                            ]}
+                          >
+                            <Ionicons
+                              name={item.icon}
+                              size={20}
+                              color={active ? '#fff' : item.color}
+                            />
+                          </View>
                           <Text style={[styles.itemLabel, active && styles.itemLabelActive]}>
                             {item.label}
                           </Text>
@@ -378,6 +385,13 @@ function createStyles(colors) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
       gap: 14,
+    },
+    itemIconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     itemActive: {
       backgroundColor: colors.primary,
