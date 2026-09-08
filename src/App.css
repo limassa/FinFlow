@@ -1816,11 +1816,11 @@
 
 /* Header da aplicação */
 .app-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--grey-300);
+  background: #EFF6FF;
+  backdrop-filter: none;
+  border-bottom: 1px solid #BFDBFE;
   padding: 15px 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.06);
   position: fixed;
   left: 240px;
   top: 0;
