@@ -4,11 +4,14 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
+  Filler,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
@@ -18,6 +21,9 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
+  Filler,
   Title,
   Tooltip,
   Legend
@@ -61,7 +67,12 @@ function parseLocalDate(raw) {
   return new Date(y, m - 1, day);
 }
 
-function GraficoEvolucaoMensal() {
+/**
+ * @param {{ variant?: 'default' | 'home' }} props
+ * variant "home": gráfico de linhas com rótulos 1, 15 e último dia do mês
+ */
+function GraficoEvolucaoMensal({ variant = 'default' }) {
+  const isHome = variant === 'home';
   const [receitas, setReceitas] = useState([]);
   const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +115,7 @@ function GraficoEvolucaoMensal() {
     for (let i = 1; i <= totalDias; i++) {
       dias.push(new Date(ano, mes, i));
     }
-    return { ref, dias, hoje };
+    return { ref, dias, hoje, totalDias };
   }, [offsetMeses]);
 
   const dadosGrafico = useMemo(() => {
@@ -133,6 +144,36 @@ function GraficoEvolucaoMensal() {
       dadosDespesas.push(totalDespesas);
     });
 
+    if (isHome) {
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Receitas',
+            data: dadosReceitas,
+            borderColor: '#16A34A',
+            backgroundColor: 'rgba(22, 163, 74, 0.12)',
+            borderWidth: 2.5,
+            tension: 0.35,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          },
+          {
+            label: 'Despesas',
+            data: dadosDespesas,
+            borderColor: '#DC2626',
+            backgroundColor: 'rgba(220, 38, 38, 0.12)',
+            borderWidth: 2.5,
+            tension: 0.35,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          },
+        ],
+      };
+    }
+
     return {
       labels,
       datasets: [
@@ -156,7 +197,7 @@ function GraficoEvolucaoMensal() {
         },
       ],
     };
-  }, [janela, receitas, despesas]);
+  }, [janela, receitas, despesas, isHome]);
 
   const tituloPeriodo = useMemo(() => {
     if (!janela.ref) return '';
@@ -167,16 +208,21 @@ function GraficoEvolucaoMensal() {
     janela.ref.getFullYear() === janela.hoje.getFullYear() &&
     janela.ref.getMonth() === janela.hoje.getMonth();
 
+  const ultimoDia = janela.totalDias;
+  const ticksVisiveis = new Set([1, 15, ultimoDia]);
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
-    datasets: {
-      bar: {
-        categoryPercentage: 0.82,
-        barPercentage: 0.9,
-      },
-    },
+    datasets: isHome
+      ? undefined
+      : {
+          bar: {
+            categoryPercentage: 0.82,
+            barPercentage: 0.9,
+          },
+        },
     plugins: {
       legend: {
         display: true,
@@ -237,13 +283,28 @@ function GraficoEvolucaoMensal() {
       x: {
         border: { display: false },
         grid: { display: false },
-        ticks: {
-          autoSkip: false,
-          maxRotation: 0,
-          minRotation: 0,
-          color: '#64748b',
-          font: { size: 9, weight: '600' },
-        },
+        ticks: isHome
+          ? {
+              autoSkip: false,
+              maxRotation: 0,
+              minRotation: 0,
+              color: '#64748b',
+              font: { size: 12, weight: '600' },
+              callback(value, index) {
+                const dia = Number(this.getLabelForValue(value));
+                if (ticksVisiveis.has(dia)) return String(dia);
+                // Garante rótulo no primeiro índice mesmo se label for "1"
+                if (index === 0) return '1';
+                return '';
+              },
+            }
+          : {
+              autoSkip: false,
+              maxRotation: 0,
+              minRotation: 0,
+              color: '#64748b',
+              font: { size: 9, weight: '600' },
+            },
       },
     },
     layout: {
@@ -269,6 +330,8 @@ function GraficoEvolucaoMensal() {
       </div>
     );
   }
+
+  const ChartComponent = isHome ? Line : Bar;
 
   return (
     <div className="grafico-evolucao-mensal">
@@ -300,7 +363,7 @@ function GraficoEvolucaoMensal() {
         </button>
       </div>
       <div className="chart-container" style={{ height: '280px', width: '100%', position: 'relative' }}>
-        <Bar data={dadosGrafico} options={options} />
+        <ChartComponent data={dadosGrafico} options={options} />
       </div>
     </div>
   );

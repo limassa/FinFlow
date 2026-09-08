@@ -151,6 +151,12 @@
   flex-shrink: 0;
 }
 
+.sidebar-brand__logo {
+  flex-shrink: 0;
+  display: block;
+  border-radius: 50%;
+}
+
 .sidebar-brand__text {
   font-size: 1.05rem;
   font-weight: 800;
@@ -161,16 +167,16 @@
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 12px 10px;
+  gap: 0;
+  padding: 8px 10px;
   flex: 1;
 }
 
 .sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px;
+  gap: 0;
+  padding: 8px 10px;
   border-top: 1px solid #E2E8F0;
   margin-top: auto;
 }
@@ -193,12 +199,12 @@
 .sidebar--panel .sidebar-item {
   width: auto;
   height: auto;
-  min-height: 42px;
+  min-height: 34px;
   margin-bottom: 0;
   justify-content: flex-start;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
 }
 
 .sidebar-item .icon {
@@ -339,7 +345,7 @@
 
 .main-content--with-panel {
   margin-left: 240px;
-  background: #F1F5F9;
+  background: #EFF6FF;
 }
 
 /* Google AdSense */

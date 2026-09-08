@@ -40,7 +40,26 @@ function Layout() {
       <Header />
       <nav className="sidebar sidebar--panel">
         <div className="sidebar-brand">
-          <span className="sidebar-brand__mark" aria-hidden="true" />
+          <svg
+            className="sidebar-brand__logo"
+            width="36"
+            height="36"
+            viewBox="0 0 40 40"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="sidebarClaricashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#4F46E5" />
+                <stop offset="100%" stopColor="#2563EB" />
+              </linearGradient>
+            </defs>
+            <circle cx="20" cy="20" r="18" fill="url(#sidebarClaricashGradient)" />
+            <path d="M12 15 L20 12 L28 15 L20 18 Z" fill="white" opacity="0.9" />
+            <path d="M12 20 L20 17 L28 20 L20 23 Z" fill="white" opacity="0.7" />
+            <path d="M12 25 L20 22 L28 25 L20 28 Z" fill="white" opacity="0.5" />
+            <text x="20" y="18" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">$</text>
+          </svg>
           <span className="sidebar-brand__text">Claricash</span>
         </div>
         <div className="sidebar-nav">

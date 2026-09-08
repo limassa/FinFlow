@@ -518,7 +518,7 @@ function Principal() {
               Evolução financeira
             </h4>
             <div className="principal-chart-card__content">
-              <GraficoEvolucaoMensal />
+              <GraficoEvolucaoMensal variant="home" />
             </div>
           </div>
           <div className="principal-chart-card">
