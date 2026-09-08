@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaBullseye } from 'react-icons/fa';
+import { FaMoneyBillWave, FaMoneyCheckAlt, FaChartLine, FaFilePdf, FaLightbulb, FaChevronRight, FaBullseye, FaChartPie } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { getUsuarioLogado } from '../functions/auth';
 import '../App.css';
 import { useNavigate } from 'react-router-dom';
 import ModalRelatorio from '../components/ModalRelatorio';
+import GraficoEvolucaoMensal from '../components/GraficoEvolucaoMensal';
+import GraficosPizza from '../components/GraficosPizza';
 
 const logoNova = (process.env.PUBLIC_URL || '') + '/logo_nova.png';
 
@@ -502,6 +504,33 @@ function Principal() {
             </p>
           </>
         )}
+      </section>
+
+      <section className="principal-charts">
+        <div className="principal-charts__header">
+          <h3>Visão geral do mês</h3>
+          <p>Acompanhe a evolução e a distribuição das suas finanças</p>
+        </div>
+        <div className="principal-charts__grid">
+          <div className="principal-chart-card">
+            <h4>
+              <FaChartLine style={{ marginRight: 8, color: '#2563EB' }} />
+              Evolução financeira
+            </h4>
+            <div className="principal-chart-card__content">
+              <GraficoEvolucaoMensal />
+            </div>
+          </div>
+          <div className="principal-chart-card">
+            <h4>
+              <FaChartPie style={{ marginRight: 8, color: '#7C3AED' }} />
+              Despesas por categoria
+            </h4>
+            <div className="principal-chart-card__content">
+              <GraficosPizza />
+            </div>
+          </div>
+        </div>
       </section>
 
       <button

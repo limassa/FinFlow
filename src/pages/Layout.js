@@ -6,17 +6,17 @@ import Header from '../components/Header';
 import LembreteEventoProvider from '../components/LembreteEventoProvider';
 
 const MENU_ITEMS = [
-  { key: 'home', path: '/layout/principal', match: ['/layout/principal', '/layout/resumo-financeiro'], icon: FaHome, label: 'Home', title: 'Home' },
-  { key: 'dashboard', path: '/layout/dashboard', match: ['/layout/dashboard'], icon: FaChartLine, label: 'Dashboard', title: 'Dashboard' },
-  { key: 'contas', path: '/layout/contas', match: ['/layout/contas'], icon: FaWallet, label: 'Contas', title: 'Contas' },
-  { key: 'receita', path: '/layout/receita', match: ['/layout/receita'], icon: FaMoneyBillWave, label: 'Receita', title: 'Receita' },
-  { key: 'despesa', path: '/layout/despesa', match: ['/layout/despesa'], icon: FaMoneyCheckAlt, label: 'Despesa', title: 'Despesa' },
-  { key: 'calendario', path: '/layout/calendario', match: ['/layout/calendario'], icon: FaCalendarAlt, label: 'Calendário Financeiro', title: 'Calendário Financeiro' },
-  { key: 'agenda', path: '/layout/agenda', match: ['/layout/agenda'], icon: FaCalendarWeek, label: 'Agenda Pessoal', title: 'Agenda Pessoal' },
-  { key: 'cartoes', path: '/layout/cartoes', match: ['/layout/cartoes'], icon: FaCreditCard, label: 'Cartões', title: 'Cartões de Crédito' },
-  { key: 'orcamento', path: '/layout/orcamento', match: ['/layout/orcamento'], icon: FaChartPie, label: 'Orçamento', title: 'Orçamento Mensal' },
-  { key: 'categorias', path: '/layout/categorias', match: ['/layout/categorias'], icon: FaTags, label: 'Categorias', title: 'Categorias' },
-  { key: 'calculadoras', path: '/layout/calculadora-juros', match: ['/layout/calculadora-juros', '/layout/calculadora-retiradas', '/layout/calculadora-aporte-meta'], icon: FaCalculator, label: 'Calculadoras', title: 'Calculadoras' },
+  { key: 'home', path: '/layout/principal', match: ['/layout/principal', '/layout/resumo-financeiro'], icon: FaHome, label: 'Home', title: 'Home', color: '#2563EB' },
+  { key: 'dashboard', path: '/layout/dashboard', match: ['/layout/dashboard'], icon: FaChartLine, label: 'Dashboard', title: 'Dashboard', color: '#7C3AED' },
+  { key: 'contas', path: '/layout/contas', match: ['/layout/contas'], icon: FaWallet, label: 'Contas', title: 'Contas', color: '#0EA5E9' },
+  { key: 'receita', path: '/layout/receita', match: ['/layout/receita'], icon: FaMoneyBillWave, label: 'Receitas', title: 'Receitas', color: '#059669' },
+  { key: 'despesa', path: '/layout/despesa', match: ['/layout/despesa'], icon: FaMoneyCheckAlt, label: 'Despesas', title: 'Despesas', color: '#DC2626' },
+  { key: 'calendario', path: '/layout/calendario', match: ['/layout/calendario'], icon: FaCalendarAlt, label: 'Calendário', title: 'Calendário Financeiro', color: '#2563EB' },
+  { key: 'agenda', path: '/layout/agenda', match: ['/layout/agenda'], icon: FaCalendarWeek, label: 'Agenda', title: 'Agenda Pessoal', color: '#8B5CF6' },
+  { key: 'cartoes', path: '/layout/cartoes', match: ['/layout/cartoes'], icon: FaCreditCard, label: 'Cartões', title: 'Cartões de Crédito', color: '#D97706' },
+  { key: 'orcamento', path: '/layout/orcamento', match: ['/layout/orcamento'], icon: FaChartPie, label: 'Orçamento', title: 'Orçamento Mensal', color: '#EC4899' },
+  { key: 'categorias', path: '/layout/categorias', match: ['/layout/categorias'], icon: FaTags, label: 'Categorias', title: 'Categorias', color: '#14B8A6' },
+  { key: 'calculadoras', path: '/layout/calculadora-juros', match: ['/layout/calculadora-juros', '/layout/calculadora-retiradas', '/layout/calculadora-aporte-meta'], icon: FaCalculator, label: 'Calculadoras', title: 'Calculadoras', color: '#4F46E5' },
 ];
 
 function Layout() {
@@ -38,45 +38,63 @@ function Layout() {
     <LembreteEventoProvider>
     <div className="home-container">
       <Header />
-      <nav className="sidebar">
-        {MENU_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item);
-          return (
-            <div
-              key={item.key}
-              className={`sidebar-item ${hovered === item.key ? 'hovered' : ''} ${active ? 'active' : ''}`}
-              onMouseEnter={() => setHovered(item.key)}
-              onMouseLeave={() => setHovered(null)}
-              onClick={() => navigate(item.path)}
-              style={{ cursor: 'pointer' }}
-              title={item.title}
-            >
-              <span className="icon"><Icon /></span>
-              <span className="label">{(hovered === item.key || active) && item.label}</span>
-            </div>
-          );
-        })}
-        <div className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''} ${location.pathname === '/fale-conosco' ? 'active' : ''}`}
-        onMouseEnter={() => setHovered('fale-conosco')}
-        onMouseLeave={() => setHovered(null)}
-        onClick={() => navigate('/fale-conosco')}
-        style={{ cursor: 'pointer', marginTop: 'auto', marginBottom: '20px' }}
-        title="Fale Conosco">
-            <span className="icon"><FaEnvelope /></span>
-            <span className="label">{hovered === 'fale-conosco' && 'Fale Conosco'}</span>
+      <nav className="sidebar sidebar--panel">
+        <div className="sidebar-brand">
+          <span className="sidebar-brand__mark" aria-hidden="true" />
+          <span className="sidebar-brand__text">Claricash</span>
         </div>
-        <div className={`sidebar-item ${hovered === 'logout' ? 'hovered' : ''}`}
-        onMouseEnter={() => setHovered('logout')}
-        onMouseLeave={() => setHovered(null)}
-        onClick={handleSair}
-        style={{ cursor: 'pointer' }}
-        title="Sair">
-            <span className="icon"><FaSignOutAlt /></span>
-            <span className="label">{hovered === 'logout' && 'Sair'}</span>
+        <div className="sidebar-nav">
+          {MENU_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item);
+            return (
+              <div
+                key={item.key}
+                className={`sidebar-item ${hovered === item.key ? 'hovered' : ''} ${active ? 'active' : ''}`}
+                onMouseEnter={() => setHovered(item.key)}
+                onMouseLeave={() => setHovered(null)}
+                onClick={() => navigate(item.path)}
+                style={{ cursor: 'pointer', '--item-color': item.color }}
+                title={item.title}
+              >
+                <span className="icon" style={{ color: active ? '#fff' : item.color }}>
+                  <Icon />
+                </span>
+                <span className="label">{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="sidebar-footer">
+          <div
+            className={`sidebar-item ${hovered === 'fale-conosco' ? 'hovered' : ''} ${location.pathname === '/fale-conosco' ? 'active' : ''}`}
+            onMouseEnter={() => setHovered('fale-conosco')}
+            onMouseLeave={() => setHovered(null)}
+            onClick={() => navigate('/fale-conosco')}
+            style={{ cursor: 'pointer', '--item-color': '#64748B' }}
+            title="Fale Conosco"
+          >
+            <span className="icon" style={{ color: location.pathname === '/fale-conosco' ? '#fff' : '#64748B' }}>
+              <FaEnvelope />
+            </span>
+            <span className="label">Fale Conosco</span>
+          </div>
+          <div
+            className={`sidebar-item sidebar-item--logout ${hovered === 'logout' ? 'hovered' : ''}`}
+            onMouseEnter={() => setHovered('logout')}
+            onMouseLeave={() => setHovered(null)}
+            onClick={handleSair}
+            style={{ cursor: 'pointer', '--item-color': '#DC2626' }}
+            title="Sair"
+          >
+            <span className="icon" style={{ color: '#DC2626' }}>
+              <FaSignOutAlt />
+            </span>
+            <span className="label">Sair</span>
+          </div>
         </div>
       </nav>
-      <main className="main-content">
+      <main className="main-content main-content--with-panel">
         <Outlet />
       </main>
     </div>
