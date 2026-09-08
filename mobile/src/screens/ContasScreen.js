@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,6 @@ import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
 import { HeaderIconButton } from '../components/HeaderIconButton';
-import { colors } from '../theme/theme';
 import { useTheme } from '../context/ThemeContext';
 import Select from '../components/Select';
 import BankSelector from '../components/BankSelector';
@@ -32,7 +31,9 @@ const tiposConta = ['Conta Corrente', 'Conta Poupança', 'Carteira', 'Cartão de
 export default function ContasScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const keyboardAppearance = isDark ? 'dark' : 'light';
   const userId = getUserId();
   
   useLayoutEffect(() => {
@@ -306,6 +307,9 @@ export default function ContasScreen() {
                 value={nome}
                 onChangeText={setNome}
                 placeholder="Ex: Banco do Brasil"
+                placeholderTextColor={colors.placeholder}
+                keyboardAppearance={keyboardAppearance}
+                selectionColor={colors.primary}
               />
 
               <Text style={styles.label}>Tipo *</Text>
@@ -332,7 +336,10 @@ export default function ContasScreen() {
                   setSaldo(formatCurrency(numbers));
                 }}
                 placeholder="0,00"
+                placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
+                keyboardAppearance={keyboardAppearance}
+                selectionColor={colors.primary}
               />
 
               <View style={styles.formActions}>
@@ -359,7 +366,8 @@ export default function ContasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -391,7 +399,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -424,7 +432,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   contaCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -433,6 +441,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   contaHeader: {
     flexDirection: 'row',
@@ -538,6 +548,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    color: colors.text,
   },
   formActions: {
     flexDirection: 'row',
@@ -569,4 +580,4 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
-
+}

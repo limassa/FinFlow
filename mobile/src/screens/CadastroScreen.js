@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { formatarTelefone, removerFormatacaoTelefone } from '../utils/formatters';
 
 // Requisitos de senha (mesma lógica do web)
@@ -37,6 +37,8 @@ const getRequisitosSenha = (senha) => {
 };
 
 export default function CadastroScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -219,7 +221,8 @@ export default function CadastroScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -336,4 +339,4 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
-
+}

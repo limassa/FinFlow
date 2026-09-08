@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,12 +15,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
-import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 import { formatarTelefone } from '../utils/formatters';
 import Select from '../components/Select';
 
 export default function FaleConoscoScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
@@ -272,7 +274,8 @@ export default function FaleConoscoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -314,7 +317,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   statCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -325,6 +328,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   statLabel: {
     fontSize: 12,
@@ -338,7 +343,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   formContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -346,6 +351,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   formTitle: {
     fontSize: 20,
@@ -369,7 +376,7 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: colors.text,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
   textArea: {
     minHeight: 120,
@@ -396,4 +403,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
+}

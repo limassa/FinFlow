@@ -604,6 +604,7 @@ export default function ConfiguracoesScreen() {
                   value={formData.nome}
                   onChangeText={(text) => setFormData({ ...formData, nome: text })}
                   placeholder="Nome completo"
+                  placeholderTextColor={themeColors.placeholder}
                 />
               </View>
 
@@ -614,6 +615,7 @@ export default function ConfiguracoesScreen() {
                   value={formData.email}
                   onChangeText={(text) => setFormData({ ...formData, email: text })}
                   placeholder="email@exemplo.com"
+                  placeholderTextColor={themeColors.placeholder}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -630,6 +632,7 @@ export default function ConfiguracoesScreen() {
                     setFormData({ ...formData, telefone: telefoneFormatado });
                   }}
                   placeholder="(00) 00000-0000"
+                  placeholderTextColor={themeColors.placeholder}
                   keyboardType="phone-pad"
                   maxLength={15} // (00) 00000-0000 = 15 caracteres
                 />
@@ -643,6 +646,7 @@ export default function ConfiguracoesScreen() {
                     value={formData.senhaAtual}
                     onChangeText={(text) => setFormData({ ...formData, senhaAtual: text })}
                     placeholder="Digite sua senha atual"
+                    placeholderTextColor={themeColors.placeholder}
                     secureTextEntry={!showPassword}
                   />
                   <TouchableOpacity
@@ -665,6 +669,7 @@ export default function ConfiguracoesScreen() {
                   value={formData.novaSenha}
                   onChangeText={(text) => setFormData({ ...formData, novaSenha: text })}
                   placeholder="Deixe em branco para não alterar"
+                  placeholderTextColor={themeColors.placeholder}
                   secureTextEntry={!showPassword}
                 />
               </View>
@@ -676,6 +681,7 @@ export default function ConfiguracoesScreen() {
                   value={formData.confirmarSenha}
                   onChangeText={(text) => setFormData({ ...formData, confirmarSenha: text })}
                   placeholder="Confirme a nova senha"
+                  placeholderTextColor={themeColors.placeholder}
                   secureTextEntry={!showPassword}
                 />
               </View>
@@ -760,6 +766,7 @@ export default function ConfiguracoesScreen() {
                   }}
                   keyboardType="number-pad"
                   placeholder="0"
+                  placeholderTextColor={themeColors.placeholder}
                 />
                 <Text style={styles.helperText}>
                   0 = só no dia do vencimento. Ex.: 5 = avisa a partir de 5 dias antes até o vencimento.
@@ -968,6 +975,7 @@ export default function ConfiguracoesScreen() {
                 value={excluirTexto}
                 onChangeText={setExcluirTexto}
                 placeholder="EXCLUIR"
+                placeholderTextColor={themeColors.placeholder}
                 autoCapitalize="characters"
               />
               <View style={{ flexDirection: 'row', gap: 10 }}>

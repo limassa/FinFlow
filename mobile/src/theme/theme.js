@@ -40,7 +40,7 @@ export const darkColors = {
   text: '#F1F5F9',
   textSecondary: '#A8B3C7',
   border: '#3D4F66',
-  placeholder: '#7B8BA3',
+  placeholder: '#94A3B8',
   card: '#243044',
   tabBar: '#0B1220',
   header: '#152033',

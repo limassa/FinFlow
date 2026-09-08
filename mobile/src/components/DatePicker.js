@@ -6,10 +6,11 @@ import { useTheme } from '../context/ThemeContext';
 import { formatarData } from '../utils/formatters';
 
 export default function DatePicker({ value, onChange, placeholder = 'Selecione a data', mode = 'date' }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [show, setShow] = useState(false);
   const [tempDate, setTempDate] = useState(null);
+  const themeVariant = isDark ? 'dark' : 'light';
 
   const handleOpen = () => {
     setTempDate(value || new Date());
@@ -75,6 +76,8 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
                 value={pickerValue}
                 mode={mode}
                 display="spinner"
+                themeVariant={themeVariant}
+                textColor={colors.text}
                 onChange={(event, selectedDate) => {
                   if (selectedDate && event.type !== 'dismissed') {
                     setTempDate(selectedDate);
@@ -93,6 +96,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
           value={value || new Date()}
           mode={mode}
           display="default"
+          themeVariant={themeVariant}
           onChange={handleChange}
           locale="pt-BR"
         />
@@ -103,55 +107,55 @@ export default function DatePicker({ value, onChange, placeholder = 'Selecione a
 
 function createStyles(colors) {
   return StyleSheet.create({
-  input: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 48,
-  },
-  text: {
-    fontSize: 16,
-    color: colors.text,
-    flex: 1,
-  },
-  placeholder: {
-    color: colors.placeholder,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  iosPickerContainer: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  iosPickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  iosPickerButton: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  iosPickerButtonConfirm: {
-    color: colors.primary,
-  },
-  iosPicker: {
-    height: 200,
-  },
-});
+    input: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 48,
+    },
+    text: {
+      fontSize: 16,
+      color: colors.text,
+      flex: 1,
+    },
+    placeholder: {
+      color: colors.placeholder,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    iosPickerContainer: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingTop: 10,
+      paddingBottom: 20,
+    },
+    iosPickerHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    iosPickerButton: {
+      fontSize: 16,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    iosPickerButtonConfirm: {
+      color: colors.primary,
+    },
+    iosPicker: {
+      height: 200,
+    },
+  });
 }

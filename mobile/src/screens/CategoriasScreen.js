@@ -409,6 +409,7 @@ function createStyles(colors) {
     padding: 14,
     fontSize: 16,
     color: colors.text,
+    backgroundColor: colors.surface,
     marginBottom: 16,
   },
   checkboxRow: { flexDirection: 'row', gap: 20, marginBottom: 16 },

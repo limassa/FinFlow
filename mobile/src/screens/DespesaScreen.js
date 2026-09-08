@@ -55,7 +55,9 @@ const tiposDespesaPadrao = [
 export default function DespesaScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const themeVariant = isDark ? 'dark' : 'light';
+  const keyboardAppearance = isDark ? 'dark' : 'light';
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { isOnline, saveCache, loadCache } = useOffline();
   const userId = getUserId();
@@ -859,6 +861,8 @@ export default function DespesaScreen() {
                 value={new Date(`${ymPrimeiroDia(mesAtual)}T00:00:00`)}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={themeVariant}
+                textColor={colors.text}
                 onChange={(event, selectedDate) => {
                   if (Platform.OS === 'android') setShowMesPicker(false);
                   if (event.type === 'dismissed') return;
@@ -1179,6 +1183,9 @@ export default function DespesaScreen() {
                 value={descricao}
                 onChangeText={setDescricao}
                 placeholder="Descrição da despesa"
+                placeholderTextColor={colors.placeholder}
+                keyboardAppearance={keyboardAppearance}
+                selectionColor={colors.primary}
               />
 
               <Text style={styles.label}>Valor *</Text>
@@ -1193,7 +1200,10 @@ export default function DespesaScreen() {
                   setValorDisplay(formatCurrency(numbers));
                 }}
                 placeholder="0,00"
+                placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
+                keyboardAppearance={keyboardAppearance}
+                selectionColor={colors.primary}
               />
 
               <Text style={styles.label}>Data *</Text>
@@ -1258,7 +1268,10 @@ export default function DespesaScreen() {
                     value={proximasParcelas}
                     onChangeText={setProximasParcelas}
                     placeholder="12"
+                    placeholderTextColor={colors.placeholder}
                     keyboardType="number-pad"
+                    keyboardAppearance={keyboardAppearance}
+                    selectionColor={colors.primary}
                   />
                 </>
               )}
@@ -1853,6 +1866,7 @@ function createStyles(colors) {
     fontSize: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    color: colors.text,
   },
   selectContainer: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,9 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
-import { colors } from '../theme/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ForgotPasswordScreen({ navigation }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -128,7 +130,8 @@ export default function ForgotPasswordScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors, isDark) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -212,17 +215,17 @@ const styles = StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
+    backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#e8f5e9',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     gap: 8,
   },
   messageText: {
-    color: '#2e7d32',
+    color: colors.success,
     fontSize: 14,
     flex: 1,
   },
 });
-
+}
 
