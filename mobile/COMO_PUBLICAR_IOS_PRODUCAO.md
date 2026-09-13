@@ -133,8 +133,8 @@ npx eas-cli submit --platform ios --profile production --latest --non-interactiv
 **Descrição curta (até 170 caracteres) — exemplo:**
 > Organize receitas, despesas, cartões e orçamento. Claricash: finanças claras no iPhone.
 
-**Descrição longa — exemplo:**
-> O Claricash ajuda você a controlar suas finanças pessoais com clareza.
+**Descrição longa — exemplo (sem mencionar Android/outras lojas — Guideline 2.3.10):**
+> O Claricash ajuda você a controlar suas finanças pessoais com clareza no iPhone.
 >
 > • Receitas e despesas
 > • Cartão de crédito
@@ -142,9 +142,11 @@ npx eas-cli submit --platform ios --profile production --latest --non-interactiv
 > • Orçamento e categorias
 > • Calculadoras financeiras
 > • Resumo do mês na Home
+> • Notificações de lembretes
 >
-> Disponível também na Web e no Android.
 > Desenvolvido por Liz Software.
+
+**Importante (App Review 2.3.10):** na descrição, subtítulo, palavras-chave e notas de versão da App Store, **não** cite Android, Google Play nem outras plataformas. Foque só na experiência iOS.
 
 ### 4. Capturas de tela (obrigatório)
 
