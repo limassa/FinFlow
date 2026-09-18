@@ -18,6 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
+import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
 
 export default function CartaoCreditoScreen() {
   const navigation = useNavigation();
@@ -217,7 +218,11 @@ export default function CartaoCreditoScreen() {
 
       <Modal visible={showModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalScroll}>
+          <ScrollView
+            contentContainerStyle={styles.modalScroll}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{editando ? 'Editar' : 'Novo'} Cartão</Text>
               <Text style={styles.modalLabel}>Nome</Text>
@@ -227,6 +232,7 @@ export default function CartaoCreditoScreen() {
                 onChangeText={setNome}
                 placeholder="Ex: Nubank, Itaú"
                 placeholderTextColor={colors.placeholder}
+                {...keyboardInputProps()}
               />
               <Text style={styles.modalLabel}>Limite (R$)</Text>
               <TextInput
@@ -236,6 +242,7 @@ export default function CartaoCreditoScreen() {
                 placeholder="0,00"
                 placeholderTextColor={colors.placeholder}
                 keyboardType="numeric"
+                {...keyboardInputProps()}
               />
               <Text style={styles.modalLabel}>Dia fechamento</Text>
               <TextInput
@@ -245,6 +252,7 @@ export default function CartaoCreditoScreen() {
                 placeholder="1"
                 placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
+                {...keyboardInputProps()}
               />
               <Text style={styles.modalLabel}>Dia vencimento</Text>
               <TextInput
@@ -254,7 +262,9 @@ export default function CartaoCreditoScreen() {
                 placeholder="10"
                 placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
+                {...keyboardInputProps()}
               />
+              <KeyboardDismissButton colors={colors} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setShowModal(false)}>
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>

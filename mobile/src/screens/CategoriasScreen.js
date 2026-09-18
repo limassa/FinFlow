@@ -21,6 +21,7 @@ import {
   CORES_DISPONIVEIS,
   ICONS_CATEGORIA_CUSTOM,
 } from '../utils/categoryIcons';
+import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
 
 export default function CategoriasScreen() {
   const navigation = useNavigation();
@@ -237,6 +238,7 @@ export default function CategoriasScreen() {
             style={styles.modalScroll}
             contentContainerStyle={styles.modalScrollContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{editando ? 'Editar' : 'Nova'} Categoria</Text>
@@ -248,6 +250,7 @@ export default function CategoriasScreen() {
                 onChangeText={(v) => setFormCategoria({ ...formCategoria, nome: v })}
                 placeholder="Nome da categoria"
                 placeholderTextColor={colors.placeholder}
+                {...keyboardInputProps()}
               />
 
               {!editando && (
@@ -320,6 +323,7 @@ export default function CategoriasScreen() {
                 </View>
               </View>
 
+              <KeyboardDismissButton colors={colors} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setShowModal(false)}>
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>

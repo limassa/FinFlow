@@ -18,8 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
-import { formatarValor, formatarData, formatDateLocalYmd } from '../utils/formatters';
-import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { formatarValor, formatarData, formatDateLocalYmd, parseLocalDateInput } from '../utils/formatters';
+import { currentMonthYm, ymdToday, ymdEfetivoDespesa, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
@@ -285,10 +286,19 @@ export default function DespesaScreen() {
 
   const listaPorAba = React.useMemo(() => {
     if (abaLista === 'atual') return despesas;
-    if (abaLista === 'historico') return todasDespesasCache || [];
     const hoje = ymdToday();
     const all = todasDespesasCache || [];
-    return all.filter(d => ymdFromIso(d.despesa_data) > hoje);
+    if (abaLista === 'historico') {
+      return all.filter(d => {
+        const ymd = ymdEfetivoDespesa(d);
+        return ymd && ymd < hoje;
+      });
+    }
+    // futuros: vencimento (fallback lançamento) depois de hoje
+    return all.filter(d => {
+      const ymd = ymdEfetivoDespesa(d);
+      return ymd && ymd > hoje;
+    });
   }, [abaLista, despesas, todasDespesasCache]);
 
   const listaAposBusca = React.useMemo(() => {
@@ -325,8 +335,8 @@ export default function DespesaScreen() {
       const subgruposRaw = grupos[tipo];
       const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
         const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.despesa_data || '').split('T')[0];
-          const dataB = (b.despesa_data || '').split('T')[0];
+          const dataA = ymdEfetivoDespesa(a);
+          const dataB = ymdEfetivoDespesa(b);
           return dataA.localeCompare(dataB);
         });
         return { nomeBase, itens: ordenados };
@@ -337,8 +347,8 @@ export default function DespesaScreen() {
 
   const despesasOrdenadasPorData = React.useMemo(() => {
     return [...despesasFiltradas].sort((a, b) => {
-      const dataA = (a.despesa_data || '').split('T')[0];
-      const dataB = (b.despesa_data || '').split('T')[0];
+      const dataA = ymdEfetivoDespesa(a);
+      const dataB = ymdEfetivoDespesa(b);
       return dataA.localeCompare(dataB);
     });
   }, [despesasFiltradas]);
@@ -478,9 +488,8 @@ export default function DespesaScreen() {
     const valorNum = despesaValor ? despesaValor.toString().replace(/\D/g, '') : '';
     setValor(valorNum);
     setValorDisplay(formatCurrency(valorNum));
-    // Converter datas string para Date object
-    setData(despesaData ? new Date(despesaData) : null);
-    setDataVencimento(despesaDtVencimento ? new Date(despesaDtVencimento) : null);
+    setData(parseLocalDateInput(despesaData));
+    setDataVencimento(parseLocalDateInput(despesaDtVencimento));
     setTipo(despesaTipo);
     setPago(despesaPago);
     setContaId(despesaContaId ? despesaContaId.toString() : '');
@@ -622,6 +631,9 @@ export default function DespesaScreen() {
               <Switch
                 value={despesa.despesa_pago || false}
                 onValueChange={() => handleTogglePago(despesa)}
+                trackColor={{ false: isDark ? '#475569' : '#94A3B8', true: '#22C55E' }}
+                thumbColor={despesa.despesa_pago ? '#ffffff' : (isDark ? '#E2E8F0' : '#F8FAFC')}
+                ios_backgroundColor={isDark ? '#475569' : '#94A3B8'}
               />
             </View>
           </View>
@@ -1175,6 +1187,7 @@ export default function DespesaScreen() {
               style={styles.formContainer}
               contentContainerStyle={{ paddingBottom: 40 }}
               keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
             >
               <Text style={styles.label}>Descrição *</Text>
@@ -1186,6 +1199,7 @@ export default function DespesaScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardAppearance={keyboardAppearance}
                 selectionColor={colors.primary}
+                {...keyboardInputProps()}
               />
 
               <Text style={styles.label}>Valor *</Text>
@@ -1204,6 +1218,7 @@ export default function DespesaScreen() {
                 keyboardType="number-pad"
                 keyboardAppearance={keyboardAppearance}
                 selectionColor={colors.primary}
+                {...keyboardInputProps()}
               />
 
               <Text style={styles.label}>Data *</Text>
@@ -1240,12 +1255,24 @@ export default function DespesaScreen() {
 
               <View style={styles.switchContainer}>
                 <Text style={styles.label}>Pago</Text>
-                <Switch value={pago} onValueChange={setPago} />
+                <Switch
+                  value={pago}
+                  onValueChange={setPago}
+                  trackColor={{ false: isDark ? '#475569' : '#94A3B8', true: '#22C55E' }}
+                  thumbColor={pago ? '#ffffff' : (isDark ? '#E2E8F0' : '#F8FAFC')}
+                  ios_backgroundColor={isDark ? '#475569' : '#94A3B8'}
+                />
               </View>
 
               <View style={styles.switchContainer}>
                 <Text style={styles.label}>Recorrente</Text>
-                <Switch value={recorrente} onValueChange={setRecorrente} />
+                <Switch
+                  value={recorrente}
+                  onValueChange={setRecorrente}
+                  trackColor={{ false: isDark ? '#475569' : '#94A3B8', true: colors.primary }}
+                  thumbColor={recorrente ? '#ffffff' : (isDark ? '#E2E8F0' : '#F8FAFC')}
+                  ios_backgroundColor={isDark ? '#475569' : '#94A3B8'}
+                />
               </View>
 
               {recorrente && (
@@ -1272,9 +1299,12 @@ export default function DespesaScreen() {
                     keyboardType="number-pad"
                     keyboardAppearance={keyboardAppearance}
                     selectionColor={colors.primary}
+                    {...keyboardInputProps()}
                   />
                 </>
               )}
+
+              <KeyboardDismissButton colors={colors} />
 
               <View style={styles.formActions}>
                 <TouchableOpacity

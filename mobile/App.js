@@ -14,6 +14,7 @@ import { OfflineProvider } from './src/context/OfflineContext';
 import AuthStack from './src/navigation/AuthStack';
 import MainNavigator from './src/navigation/MainNavigator';
 import DespesasNotificationSync from './src/components/DespesasNotificationSync';
+import { KeyboardDismissAccessory } from './src/components/FormKeyboard';
 
 function AppNavigator() {
   const { user, loading } = useAuth();
@@ -52,6 +53,7 @@ function ThemedApp() {
       <OfflineProvider>
         <AuthProvider>
           <StatusBar style={isDark ? 'light' : 'dark'} />
+          <KeyboardDismissAccessory colors={colors} />
           <View style={{ flex: 1, backgroundColor: colors.background }}>
             <AppNavigator />
           </View>

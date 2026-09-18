@@ -23,6 +23,7 @@ import { HeaderIconButton } from '../components/HeaderIconButton';
 import { useTheme } from '../context/ThemeContext';
 import Select from '../components/Select';
 import BankSelector from '../components/BankSelector';
+import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
 import { getBancoById } from '../utils/banks';
 import BankLogo from '../components/BankLogo';
 
@@ -299,6 +300,7 @@ export default function ContasScreen() {
               style={styles.formContainer}
               contentContainerStyle={styles.formContent}
               keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
             >
               <Text style={styles.label}>Nome da Conta *</Text>
@@ -310,6 +312,7 @@ export default function ContasScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardAppearance={keyboardAppearance}
                 selectionColor={colors.primary}
+                {...keyboardInputProps()}
               />
 
               <Text style={styles.label}>Tipo *</Text>
@@ -340,7 +343,10 @@ export default function ContasScreen() {
                 keyboardType="number-pad"
                 keyboardAppearance={keyboardAppearance}
                 selectionColor={colors.primary}
+                {...keyboardInputProps()}
               />
+
+              <KeyboardDismissButton colors={colors} />
 
               <View style={styles.formActions}>
                 <TouchableOpacity

@@ -14,7 +14,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { normalizarDataInput, formatarValorInput, valorParaNumero } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
-import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymdToYm, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { currentMonthYm, ymdToday, ymdEfetivoReceita, addMonthsYm, formatMesPtBr, ymdToYm, ymPrimeiroDia } from '../utils/abaListaFinanceira';
 import '../App.css';
 
 function Receita() {
@@ -237,9 +237,18 @@ function Receita() {
 
   const listaPorAba = useMemo(() => {
     if (abaLista === 'atual') return receitas;
-    if (abaLista === 'historico') return todasReceitasCache || [];
     const hoje = ymdToday();
-    return (todasReceitasCache || []).filter(r => ymdFromIso(r.receita_data) > hoje);
+    const all = todasReceitasCache || [];
+    if (abaLista === 'historico') {
+      return all.filter(r => {
+        const ymd = ymdEfetivoReceita(r);
+        return ymd && ymd < hoje;
+      });
+    }
+    return all.filter(r => {
+      const ymd = ymdEfetivoReceita(r);
+      return ymd && ymd > hoje;
+    });
   }, [abaLista, receitas, todasReceitasCache]);
 
   const listaAposBusca = useMemo(() => {

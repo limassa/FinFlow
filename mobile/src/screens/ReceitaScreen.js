@@ -18,8 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
-import { formatarValor, formatarData, formatDateLocalYmd } from '../utils/formatters';
-import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { formatarValor, formatarData, formatDateLocalYmd, parseLocalDateInput } from '../utils/formatters';
+import { currentMonthYm, ymdToday, ymdEfetivoReceita, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
@@ -248,10 +249,18 @@ export default function ReceitaScreen() {
 
   const listaPorAba = React.useMemo(() => {
     if (abaLista === 'atual') return receitas;
-    if (abaLista === 'historico') return todasReceitasCache || [];
     const hoje = ymdToday();
     const all = todasReceitasCache || [];
-    return all.filter(r => ymdFromIso(r.receita_data) > hoje);
+    if (abaLista === 'historico') {
+      return all.filter(r => {
+        const ymd = ymdEfetivoReceita(r);
+        return ymd && ymd < hoje;
+      });
+    }
+    return all.filter(r => {
+      const ymd = ymdEfetivoReceita(r);
+      return ymd && ymd > hoje;
+    });
   }, [abaLista, receitas, todasReceitasCache]);
 
   const listaAposBusca = React.useMemo(() => {
@@ -289,8 +298,8 @@ export default function ReceitaScreen() {
       const subgruposRaw = grupos[tipo];
       const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
         const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.receita_data || '').split('T')[0];
-          const dataB = (b.receita_data || '').split('T')[0];
+          const dataA = ymdEfetivoReceita(a);
+          const dataB = ymdEfetivoReceita(b);
           return dataA.localeCompare(dataB);
         });
         return { nomeBase, itens: ordenados };
@@ -301,8 +310,8 @@ export default function ReceitaScreen() {
 
   const receitasOrdenadasPorData = React.useMemo(() => {
     return [...receitasFiltradas].sort((a, b) => {
-      const dataA = (a.receita_data || '').split('T')[0];
-      const dataB = (b.receita_data || '').split('T')[0];
+      const dataA = ymdEfetivoReceita(a);
+      const dataB = ymdEfetivoReceita(b);
       return dataA.localeCompare(dataB);
     });
   }, [receitasFiltradas]);
@@ -438,8 +447,7 @@ export default function ReceitaScreen() {
     const valorNum = receitaValor ? receitaValor.toString().replace(/\D/g, '') : '';
     setValor(valorNum);
     setValorDisplay(formatCurrency(valorNum));
-    // Converter data string para Date object
-    setData(receitaData ? new Date(receitaData) : null);
+    setData(parseLocalDateInput(receitaData));
     setTipo(receitaTipo);
     setRecebido(receitaRecebido);
     setContaId(receitaContaId ? receitaContaId.toString() : '');
@@ -607,6 +615,9 @@ export default function ReceitaScreen() {
               <Switch
                 value={receita.receita_recebido || false}
                 onValueChange={() => handleToggleRecebido(receita)}
+                trackColor={{ false: isDark ? '#475569' : '#94A3B8', true: '#22C55E' }}
+                thumbColor={receita.receita_recebido ? '#ffffff' : (isDark ? '#E2E8F0' : '#F8FAFC')}
+                ios_backgroundColor={isDark ? '#475569' : '#94A3B8'}
               />
             </View>
           </View>
@@ -1010,6 +1021,7 @@ export default function ReceitaScreen() {
               style={styles.formContainer}
               contentContainerStyle={{ paddingBottom: 40 }}
               keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
             >
               <Text style={styles.label}>Descrição *</Text>
@@ -1021,6 +1033,7 @@ export default function ReceitaScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardAppearance={keyboardAppearance}
                 selectionColor={colors.primary}
+                {...keyboardInputProps()}
               />
 
               <Text style={styles.label}>Valor *</Text>
@@ -1039,6 +1052,7 @@ export default function ReceitaScreen() {
                 keyboardType="number-pad"
                 keyboardAppearance={keyboardAppearance}
                 selectionColor={colors.primary}
+                {...keyboardInputProps()}
               />
 
               <Text style={styles.label}>Data *</Text>
@@ -1068,12 +1082,24 @@ export default function ReceitaScreen() {
 
               <View style={styles.switchContainer}>
                 <Text style={styles.label}>Recebido</Text>
-                <Switch value={recebido} onValueChange={setRecebido} />
+                <Switch
+                  value={recebido}
+                  onValueChange={setRecebido}
+                  trackColor={{ false: isDark ? '#475569' : '#94A3B8', true: '#22C55E' }}
+                  thumbColor={recebido ? '#ffffff' : (isDark ? '#E2E8F0' : '#F8FAFC')}
+                  ios_backgroundColor={isDark ? '#475569' : '#94A3B8'}
+                />
               </View>
 
               <View style={styles.switchContainer}>
                 <Text style={styles.label}>Recorrente</Text>
-                <Switch value={recorrente} onValueChange={setRecorrente} />
+                <Switch
+                  value={recorrente}
+                  onValueChange={setRecorrente}
+                  trackColor={{ false: isDark ? '#475569' : '#94A3B8', true: colors.primary }}
+                  thumbColor={recorrente ? '#ffffff' : (isDark ? '#E2E8F0' : '#F8FAFC')}
+                  ios_backgroundColor={isDark ? '#475569' : '#94A3B8'}
+                />
               </View>
 
               {recorrente && (
@@ -1100,9 +1126,12 @@ export default function ReceitaScreen() {
                     keyboardType="number-pad"
                     keyboardAppearance={keyboardAppearance}
                     selectionColor={colors.primary}
+                    {...keyboardInputProps()}
                   />
                 </>
               )}
+
+              <KeyboardDismissButton colors={colors} />
 
               <View style={styles.formActions}>
                 <TouchableOpacity

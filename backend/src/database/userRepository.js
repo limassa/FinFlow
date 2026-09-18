@@ -298,13 +298,18 @@ const userRepository = {
     let result;
     try {
       let query = 'SELECT * FROM "Despesa" WHERE "Usuario_Id" = $1 AND "Despesa_Ativo" = TRUE';
-      if (mes) query += ' AND DATE_TRUNC(\'month\', "Despesa_Data") = DATE_TRUNC(\'month\', $2::date)';
-      query += ' ORDER BY "Despesa_Data" ASC';
+      // Mês pela data de vencimento (fallback: data de lançamento)
+      if (mes) {
+        query += ' AND DATE_TRUNC(\'month\', COALESCE("Despesa_DtVencimento", "Despesa_Data")) = DATE_TRUNC(\'month\', $2::date)';
+      }
+      query += ' ORDER BY COALESCE("Despesa_DtVencimento", "Despesa_Data") ASC';
       result = await pool.query(query, paramsMes);
     } catch (err) {
       let q = 'SELECT * FROM despesa WHERE usuario_id = $1 AND despesa_ativo = TRUE';
-      if (mes) q += ' AND DATE_TRUNC(\'month\', despesa_data) = DATE_TRUNC(\'month\', $2::date)';
-      q += ' ORDER BY despesa_data ASC';
+      if (mes) {
+        q += ' AND DATE_TRUNC(\'month\', COALESCE(despesa_dtvencimento, despesa_data)) = DATE_TRUNC(\'month\', $2::date)';
+      }
+      q += ' ORDER BY COALESCE(despesa_dtvencimento, despesa_data) ASC';
       result = await pool.query(q, paramsMes);
     }
     return result.rows.map(normalizarDespesa);

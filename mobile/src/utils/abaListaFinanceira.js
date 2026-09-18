@@ -14,6 +14,26 @@ export function ymdFromIso(iso) {
   return (iso || '').split('T')[0];
 }
 
+/** Data efetiva da despesa: vencimento, com fallback para data de lançamento */
+export function ymdEfetivoDespesa(despesa) {
+  return ymdFromIso(
+    despesa?.despesa_dtvencimento ||
+      despesa?.Despesa_DtVencimento ||
+      despesa?.dataVencimento ||
+      despesa?.despesa_data ||
+      despesa?.Despesa_Data ||
+      despesa?.data ||
+      ''
+  );
+}
+
+/** Data efetiva da receita (campo único de data) */
+export function ymdEfetivoReceita(receita) {
+  return ymdFromIso(
+    receita?.receita_data || receita?.Receita_Data || receita?.data || ''
+  );
+}
+
 export function addMonthsYm(ym, delta) {
   const [y, m] = ym.split('-').map(Number);
   const d = new Date(y, m - 1 + delta, 1);

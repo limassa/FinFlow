@@ -13,7 +13,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { normalizarDataInput, formatarValorInput, valorParaNumero } from '../utils/formatters';
 import { getUsuarioLogado } from '../functions/auth';
 import { useNavigate } from 'react-router-dom';
-import { currentMonthYm, ymdToday, ymdFromIso, addMonthsYm, formatMesPtBr, ymdToYm, ymPrimeiroDia } from '../utils/abaListaFinanceira';
+import { currentMonthYm, ymdToday, ymdEfetivoDespesa, addMonthsYm, formatMesPtBr, ymdToYm, ymPrimeiroDia } from '../utils/abaListaFinanceira';
 import '../App.css';
 
 function Despesa() {
@@ -289,9 +289,18 @@ function Despesa() {
 
   const listaPorAba = useMemo(() => {
     if (abaLista === 'atual') return despesas;
-    if (abaLista === 'historico') return todasDespesasCache || [];
     const hoje = ymdToday();
-    return (todasDespesasCache || []).filter(d => ymdFromIso(d.despesa_data) > hoje);
+    const all = todasDespesasCache || [];
+    if (abaLista === 'historico') {
+      return all.filter(d => {
+        const ymd = ymdEfetivoDespesa(d);
+        return ymd && ymd < hoje;
+      });
+    }
+    return all.filter(d => {
+      const ymd = ymdEfetivoDespesa(d);
+      return ymd && ymd > hoje;
+    });
   }, [abaLista, despesas, todasDespesasCache]);
 
   const listaAposBusca = useMemo(() => {
@@ -328,8 +337,8 @@ function Despesa() {
       const subgruposRaw = grupos[tipo];
       const subgrupos = Object.entries(subgruposRaw).map(([nomeBase, itens]) => {
         const ordenados = [...itens].sort((a, b) => {
-          const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
-          const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
+          const dataA = ymdEfetivoDespesa(a);
+          const dataB = ymdEfetivoDespesa(b);
           return dataA.localeCompare(dataB);
         });
         return { nomeBase, itens: ordenados };
@@ -340,8 +349,8 @@ function Despesa() {
 
   const despesasOrdenadasPorVencimento = useMemo(() => {
     return [...despesasFiltradas].sort((a, b) => {
-      const dataA = (a.despesa_dtvencimento || a.despesa_data || '').split('T')[0];
-      const dataB = (b.despesa_dtvencimento || b.despesa_data || '').split('T')[0];
+      const dataA = ymdEfetivoDespesa(a);
+      const dataB = ymdEfetivoDespesa(b);
       return dataA.localeCompare(dataB);
     });
   }, [despesasFiltradas]);
