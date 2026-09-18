@@ -2,7 +2,7 @@
   "expo": {
     "name": "Claricash",
     "slug": "finflow-mobile",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "newArchEnabled": false,
     "orientation": "default",
     "icon": "./assets/icon.png",
