@@ -18,7 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor } from '../utils/formatters';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
-import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
+import { keyboardInputProps } from '../components/FormKeyboard';
 
 export default function CartaoCreditoScreen() {
   const navigation = useNavigation();
@@ -264,7 +264,6 @@ export default function CartaoCreditoScreen() {
                 keyboardType="number-pad"
                 {...keyboardInputProps()}
               />
-              <KeyboardDismissButton colors={colors} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setShowModal(false)}>
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>

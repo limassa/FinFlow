@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { getIconNameForTipo, getColorForTipo } from '../utils/categoryIcons';
 
@@ -22,6 +23,7 @@ export default function SelectWithIcons({
   customColors = {},
 }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -66,17 +68,18 @@ export default function SelectWithIcons({
         visible={modalVisible}
         transparent={true}
         animationType="slide"
+        statusBarTranslucent
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Selecione uma opção</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.optionsList}>
+            <ScrollView style={styles.optionsList} keyboardShouldPersistTaps="handled">
               {options.map((option, index) => {
                 const optValue = typeof option === 'object' ? option.value : option;
                 const optLabel = typeof option === 'object' ? option.label : option;
@@ -154,7 +157,8 @@ function createStyles(colors) {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   modalHeader: {
     flexDirection: 'row',

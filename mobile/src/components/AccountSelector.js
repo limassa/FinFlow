@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { getBancoById } from '../utils/banks';
 import BankLogo from './BankLogo';
 
 export default function AccountSelector({ value, onChange, contas = [], placeholder = 'Selecione uma conta', label }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -39,17 +41,22 @@ export default function AccountSelector({ value, onChange, contas = [], placehol
         visible={modalVisible}
         transparent={true}
         animationType="slide"
+        statusBarTranslucent
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Selecione a conta</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.optionsList}>
+            <ScrollView
+              style={styles.optionsList}
+              contentContainerStyle={{ paddingBottom: 8 }}
+              keyboardShouldPersistTaps="handled"
+            >
               <TouchableOpacity
                 style={[styles.option, !value && styles.optionSelected]}
                 onPress={() => handleSelect(null)}
@@ -143,7 +150,8 @@ function createStyles(colors) {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   modalHeader: {
     flexDirection: 'row',

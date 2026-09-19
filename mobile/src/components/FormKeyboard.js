@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Keyboard,
@@ -16,13 +15,17 @@ export function dismissKeyboard() {
   Keyboard.dismiss();
 }
 
-/** Props para TextInput no iOS (barra "Ocultar teclado" acima do teclado). */
+/** Props para TextInput no iOS (seta acima do teclado). */
 export function keyboardInputProps() {
   if (Platform.OS !== 'ios') return {};
   return { inputAccessoryViewID: KEYBOARD_ACCESSORY_ID };
 }
 
-/** Montar uma vez na raiz do app (iOS). */
+/**
+ * Barra nativa acima do teclado no iOS (seta para ocultar).
+ * No Android o teclado do sistema já traz a seta de fechar.
+ * Montar uma vez na raiz do app.
+ */
 export function KeyboardDismissAccessory({ colors }) {
   if (Platform.OS !== 'ios') return null;
   const bg = colors?.surface || '#f1f5f9';
@@ -37,31 +40,12 @@ export function KeyboardDismissAccessory({ colors }) {
           style={styles.accessoryBtn}
           accessibilityRole="button"
           accessibilityLabel="Ocultar teclado"
+          hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-down" size={20} color={text} />
-          <Text style={[styles.accessoryText, { color: text }]}>Ocultar teclado</Text>
+          <Ionicons name="chevron-down" size={22} color={text} />
         </TouchableOpacity>
       </View>
     </InputAccessoryView>
-  );
-}
-
-/** Botão visível nos formulários (iOS e Android). */
-export function KeyboardDismissButton({ colors, style }) {
-  const text = colors?.primary || '#2563EB';
-  const border = colors?.border || '#cbd5e1';
-  const bg = colors?.surface || '#EFF6FF';
-
-  return (
-    <TouchableOpacity
-      onPress={dismissKeyboard}
-      style={[styles.formBtn, { borderColor: border, backgroundColor: bg }, style]}
-      accessibilityRole="button"
-      accessibilityLabel="Ocultar teclado"
-    >
-      <Ionicons name="keypad-outline" size={18} color={text} />
-      <Text style={[styles.formBtnText, { color: text }]}>Ocultar teclado</Text>
-    </TouchableOpacity>
   );
 }
 
@@ -71,33 +55,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   accessoryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     paddingVertical: 4,
     paddingHorizontal: 8,
-  },
-  accessoryText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  formBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  formBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

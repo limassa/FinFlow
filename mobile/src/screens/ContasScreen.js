@@ -23,7 +23,9 @@ import { HeaderIconButton } from '../components/HeaderIconButton';
 import { useTheme } from '../context/ThemeContext';
 import Select from '../components/Select';
 import BankSelector from '../components/BankSelector';
-import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
+import { keyboardInputProps } from '../components/FormKeyboard';
+import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBancoById } from '../utils/banks';
 import BankLogo from '../components/BankLogo';
 
@@ -33,6 +35,8 @@ export default function ContasScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardBottomInset();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const keyboardAppearance = isDark ? 'dark' : 'light';
   const userId = getUserId();
@@ -279,14 +283,24 @@ export default function ContasScreen() {
         visible={showForm}
         animationType="slide"
         transparent={true}
+        statusBarTranslucent
         onRequestClose={resetForm}
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                paddingBottom: Math.max(insets.bottom, 16),
+                marginBottom: Platform.OS === 'android' ? keyboardInset : 0,
+                maxHeight: Platform.OS === 'android' && keyboardInset > 0 ? '92%' : '90%',
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {editId ? 'Editar Conta' : 'Nova Conta'}
@@ -302,6 +316,7 @@ export default function ContasScreen() {
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
             >
               <Text style={styles.label}>Nome da Conta *</Text>
               <TextInput
@@ -345,8 +360,6 @@ export default function ContasScreen() {
                 selectionColor={colors.primary}
                 {...keyboardInputProps()}
               />
-
-              <KeyboardDismissButton colors={colors} />
 
               <View style={styles.formActions}>
                 <TouchableOpacity
@@ -521,7 +534,8 @@ function createStyles(colors) {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   modalHeader: {
     flexDirection: 'row',

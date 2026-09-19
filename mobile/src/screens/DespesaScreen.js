@@ -20,7 +20,9 @@ import { useAuth } from '../context/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import { formatarValor, formatarData, formatDateLocalYmd, parseLocalDateInput } from '../utils/formatters';
 import { currentMonthYm, ymdToday, ymdEfetivoDespesa, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
-import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
+import { keyboardInputProps } from '../components/FormKeyboard';
+import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatCurrency, parseCurrencyToNumber } from '../utils/currencyMask';
@@ -57,6 +59,8 @@ export default function DespesaScreen() {
   const navigation = useNavigation();
   const { getUserId } = useAuth();
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardBottomInset();
   const themeVariant = isDark ? 'dark' : 'light';
   const keyboardAppearance = isDark ? 'dark' : 'light';
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -1166,14 +1170,24 @@ export default function DespesaScreen() {
         visible={showForm}
         animationType="slide"
         transparent={true}
+        statusBarTranslucent
         onRequestClose={resetForm}
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                paddingBottom: Math.max(insets.bottom, 16),
+                marginBottom: Platform.OS === 'android' ? keyboardInset : 0,
+                maxHeight: Platform.OS === 'android' && keyboardInset > 0 ? '92%' : '90%',
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {editId ? 'Editar Despesa' : 'Nova Despesa'}
@@ -1185,10 +1199,11 @@ export default function DespesaScreen() {
 
             <ScrollView
               style={styles.formContainer}
-              contentContainerStyle={{ paddingBottom: 40 }}
+              contentContainerStyle={{ paddingBottom: 24 }}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
             >
               <Text style={styles.label}>Descrição *</Text>
               <TextInput
@@ -1303,8 +1318,6 @@ export default function DespesaScreen() {
                   />
                 </>
               )}
-
-              <KeyboardDismissButton colors={colors} />
 
               <View style={styles.formActions}>
                 <TouchableOpacity
@@ -1866,7 +1879,8 @@ function createStyles(colors) {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1880,7 +1894,7 @@ function createStyles(colors) {
     color: colors.text,
   },
   formContainer: {
-    maxHeight: 500,
+    flexGrow: 0,
   },
   label: {
     fontSize: 14,

@@ -21,7 +21,7 @@ import {
   CORES_DISPONIVEIS,
   ICONS_CATEGORIA_CUSTOM,
 } from '../utils/categoryIcons';
-import { KeyboardDismissButton, keyboardInputProps } from '../components/FormKeyboard';
+import { keyboardInputProps } from '../components/FormKeyboard';
 
 export default function CategoriasScreen() {
   const navigation = useNavigation();
@@ -323,7 +323,6 @@ export default function CategoriasScreen() {
                 </View>
               </View>
 
-              <KeyboardDismissButton colors={colors} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setShowModal(false)}>
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>
