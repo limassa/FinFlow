@@ -7943,7 +7943,7 @@ select.form-input:focus {
   height: 40px;
   width: auto;
 }
-.store-badges__img--google {
-  height: 58px;
-  margin: -9px 0;
+.store-badges__img--google,
+.store-badges__img--apple {
+  height: 40px;
 }

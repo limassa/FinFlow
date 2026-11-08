@@ -21,7 +21,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { formatarValor, formatarData, formatDateLocalYmd, parseLocalDateInput } from '../utils/formatters';
 import { currentMonthYm, ymdToday, ymdEfetivoReceita, addMonthsYm, formatMesPtBr, ymPrimeiroDia } from '../utils/abaListaFinanceira';
 import { keyboardInputProps } from '../components/FormKeyboard';
-import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
+import { useFormSheetKeyboardStyle } from '../hooks/useKeyboardBottomInset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeaderIconButton } from '../components/HeaderIconButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -44,7 +44,7 @@ export default function ReceitaScreen() {
   const { getUserId } = useAuth();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const keyboardInset = useKeyboardBottomInset();
+  const formSheetStyle = useFormSheetKeyboardStyle(insets.bottom);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const themeVariant = isDark ? 'dark' : 'light';
   const keyboardAppearance = isDark ? 'dark' : 'light';
@@ -1009,19 +1009,10 @@ export default function ReceitaScreen() {
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior="padding"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
-          <View
-            style={[
-              styles.modalContent,
-              {
-                paddingBottom: Math.max(insets.bottom, 16),
-                marginBottom: Platform.OS === 'android' ? keyboardInset : 0,
-                maxHeight: Platform.OS === 'android' && keyboardInset > 0 ? '92%' : '90%',
-              },
-            ]}
-          >
+          <View style={[styles.modalContent, formSheetStyle]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {editId ? 'Editar Receita' : 'Nova Receita'}
@@ -1033,11 +1024,12 @@ export default function ReceitaScreen() {
 
             <ScrollView
               style={styles.formContainer}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={styles.formContent}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
               nestedScrollEnabled
+              bounces={false}
             >
               <Text style={styles.label}>Descrição *</Text>
               <TextInput
@@ -1624,7 +1616,8 @@ function createStyles(colors) {
     backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '90%',
+    width: '100%',
+    overflow: 'hidden',
     paddingHorizontal: 20,
     paddingTop: 20,
   },
@@ -1632,7 +1625,7 @@ function createStyles(colors) {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   modalTitle: {
     fontSize: 20,
@@ -1641,6 +1634,10 @@ function createStyles(colors) {
   },
   formContainer: {
     flexGrow: 0,
+    flexShrink: 1,
+  },
+  formContent: {
+    paddingBottom: 24,
   },
   label: {
     fontSize: 14,
